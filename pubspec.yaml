@@ -52,6 +52,9 @@ dependencies:
   # HTTP client for Tesla API
   http: ^1.1.0
   
+  # Crypto for PKCE
+  crypto: ^3.0.3
+  
   # State management
   provider: ^6.1.1
 

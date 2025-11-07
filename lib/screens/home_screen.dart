@@ -3,6 +3,7 @@ import 'package:google_places_flutter/google_places_flutter.dart';
 import 'package:google_places_flutter/model/prediction.dart';
 import '../models/destination.dart';
 import '../services/navigation_service.dart';
+import '../services/tesla_auth_service.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -16,11 +17,55 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final _navigationService = NavigationService();
+  final _teslaAuthService = TeslaAuthService();
   final _placesController = TextEditingController();
   Destination? _selectedDestination;
   NavigationApp? _selectedApp;
   bool _isLoading = false;
   GoogleMapController? _mapController;
+  String? _userEmail;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserEmail();
+  }
+
+  Future<void> _loadUserEmail() async {
+    final email = await _teslaAuthService.getEmail();
+    if (mounted) {
+      setState(() {
+        _userEmail = email;
+      });
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('로그아웃'),
+        content: const Text('로그아웃 하시겠습니까?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('로그아웃'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await _teslaAuthService.logout();
+      if (mounted) {
+        Navigator.of(context).pushReplacementNamed('/login');
+      }
+    }
+  }
 
   // Google Places API key
   static const String _googlePlacesApiKey =
@@ -55,7 +100,7 @@ class _HomeScreenState extends State<HomeScreen> {
           await _mapController!.animateCamera(
             CameraUpdate.newLatLngZoom(
               LatLng(placeDetails.latitude, placeDetails.longitude),
-              15,
+              15.0,
             ),
           );
         }
@@ -167,7 +212,23 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('테슬라 맵 브릿지')),
+      appBar: AppBar(
+        title: const Text('테슬라 맵 브릿지'),
+        actions: [
+          if (_userEmail != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Center(
+                child: Text(_userEmail!, style: const TextStyle(fontSize: 12)),
+              ),
+            ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: '로그아웃',
+            onPressed: _handleLogout,
+          ),
+        ],
+      ),
       body: Column(
         children: [
           // Search bar
@@ -246,7 +307,7 @@ class _HomeScreenState extends State<HomeScreen> {
               color: Colors.grey.shade100,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 4,
                   offset: const Offset(0, -2),
                 ),

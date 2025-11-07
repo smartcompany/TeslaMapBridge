@@ -1,4 +1,4 @@
-package com.teslamapbridge.tesla_map_bridge
+package com.smartcompany.teslaMapBridge
 
 import io.flutter.embedding.android.FlutterActivity
 
