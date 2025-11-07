@@ -307,4 +307,44 @@ class TeslaAuthService {
       return [];
     }
   }
+
+  /// Send destination to a Tesla vehicle
+  Future<bool> sendDestinationToVehicle(
+    String vehicleId,
+    double latitude,
+    double longitude,
+    String destinationName,
+  ) async {
+    try {
+      final accessToken = await getAccessToken();
+      if (accessToken == null) return false;
+
+      if (!await isLoggedIn()) {
+        return false;
+      }
+
+      final response = await http.post(
+        Uri.parse('$_ownerApiUrl/api/1/vehicles/$vehicleId/command/share'),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'type': 'share_ext_content_raw',
+          'value': {
+            'android.intent.ACTION_VIEW':
+                'geo:$latitude,$longitude?q=$destinationName',
+            'lat': latitude,
+            'lon': longitude,
+            'label': destinationName,
+          },
+        }),
+      );
+
+      return response.statusCode == 200;
+    } catch (e) {
+      print('Send destination error: $e');
+      return false;
+    }
+  }
 }

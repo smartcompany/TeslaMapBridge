@@ -20,15 +20,19 @@ class _HomeScreenState extends State<HomeScreen> {
   final _teslaAuthService = TeslaAuthService();
   final _placesController = TextEditingController();
   Destination? _selectedDestination;
-  NavigationApp? _selectedApp;
+  NavigationApp _selectedApp = NavigationApp.tmap;
   bool _isLoading = false;
+  bool _isSendingToTesla = false;
   GoogleMapController? _mapController;
   String? _userEmail;
+  List<Map<String, dynamic>> _vehicles = [];
+  String? _selectedVehicleId;
 
   @override
   void initState() {
     super.initState();
     _loadUserEmail();
+    _loadTeslaVehicles();
   }
 
   Future<void> _loadUserEmail() async {
@@ -62,8 +66,85 @@ class _HomeScreenState extends State<HomeScreen> {
     if (confirm == true) {
       await _teslaAuthService.logout();
       if (mounted) {
+        setState(() {
+          _userEmail = null;
+          _vehicles = [];
+          _selectedVehicleId = null;
+        });
         Navigator.of(context).pushReplacementNamed('/login');
       }
+    }
+  }
+
+  Future<void> _loadTeslaVehicles() async {
+    final loggedIn = await _teslaAuthService.isLoggedIn();
+    if (!loggedIn) {
+      if (mounted) {
+        setState(() {
+          _vehicles = [];
+          _selectedVehicleId = null;
+        });
+      }
+      return;
+    }
+
+    final vehicles = await _teslaAuthService.getVehicles();
+    if (mounted) {
+      setState(() {
+        _vehicles = vehicles;
+        if (vehicles.isNotEmpty) {
+          final firstValidId = vehicles
+              .map(
+                (vehicle) =>
+                    (vehicle['id_s'] ?? vehicle['id']?.toString())?.toString(),
+              )
+              .firstWhere(
+                (id) => id != null && id.isNotEmpty,
+                orElse: () => null,
+              );
+          _selectedVehicleId ??= firstValidId;
+        }
+      });
+    }
+  }
+
+  Future<void> _sendDestinationToTesla(Destination destination) async {
+    if (_selectedVehicleId == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('테슬라 차량을 먼저 선택해주세요.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
+    setState(() {
+      _isSendingToTesla = true;
+    });
+
+    final vehicleId = _selectedVehicleId!;
+    final success = await _teslaAuthService.sendDestinationToVehicle(
+      vehicleId,
+      destination.latitude,
+      destination.longitude,
+      destination.name,
+    );
+
+    if (mounted) {
+      setState(() {
+        _isSendingToTesla = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            success ? '테슬라 차량에 목적지가 전송되었습니다.' : '테슬라 차량 전송에 실패했습니다.',
+          ),
+          backgroundColor: success ? Colors.green : Colors.red,
+        ),
+      );
     }
   }
 
@@ -159,21 +240,17 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    if (_selectedApp == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('네비게이션 앱을 선택해주세요')));
-      return;
-    }
-
     setState(() {
       _isLoading = true;
     });
 
     try {
-      // Start navigation in selected app
+      if (_vehicles.isEmpty) {
+        await _loadTeslaVehicles();
+      }
+
       final navSuccess = await _navigationService.launchNavigation(
-        _selectedApp!,
+        _selectedApp,
         _selectedDestination!.latitude,
         _selectedDestination!.longitude,
         _selectedDestination!.name,
@@ -187,6 +264,10 @@ class _HomeScreenState extends State<HomeScreen> {
               backgroundColor: Colors.green,
             ),
           );
+          final destination = _selectedDestination!;
+          if (_vehicles.isNotEmpty) {
+            await _sendDestinationToTesla(destination);
+          }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -237,6 +318,10 @@ class _HomeScreenState extends State<HomeScreen> {
             child: GooglePlaceAutoCompleteTextField(
               textEditingController: _placesController,
               googleAPIKey: _googlePlacesApiKey,
+              textInputAction: TextInputAction.done,
+              formSubmitCallback: () {
+                FocusScope.of(context).unfocus();
+              },
               inputDecoration: InputDecoration(
                 hintText: '목적지를 검색하세요',
                 prefixIcon: const Icon(Icons.search),
@@ -254,6 +339,7 @@ class _HomeScreenState extends State<HomeScreen> {
               },
               itemClick: (prediction) {
                 _placesController.text = prediction.description ?? '';
+                FocusScope.of(context).unfocus();
                 _onPlaceSelected(prediction);
               },
               itemBuilder: (context, index, prediction) {
@@ -301,87 +387,173 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           // Navigation app selection
-          Container(
-            padding: const EdgeInsets.all(16.0),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 4,
-                  offset: const Offset(0, -2),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (_selectedDestination != null) ...[
-                  Card(
-                    child: ListTile(
-                      leading: const Icon(Icons.location_on, color: Colors.red),
-                      title: Text(
-                        _selectedDestination!.name,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Text(_selectedDestination!.address),
-                    ),
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(16.0),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, -2),
                   ),
-                  const SizedBox(height: 16),
                 ],
-                const Text(
-                  '네비게이션 앱 선택',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Row(
+              ),
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Expanded(
-                      child: _buildAppButton(
-                        NavigationApp.tmap,
-                        'T맵',
-                        Icons.directions,
+                    if (_selectedDestination != null) ...[
+                      Card(
+                        child: ListTile(
+                          leading: const Icon(
+                            Icons.location_on,
+                            color: Colors.red,
+                          ),
+                          title: Text(
+                            _selectedDestination!.name,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text(_selectedDestination!.address),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    const Text(
+                      '네비게이션 앱 선택',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildAppButton(
-                        NavigationApp.naver,
-                        '네이버 네비',
-                        Icons.navigation,
-                      ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildAppButton(
+                            NavigationApp.tmap,
+                            'T맵',
+                            Icons.directions,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _buildAppButton(
+                            NavigationApp.naver,
+                            '네이버 네비',
+                            Icons.navigation,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _buildAppButton(
+                            NavigationApp.kakao,
+                            '카카오 네비',
+                            Icons.map,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _buildAppButton(
-                        NavigationApp.kakao,
-                        '카카오 네비',
-                        Icons.map,
+                    const SizedBox(height: 16),
+                    if (_userEmail != null) ...[
+                      const Text(
+                        '테슬라 차량 선택',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      if (_vehicles.isNotEmpty)
+                        DropdownButtonFormField<String>(
+                          value: _selectedVehicleId,
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            filled: true,
+                            fillColor: Colors.white,
+                          ),
+                          items: _vehicles
+                              .map((vehicle) {
+                                final id =
+                                    (vehicle['id_s'] ??
+                                            vehicle['id']?.toString())
+                                        ?.toString();
+                                if (id == null || id.isEmpty) {
+                                  return null;
+                                }
+                                final name =
+                                    vehicle['display_name'] as String? ??
+                                    vehicle['vin'] as String? ??
+                                    '차량 ${vehicle['id']}';
+                                return DropdownMenuItem<String>(
+                                  value: id,
+                                  child: Text(name),
+                                );
+                              })
+                              .whereType<DropdownMenuItem<String>>()
+                              .toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedVehicleId = value;
+                            });
+                          },
+                        )
+                      else
+                        Card(
+                          color: Colors.grey.shade200,
+                          child: Padding(
+                            padding: const EdgeInsets.all(12.0),
+                            child: Text(
+                              '등록된 차량이 없거나 불러오지 못했습니다.\nTesla 앱에서 차량을 확인한 후 새로고침하세요.',
+                              style: TextStyle(color: Colors.grey.shade700),
+                            ),
+                          ),
+                        ),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton.icon(
+                          onPressed: _isLoading ? null : _loadTeslaVehicles,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('차량 새로고침'),
+                        ),
+                      ),
+                      if (_isSendingToTesla)
+                        Row(
+                          children: const [
+                            SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                            SizedBox(width: 8),
+                            Text('테슬라 차량으로 전송 중...'),
+                          ],
+                        ),
+                      const SizedBox(height: 16),
+                    ],
+                    ElevatedButton.icon(
+                      onPressed: _isLoading || _selectedDestination == null
+                          ? null
+                          : _startNavigation,
+                      icon: _isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.directions_car),
+                      label: const Text('길 안내 시작'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  onPressed:
-                      _isLoading ||
-                          _selectedDestination == null ||
-                          _selectedApp == null
-                      ? null
-                      : _startNavigation,
-                  icon: _isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.directions_car),
-                  label: const Text('길 안내 시작'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ],

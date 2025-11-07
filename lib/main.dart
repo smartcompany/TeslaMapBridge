@@ -19,6 +19,13 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
+      builder: (context, child) {
+        final mediaQuery = MediaQuery.of(context);
+        return MediaQuery(
+          data: mediaQuery.copyWith(textScaler: const TextScaler.linear(1.0)),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
       home: const AuthWrapper(),
       routes: {
         '/home': (context) => const HomeScreen(),
