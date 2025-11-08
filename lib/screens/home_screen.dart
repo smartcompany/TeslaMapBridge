@@ -41,6 +41,9 @@ class _HomeScreenState extends State<HomeScreen> {
     _searchFocusNode.addListener(_focusListener);
     _placesController.addListener(() {
       debugPrint('onChanged: ${_placesController.text}');
+      if (mounted) {
+        setState(() {});
+      }
     });
     _loadDefaultNavigationApp();
     _loadUserEmail();
