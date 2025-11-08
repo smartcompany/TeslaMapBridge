@@ -406,14 +406,30 @@ class _HomeScreenState extends State<HomeScreen> {
                       _searchFocusNode.unfocus();
                       FocusManager.instance.primaryFocus?.unfocus();
                     },
+                    boxDecoration: const BoxDecoration(
+                      color: Colors.transparent,
+                    ),
+                    containerHorizontalPadding: 0,
+                    containerVerticalPadding: 0,
                     inputDecoration: InputDecoration(
                       hintText: '목적지를 검색하세요',
                       prefixIcon: const Icon(Icons.search),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: Theme.of(context).primaryColor,
+                        ),
                       ),
                       filled: true,
-                      fillColor: Colors.grey.shade50,
+                      fillColor: Colors.white,
                     ),
                     debounceTime: 400,
                     countries: const ['kr'],
@@ -440,7 +456,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       );
                     },
                     seperatedBuilder: const Divider(),
-                    containerHorizontalPadding: 10,
                   ),
                 ),
                 if (_recentDestinations.isNotEmpty &&
