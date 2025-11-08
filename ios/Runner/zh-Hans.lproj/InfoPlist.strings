@@ -1,2 +1,2 @@
 "CFBundleDisplayName" = "特斯拉地图桥";
-
+"NSLocationWhenInUseUsageDescription" = "Tesla Map Bridge 需要使用您的位置来从当前位置规划路线。";

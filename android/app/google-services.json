@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "849629235162",
+    "project_id": "tesla-map-bridge",
+    "storage_bucket": "tesla-map-bridge.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:849629235162:android:7698e78097f6883d4522e3",
+        "android_client_info": {
+          "package_name": "com.smartcompany.teslaMapBridge"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC1mOEtKTtByN3ID24IQD0UIJhx7Jawbic"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

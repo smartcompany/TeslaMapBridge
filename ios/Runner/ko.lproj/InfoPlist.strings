@@ -1,2 +1,2 @@
 "CFBundleDisplayName" = "테슬라 맵 브리지";
-
+"NSLocationWhenInUseUsageDescription" = "현재 위치에서 길 안내를 제공하기 위해 Tesla Map Bridge가 위치 정보를 사용합니다.";
