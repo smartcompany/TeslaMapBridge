@@ -112,20 +112,25 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _applySelectedDestination(Destination destination) async {
     setState(() {
+      _isLoading = false;
       _selectedDestination = destination;
       _placesController.text = destination.name;
     });
 
-    if (_mapController != null) {
-      await _mapController!.animateCamera(
-        CameraUpdate.newLatLngZoom(
-          LatLng(destination.latitude, destination.longitude),
-          15.0,
-        ),
-      );
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _moveCameraToSelectedDestination();
+    });
 
     await _saveRecentDestination(destination);
+  }
+
+  Future<void> _moveCameraToSelectedDestination() async {
+    if (_mapController != null && _selectedDestination != null) {
+      final dest = _selectedDestination!;
+      await _mapController!.animateCamera(
+        CameraUpdate.newLatLngZoom(LatLng(dest.latitude, dest.longitude), 15.0),
+      );
+    }
   }
 
   Future<void> _handleLogout() async {
@@ -485,6 +490,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                   : null,
                               trailing: const Icon(Icons.north_east),
                               onTap: () {
+                                debugPrint(
+                                  '[Recent] tapped ${destination.name}',
+                                );
                                 _searchFocusNode.unfocus();
                                 FocusManager.instance.primaryFocus?.unfocus();
                                 _applySelectedDestination(destination);
@@ -506,6 +514,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       onMapCreated: (controller) {
                         _mapController = controller;
+                        _moveCameraToSelectedDestination();
                       },
                       markers: _selectedDestination != null
                           ? {
