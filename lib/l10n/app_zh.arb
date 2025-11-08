@@ -1,0 +1,67 @@
+{
+  "@@locale": "zh",
+  "appTitle": "特斯拉地图桥",
+  "settingsTitle": "设置",
+  "defaultNavigationApp": "默认导航应用",
+  "navigationSetConfirmation": "{appName} 已设为默认导航应用。",
+  "@navigationSetConfirmation": {
+    "placeholders": {
+      "appName": {}
+    }
+  },
+  "logoutTitle": "注销",
+  "logoutDescription": "退出您的帐户",
+  "logoutConfirmation": "要注销吗？",
+  "cancel": "取消",
+  "logoutButton": "注销",
+  "searchHint": "搜索目的地",
+  "recentSearches": "最近搜索",
+  "teslaVehicleSelection": "选择特斯拉车辆",
+  "noVehiclesMessage": "未找到车辆或加载失败。\n请在 Tesla 应用中确认后刷新。",
+  "refreshVehicles": "刷新车辆",
+  "sendingToTesla": "正在发送到特斯拉车辆...",
+  "startNavigation": "开始导航",
+  "teslaVehicleRequired": "请先选择特斯拉车辆。",
+  "sendToTeslaSuccess": "已将目的地发送到特斯拉车辆。",
+  "sendToTeslaFailure": "发送目的地到特斯拉车辆失败。",
+  "navigationStarted": "导航已启动。",
+  "navigationFailed": "无法启动导航。",
+  "selectDestinationPrompt": "请选择目的地。",
+  "failedToFetchPlaceDetails": "获取地点信息失败：{error}",
+  "@failedToFetchPlaceDetails": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "errorWithMessage": "错误：{error}",
+  "@errorWithMessage": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "unknownPlace": "未知地点",
+  "loginTitle": "特斯拉登录",
+  "initializing": "初始化中...",
+  "webViewInitializationFailed": "WebView 初始化失败",
+  "processingLogin": "正在处理登录...",
+  "loading": "加载中...",
+  "loginFailed": "登录失败。请重试。",
+  "clientIdNotConfigured": "未配置 Client ID。\n请在 lib/services/tesla_auth_service.dart 中将 _clientId 设置为 Tesla 开发者门户提供的值。",
+  "vehicleDefaultName": "车辆 {id}",
+  "@vehicleDefaultName": {
+    "placeholders": {
+      "id": {}
+    }
+  },
+  "navAppTmap": "Tmap",
+  "navAppNaver": "Naver 地图",
+  "navAppKakao": "Kakao 导航",
+  "navAppGoogleMaps": "Google 地图",
+  "navAppWaze": "Waze",
+  "navAppBaiduMaps": "百度地图",
+  "navAppGaodeMaps": "高德地图 (AMap)",
+  "navAppTencentMaps": "腾讯地图",
+  "navAppYahooCarNavi": "Yahoo! Car Navi",
+  "navAppNavitime": "NAVITIME"
+}
+

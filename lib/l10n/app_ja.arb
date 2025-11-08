@@ -1,0 +1,67 @@
+{
+  "@@locale": "ja",
+  "appTitle": "テスラマップブリッジ",
+  "settingsTitle": "設定",
+  "defaultNavigationApp": "デフォルトのナビアプリ",
+  "navigationSetConfirmation": "{appName} をデフォルトのナビアプリに設定しました。",
+  "@navigationSetConfirmation": {
+    "placeholders": {
+      "appName": {}
+    }
+  },
+  "logoutTitle": "ログアウト",
+  "logoutDescription": "アカウントからログアウトします",
+  "logoutConfirmation": "ログアウトしますか？",
+  "cancel": "キャンセル",
+  "logoutButton": "ログアウト",
+  "searchHint": "目的地を検索",
+  "recentSearches": "最近の検索",
+  "teslaVehicleSelection": "テスラ車を選択",
+  "noVehiclesMessage": "登録済みの車両がないか読み込めませんでした。\nTesla アプリを確認して更新してください。",
+  "refreshVehicles": "車両を更新",
+  "sendingToTesla": "テスラ車に送信中...",
+  "startNavigation": "ナビを開始",
+  "teslaVehicleRequired": "先にテスラ車を選択してください。",
+  "sendToTeslaSuccess": "テスラ車に目的地を送信しました。",
+  "sendToTeslaFailure": "テスラ車への送信に失敗しました。",
+  "navigationStarted": "ナビを開始しました。",
+  "navigationFailed": "ナビを開始できませんでした。",
+  "selectDestinationPrompt": "目的地を選択してください。",
+  "failedToFetchPlaceDetails": "場所情報の取得に失敗しました: {error}",
+  "@failedToFetchPlaceDetails": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "errorWithMessage": "エラー: {error}",
+  "@errorWithMessage": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "unknownPlace": "不明な場所",
+  "loginTitle": "テスラログイン",
+  "initializing": "初期化中...",
+  "webViewInitializationFailed": "WebView の初期化に失敗しました",
+  "processingLogin": "ログイン処理中...",
+  "loading": "読み込み中...",
+  "loginFailed": "ログインに失敗しました。もう一度お試しください。",
+  "clientIdNotConfigured": "Client ID が設定されていません。\nlib/services/tesla_auth_service.dart の _clientId に Tesla Developer Portal の資格情報を設定してください。",
+  "vehicleDefaultName": "車両 {id}",
+  "@vehicleDefaultName": {
+    "placeholders": {
+      "id": {}
+    }
+  },
+  "navAppTmap": "Tmap",
+  "navAppNaver": "Naver マップ",
+  "navAppKakao": "カカオナビ",
+  "navAppGoogleMaps": "Google マップ",
+  "navAppWaze": "Waze",
+  "navAppBaiduMaps": "百度地図",
+  "navAppGaodeMaps": "高徳地図 (AMap)",
+  "navAppTencentMaps": "テンセント地図",
+  "navAppYahooCarNavi": "Yahoo!カーナビ",
+  "navAppNavitime": "NAVITIME"
+}
+

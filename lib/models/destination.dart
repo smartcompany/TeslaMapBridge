@@ -25,7 +25,7 @@ class Destination {
 
   factory Destination.fromMap(Map<String, dynamic> map) {
     return Destination(
-      name: map['name'] as String? ?? '알 수 없는 장소',
+      name: map['name'] as String? ?? 'Unknown place',
       address: map['address'] as String? ?? '',
       latitude: (map['latitude'] as num).toDouble(),
       longitude: (map['longitude'] as num).toDouble(),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_places_flutter/google_places_flutter.dart';
 import 'package:google_places_flutter/model/prediction.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../l10n/app_localizations.dart';
 import '../models/destination.dart';
 import '../services/navigation_service.dart';
 import '../services/tesla_auth_service.dart';
@@ -175,8 +176,8 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_selectedVehicleId == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('테슬라 차량을 먼저 선택해주세요.'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context)!.teslaVehicleRequired),
             backgroundColor: Colors.orange,
           ),
         );
@@ -200,10 +201,11 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _isSendingToTesla = false;
       });
+      final loc = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            success ? '테슬라 차량에 목적지가 전송되었습니다.' : '테슬라 차량 전송에 실패했습니다.',
+            success ? loc.sendToTeslaSuccess : loc.sendToTeslaFailure,
           ),
           backgroundColor: success ? Colors.green : Colors.red,
         ),
@@ -240,9 +242,10 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('장소 정보를 가져오는데 실패했습니다: $e')));
+        final loc = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(loc.failedToFetchPlaceDetails('$e'))),
+        );
       }
     } finally {
       setState(() {
@@ -263,7 +266,9 @@ class _HomeScreenState extends State<HomeScreen> {
         final data = jsonDecode(response.body);
         final result = data['result'] as Map<String, dynamic>;
 
-        final name = result['name'] as String? ?? '알 수 없는 장소';
+        final name =
+            result['name'] as String? ??
+            AppLocalizations.of(context)!.unknownPlace;
         final address = result['formatted_address'] as String? ?? '';
         final geometry = result['geometry'] as Map<String, dynamic>;
         final location = geometry['location'] as Map<String, dynamic>;
@@ -286,9 +291,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _startNavigation() async {
     if (_selectedDestination == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('목적지를 선택해주세요')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.selectDestinationPrompt),
+        ),
+      );
       return;
     }
 
@@ -309,10 +316,11 @@ class _HomeScreenState extends State<HomeScreen> {
       );
 
       if (mounted) {
+        final loc = AppLocalizations.of(context)!;
         if (navSuccess) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('길 안내가 시작되었습니다'),
+            SnackBar(
+              content: Text(loc.navigationStarted),
               backgroundColor: Colors.green,
             ),
           );
@@ -322,8 +330,8 @@ class _HomeScreenState extends State<HomeScreen> {
           }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('길 안내를 시작하지 못했습니다'),
+            SnackBar(
+              content: Text(loc.navigationFailed),
               backgroundColor: Colors.red,
             ),
           );
@@ -331,9 +339,10 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final loc = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('오류 발생: $e')));
+        ).showSnackBar(SnackBar(content: Text(loc.errorWithMessage('$e'))));
       }
     } finally {
       setState(() {
@@ -344,13 +353,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('테슬라 맵 브릿지'),
+        title: Text(loc.appTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
-            tooltip: '설정',
+            tooltip: loc.settingsTitle,
             onPressed: _openSettings,
           ),
           if (_userEmail != null)
@@ -386,7 +396,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     containerHorizontalPadding: 0,
                     containerVerticalPadding: 0,
                     inputDecoration: InputDecoration(
-                      hintText: '목적지를 검색하세요',
+                      hintText: loc.searchHint,
                       prefixIcon: const Icon(Icons.search),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -442,11 +452,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const Padding(
-                            padding: EdgeInsets.all(12.0),
+                          Padding(
+                            padding: const EdgeInsets.all(12.0),
                             child: Text(
-                              '최근 검색한 장소',
-                              style: TextStyle(fontWeight: FontWeight.bold),
+                              loc.recentSearches,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                           const Divider(height: 1),
@@ -528,9 +540,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         const SizedBox(height: 16),
                       ],
                       if (_userEmail != null) ...[
-                        const Text(
-                          '테슬라 차량 선택',
-                          style: TextStyle(
+                        Text(
+                          loc.teslaVehicleSelection,
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
@@ -558,7 +570,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                   final name =
                                       vehicle['display_name'] as String? ??
                                       vehicle['vin'] as String? ??
-                                      '차량 ${vehicle['id']}';
+                                      loc.vehicleDefaultName(
+                                        (vehicle['id'] ?? '').toString(),
+                                      );
                                   return DropdownMenuItem<String>(
                                     value: id,
                                     child: Text(name),
@@ -578,7 +592,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             child: Padding(
                               padding: const EdgeInsets.all(12.0),
                               child: Text(
-                                '등록된 차량이 없거나 불러오지 못했습니다.\nTesla 앱에서 차량을 확인한 후 새로고침하세요.',
+                                loc.noVehiclesMessage,
                                 style: TextStyle(color: Colors.grey.shade700),
                               ),
                             ),
@@ -588,21 +602,21 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: TextButton.icon(
                             onPressed: _isLoading ? null : _loadTeslaVehicles,
                             icon: const Icon(Icons.refresh),
-                            label: const Text('차량 새로고침'),
+                            label: Text(loc.refreshVehicles),
                           ),
                         ),
                         if (_isSendingToTesla)
                           Row(
-                            children: const [
-                              SizedBox(
+                            children: [
+                              const SizedBox(
                                 width: 18,
                                 height: 18,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
                                 ),
                               ),
-                              SizedBox(width: 8),
-                              Text('테슬라 차량으로 전송 중...'),
+                              const SizedBox(width: 8),
+                              Text(loc.sendingToTesla),
                             ],
                           ),
                         const SizedBox(height: 16),
@@ -620,7 +634,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               )
                             : const Icon(Icons.directions_car),
-                        label: const Text('길 안내 시작'),
+                        label: Text(loc.startNavigation),
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),

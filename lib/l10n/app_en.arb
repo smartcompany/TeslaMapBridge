@@ -1,0 +1,67 @@
+{
+  "@@locale": "en",
+  "appTitle": "Tesla Map Bridge",
+  "settingsTitle": "Settings",
+  "defaultNavigationApp": "Default navigation app",
+  "navigationSetConfirmation": "{appName} has been set as the default navigation app.",
+  "@navigationSetConfirmation": {
+    "placeholders": {
+      "appName": {}
+    }
+  },
+  "logoutTitle": "Log out",
+  "logoutDescription": "Log out of your account",
+  "logoutConfirmation": "Do you want to log out?",
+  "cancel": "Cancel",
+  "logoutButton": "Log out",
+  "searchHint": "Search for a destination",
+  "recentSearches": "Recent searches",
+  "teslaVehicleSelection": "Select Tesla vehicle",
+  "noVehiclesMessage": "No vehicles found or failed to load.\nCheck the Tesla app and refresh.",
+  "refreshVehicles": "Refresh vehicles",
+  "sendingToTesla": "Sending to Tesla vehicle...",
+  "startNavigation": "Start navigation",
+  "teslaVehicleRequired": "Select a Tesla vehicle first.",
+  "sendToTeslaSuccess": "Destination sent to Tesla vehicle.",
+  "sendToTeslaFailure": "Failed to send destination to Tesla vehicle.",
+  "navigationStarted": "Navigation started.",
+  "navigationFailed": "Failed to start navigation.",
+  "selectDestinationPrompt": "Please select a destination.",
+  "failedToFetchPlaceDetails": "Failed to fetch place details: {error}",
+  "@failedToFetchPlaceDetails": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "errorWithMessage": "Error: {error}",
+  "@errorWithMessage": {
+    "placeholders": {
+      "error": {}
+    }
+  },
+  "unknownPlace": "Unknown place",
+  "loginTitle": "Tesla Login",
+  "initializing": "Initializing...",
+  "webViewInitializationFailed": "WebView initialization failed",
+  "processingLogin": "Processing login...",
+  "loading": "Loading...",
+  "loginFailed": "Login failed. Please try again.",
+  "clientIdNotConfigured": "Client ID is not configured.\nSet _clientId with your Tesla Developer Portal credentials in lib/services/tesla_auth_service.dart.",
+  "vehicleDefaultName": "Vehicle {id}",
+  "@vehicleDefaultName": {
+    "placeholders": {
+      "id": {}
+    }
+  },
+  "navAppTmap": "Tmap",
+  "navAppNaver": "Naver Map",
+  "navAppKakao": "Kakao Navi",
+  "navAppGoogleMaps": "Google Maps",
+  "navAppWaze": "Waze",
+  "navAppBaiduMaps": "Baidu Maps",
+  "navAppGaodeMaps": "Gaode (AMap)",
+  "navAppTencentMaps": "Tencent Maps",
+  "navAppYahooCarNavi": "Yahoo! Car Navi",
+  "navAppNavitime": "NAVITIME"
+}
+

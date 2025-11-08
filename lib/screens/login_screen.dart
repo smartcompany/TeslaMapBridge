@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import '../l10n/app_localizations.dart';
 import '../services/tesla_auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -48,15 +49,12 @@ class _LoginScreenState extends State<LoginScreen> {
             onWebResourceError: (WebResourceError error) {
               if (mounted && !_isProcessingAuth) {
                 final errorMessage = error.description.toLowerCase();
+                final loc = AppLocalizations.of(context)!;
                 if (errorMessage.contains('client_id') ||
                     errorMessage.contains("don't recognize")) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: const Text(
-                        'Client ID가 설정되지 않았습니다.\n'
-                        'lib/services/tesla_auth_service.dart 파일에서\n'
-                        '_clientId를 Tesla Developer Portal에서 발급받은 값으로 설정하세요.',
-                      ),
+                      content: Text(loc.clientIdNotConfigured),
                       backgroundColor: Colors.orange,
                       duration: const Duration(seconds: 10),
                     ),
@@ -64,7 +62,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('오류 발생: ${error.description}'),
+                      content: Text(loc.errorWithMessage(error.description)),
                       backgroundColor: Colors.red,
                     ),
                   );
@@ -92,9 +90,10 @@ class _LoginScreenState extends State<LoginScreen> {
           _isInitializing = false;
           _errorMessage = e.toString();
         });
+        final loc = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('오류: $e'),
+            content: Text(loc.errorWithMessage('$e')),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 10),
           ),
@@ -126,8 +125,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 _isProcessingAuth = false;
               });
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('로그인에 실패했습니다. 다시 시도해주세요.'),
+                SnackBar(
+                  content: Text(AppLocalizations.of(context)!.loginFailed),
                   backgroundColor: Colors.red,
                 ),
               );
@@ -138,8 +137,12 @@ class _LoginScreenState extends State<LoginScreen> {
             setState(() {
               _isProcessingAuth = false;
             });
+            final loc = AppLocalizations.of(context)!;
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('오류 발생: $e'), backgroundColor: Colors.red),
+              SnackBar(
+                content: Text(loc.errorWithMessage('$e')),
+                backgroundColor: Colors.red,
+              ),
             );
           }
         }
@@ -149,9 +152,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('테슬라 로그인'),
+        title: Text(loc.loginTitle),
         automaticallyImplyLeading: false,
       ),
       body: _isInitializing
@@ -162,7 +166,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   const CircularProgressIndicator(),
                   const SizedBox(height: 16),
                   Text(
-                    '초기화 중...',
+                    loc.initializing,
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
                   if (_errorMessage != null) ...[
@@ -187,7 +191,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   const Icon(Icons.error_outline, size: 64, color: Colors.red),
                   const SizedBox(height: 16),
                   Text(
-                    'WebView 초기화 실패',
+                    loc.webViewInitializationFailed,
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   if (_errorMessage != null) ...[
@@ -217,7 +221,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           const CircularProgressIndicator(),
                           const SizedBox(height: 16),
                           Text(
-                            _isProcessingAuth ? '로그인 처리 중...' : '로딩 중...',
+                            _isProcessingAuth
+                                ? loc.processingLogin
+                                : loc.loading,
                             style: Theme.of(context).textTheme.bodyLarge,
                           ),
                         ],

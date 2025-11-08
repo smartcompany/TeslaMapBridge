@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../l10n/app_localizations.dart';
 import '../services/navigation_service.dart';
 import '../services/tesla_auth_service.dart';
 
@@ -53,10 +54,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await prefs.setString(kDefaultNavigationAppKey, app.name);
 
     if (!mounted) return;
+    final loc = AppLocalizations.of(context)!;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          '${NavigationService().getAppName(app)}가 기본 네비게이션으로 설정되었습니다.',
+          loc.navigationSetConfirmation(
+            NavigationService().getAppName(context, app),
+          ),
         ),
         duration: const Duration(seconds: 2),
       ),
@@ -69,19 +73,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _handleLogout() async {
+    final loc = AppLocalizations.of(context)!;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('로그아웃'),
-        content: const Text('로그아웃 하시겠습니까?'),
+        title: Text(loc.logoutTitle),
+        content: Text(loc.logoutConfirmation),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('취소'),
+            child: Text(loc.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('로그아웃'),
+            child: Text(loc.logoutButton),
           ),
         ],
       ),
@@ -114,7 +119,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       onWillPop: _handleWillPop,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('설정'),
+          title: Text(AppLocalizations.of(context)!.settingsTitle),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () {
@@ -127,14 +132,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
             : ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  const Text(
-                    '기본 네비게이션 앱',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  Text(
+                    AppLocalizations.of(context)!.defaultNavigationApp,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   ...NavigationApp.values.map(
                     (app) => RadioListTile<NavigationApp>(
-                      title: Text(NavigationService().getAppName(app)),
+                      title: Text(NavigationService().getAppName(context, app)),
                       value: app,
                       groupValue: _selectedApp,
                       onChanged: (value) {
@@ -154,8 +162,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.logout),
-                      title: const Text('로그아웃'),
-                      subtitle: const Text('계정에서 로그아웃합니다'),
+                      title: Text(AppLocalizations.of(context)!.logoutTitle),
+                      subtitle: Text(
+                        AppLocalizations.of(context)!.logoutDescription,
+                      ),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: _isLoggingOut ? null : _handleLogout,
                     ),

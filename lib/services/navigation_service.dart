@@ -1,6 +1,9 @@
 import 'dart:io';
 
+import 'package:flutter/widgets.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+import '../l10n/app_localizations.dart';
 
 const String kDefaultNavigationAppKey = 'default_navigation_app';
 
@@ -124,28 +127,29 @@ class NavigationService {
     return false;
   }
 
-  String getAppName(NavigationApp app) {
+  String getAppName(BuildContext context, NavigationApp app) {
+    final loc = AppLocalizations.of(context)!;
     switch (app) {
       case NavigationApp.tmap:
-        return 'T맵';
+        return loc.navAppTmap;
       case NavigationApp.naver:
-        return '네이버 네비';
+        return loc.navAppNaver;
       case NavigationApp.kakao:
-        return '카카오 네비';
+        return loc.navAppKakao;
       case NavigationApp.googleMaps:
-        return 'Google Maps';
+        return loc.navAppGoogleMaps;
       case NavigationApp.waze:
-        return 'Waze';
+        return loc.navAppWaze;
       case NavigationApp.baiduMaps:
-        return '바이두 지도';
+        return loc.navAppBaiduMaps;
       case NavigationApp.gaodeMaps:
-        return '가오더 지도 (AMap)';
+        return loc.navAppGaodeMaps;
       case NavigationApp.tencentMaps:
-        return '텐센트 지도';
+        return loc.navAppTencentMaps;
       case NavigationApp.yahooCarNavi:
-        return 'Yahoo! Car Navi';
+        return loc.navAppYahooCarNavi;
       case NavigationApp.navitime:
-        return 'NAVITIME';
+        return loc.navAppNavitime;
     }
   }
 }
