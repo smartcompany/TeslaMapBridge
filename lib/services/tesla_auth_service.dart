@@ -4,6 +4,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 class TeslaAuthService {
   static const _storage = FlutterSecureStorage();
@@ -279,6 +280,13 @@ class TeslaAuthService {
     await _storage.delete(key: _emailKey);
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_codeVerifierKey);
+    try {
+      final cookieManager = WebViewCookieManager();
+      await cookieManager.clearCookies();
+    } catch (e) {
+      // Ignore cookie clearing errors; they shouldn't block logout.
+      print('Error clearing webview cookies: $e');
+    }
   }
 
   /// Get list of vehicles

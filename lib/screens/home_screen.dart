@@ -139,38 +139,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _handleLogout() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('로그아웃'),
-        content: const Text('로그아웃 하시겠습니까?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('취소'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('로그아웃'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      await _teslaAuthService.logout();
-      if (mounted) {
-        setState(() {
-          _userEmail = null;
-          _vehicles = [];
-          _selectedVehicleId = null;
-        });
-        Navigator.of(context).pushReplacementNamed('/login');
-      }
-    }
-  }
-
   Future<void> _loadTeslaVehicles() async {
     final loggedIn = await _teslaAuthService.isLoggedIn();
     if (!loggedIn) {
@@ -392,11 +360,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Text(_userEmail!, style: const TextStyle(fontSize: 12)),
               ),
             ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: '로그아웃',
-            onPressed: _handleLogout,
-          ),
         ],
       ),
       body: SafeArea(

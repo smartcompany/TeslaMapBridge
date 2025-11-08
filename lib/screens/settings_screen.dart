@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/navigation_service.dart';
+import '../services/tesla_auth_service.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -11,9 +12,11 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  final TeslaAuthService _teslaAuthService = TeslaAuthService();
   NavigationApp _selectedApp = NavigationApp.tmap;
   bool _isLoading = true;
   bool _hasChanges = false;
+  bool _isLoggingOut = false;
 
   @override
   void initState() {
@@ -65,6 +68,46 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return false;
   }
 
+  Future<void> _handleLogout() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('로그아웃'),
+        content: const Text('로그아웃 하시겠습니까?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('로그아웃'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      setState(() {
+        _isLoggingOut = true;
+      });
+
+      try {
+        await _teslaAuthService.logout();
+        if (!mounted) return;
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/login', (route) => false);
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoggingOut = false;
+          });
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -99,6 +142,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           _setDefaultNavigationApp(value);
                         }
                       },
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  Card(
+                    child: ListTile(
+                      leading: _isLoggingOut
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.logout),
+                      title: const Text('로그아웃'),
+                      subtitle: const Text('계정에서 로그아웃합니다'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: _isLoggingOut ? null : _handleLogout,
                     ),
                   ),
                 ],
