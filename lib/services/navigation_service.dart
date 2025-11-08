@@ -1,8 +1,21 @@
+import 'dart:io';
+
 import 'package:url_launcher/url_launcher.dart';
 
 const String kDefaultNavigationAppKey = 'default_navigation_app';
 
-enum NavigationApp { tmap, naver, kakao }
+enum NavigationApp {
+  tmap,
+  naver,
+  kakao,
+  googleMaps,
+  waze,
+  baiduMaps,
+  gaodeMaps,
+  tencentMaps,
+  yahooCarNavi,
+  navitime,
+}
 
 class NavigationService {
   // Launch navigation app with destination
@@ -12,98 +25,103 @@ class NavigationService {
     double lng,
     String? name,
   ) async {
-    String url;
-
-    switch (app) {
-      case NavigationApp.tmap:
-        // T Map URL scheme
-        final placeName = name != null ? Uri.encodeComponent(name) : '';
-        url = 'tmap://route?goalx=$lng&goaly=$lat&goalname=$placeName';
-        break;
-
-      case NavigationApp.naver:
-        // 네이버 네비 URL scheme
-        final placeName = name != null ? Uri.encodeComponent(name) : '';
-        url = 'nmap://route?dlat=$lat&dlng=$lng&dname=$placeName';
-        break;
-
-      case NavigationApp.kakao:
-        // 카카오 네비 URL scheme
-        final placeName = name != null ? Uri.encodeComponent(name) : '';
-        // Try kakaomap first, then kakaonavi
-        url = 'kakaomap://route?ep=$lat,$lng&by=CAR&name=$placeName';
-        break;
+    final urls = _buildNavigationUrls(app, lat, lng, name);
+    for (final url in urls) {
+      if (await _launchUrl(url)) {
+        return true;
+      }
     }
-
-    final uri = Uri.parse(url);
-
-    if (await canLaunchUrl(uri)) {
-      return await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      // Fallback: try alternative schemes
-      return await _tryAlternativeSchemes(app, lat, lng, name);
-    }
+    return false;
   }
 
-  Future<bool> _tryAlternativeSchemes(
+  List<String> _buildNavigationUrls(
     NavigationApp app,
     double lat,
     double lng,
     String? name,
-  ) async {
-    String url;
-    final placeName = name != null ? Uri.encodeComponent(name) : '';
-
+  ) {
+    final encodedName = name != null ? Uri.encodeComponent(name) : '';
     switch (app) {
       case NavigationApp.tmap:
-        // Try alternative T Map scheme
-        url = 'tmap://search?name=$placeName&lon=$lng&lat=$lat';
-        break;
-
+        return [
+          'tmap://route?goalx=$lng&goaly=$lat&goalname=$encodedName',
+          'tmap://search?name=$encodedName&lon=$lng&lat=$lat',
+        ];
       case NavigationApp.naver:
-        // Try 네이버 지도 web URL
-        url = 'https://map.naver.com/v5/directions/-/-/$lat,$lng';
-        break;
-
+        return [
+          'nmap://route?dlat=$lat&dlng=$lng&dname=$encodedName',
+          'https://map.naver.com/v5/directions/-/-/$lat,$lng',
+        ];
       case NavigationApp.kakao:
-        // Try kakaonavi alternative
-        url = 'kakaonavi://navigate?name=$placeName&x=$lng&y=$lat';
-        if (!await canLaunchUrl(Uri.parse(url))) {
-          // Try 카카오맵 web URL as last resort
-          url = 'https://map.kakao.com/link/to/$placeName,$lat,$lng';
-        }
-        break;
+        return [
+          'kakaomap://route?ep=$lat,$lng&by=CAR&name=$encodedName',
+          'kakaonavi://navigate?name=$encodedName&x=$lng&y=$lat',
+          'https://map.kakao.com/link/to/$encodedName,$lat,$lng',
+        ];
+      case NavigationApp.googleMaps:
+        return [
+          if (Platform.isAndroid) 'google.navigation:q=$lat,$lng&mode=d',
+          if (Platform.isIOS)
+            'comgooglemaps://?daddr=$lat,$lng&directionsmode=driving',
+          'geo:$lat,$lng?q=$encodedName',
+          'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng',
+        ];
+      case NavigationApp.waze:
+        return [
+          'waze://?ll=$lat,$lng&navigate=yes',
+          'https://waze.com/ul?ll=$lat,$lng&navigate=yes',
+        ];
+      case NavigationApp.baiduMaps:
+        return [
+          'baidumap://map/direction?destination=latlng:$lat,$lng|name:$encodedName&mode=driving&src=TeslaMapBridge',
+          'http://api.map.baidu.com/direction?destination=$lat,$lng&mode=driving&output=html&src=TeslaMapBridge',
+        ];
+      case NavigationApp.gaodeMaps:
+        final iosUrl =
+            'iosamap://path?sourceApplication=TeslaMapBridge&dlat=$lat&dlon=$lng&dname=$encodedName&t=0';
+        final androidUrl =
+            'androidamap://route?sourceApplication=TeslaMapBridge&dlat=$lat&dlon=$lng&dname=$encodedName&dev=0&t=0';
+        return [
+          if (Platform.isIOS) iosUrl else androidUrl,
+          'amapuri://route/plan/?dlat=$lat&dlon=$lng&dname=$encodedName&dev=0&t=0',
+          'https://uri.amap.com/navigation?to=$lng,$lat,$encodedName&mode=car&src=TeslaMapBridge',
+        ];
+      case NavigationApp.tencentMaps:
+        return [
+          'qqmap://map/routeplan?type=drive&tocoord=$lat,$lng&to=$encodedName&referer=TeslaMapBridge',
+          'https://apis.map.qq.com/uri/v1/routeplan?type=drive&tocoord=$lat,$lng&to=$encodedName&referer=TeslaMapBridge',
+        ];
+      case NavigationApp.yahooCarNavi:
+        return [
+          'yjnav://navigate?to=$lat,$lng&name=$encodedName',
+          'https://map.yahoo.co.jp/dd/?lat=$lat&lon=$lng&mode=drive&title=$encodedName',
+        ];
+      case NavigationApp.navitime:
+        return [
+          'navitime://driveSearch?to=$lat,$lng&name=$encodedName',
+          'https://www.navitime.co.jp/drive/?to=$lng,$lat&name=$encodedName',
+        ];
     }
+  }
 
+  Future<bool> _launchUrl(String url) async {
     final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      return await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!await canLaunchUrl(uri)) {
+      return false;
     }
-
-    return false;
+    return launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
   // Check if navigation app is installed
   Future<bool> isAppInstalled(NavigationApp app) async {
-    String url;
-
-    switch (app) {
-      case NavigationApp.tmap:
-        url = 'tmap://';
-        break;
-      case NavigationApp.naver:
-        url = 'nmap://';
-        break;
-      case NavigationApp.kakao:
-        url = 'kakaomap://';
-        if (!await canLaunchUrl(Uri.parse(url))) {
-          url = 'kakaonavi://';
-        }
-        break;
+    final schemes = <String>[..._preferredSchemes[app] ?? const []];
+    for (final scheme in schemes) {
+      final uri = Uri.parse(scheme);
+      if (await canLaunchUrl(uri)) {
+        return true;
+      }
     }
-
-    final uri = Uri.parse(url);
-    return await canLaunchUrl(uri);
+    return false;
   }
 
   String getAppName(NavigationApp app) {
@@ -114,6 +132,33 @@ class NavigationService {
         return '네이버 네비';
       case NavigationApp.kakao:
         return '카카오 네비';
+      case NavigationApp.googleMaps:
+        return 'Google Maps';
+      case NavigationApp.waze:
+        return 'Waze';
+      case NavigationApp.baiduMaps:
+        return '바이두 지도';
+      case NavigationApp.gaodeMaps:
+        return '가오더 지도 (AMap)';
+      case NavigationApp.tencentMaps:
+        return '텐센트 지도';
+      case NavigationApp.yahooCarNavi:
+        return 'Yahoo! Car Navi';
+      case NavigationApp.navitime:
+        return 'NAVITIME';
     }
   }
 }
+
+const Map<NavigationApp, List<String>> _preferredSchemes = {
+  NavigationApp.tmap: ['tmap://'],
+  NavigationApp.naver: ['nmap://'],
+  NavigationApp.kakao: ['kakaomap://', 'kakaonavi://'],
+  NavigationApp.googleMaps: ['google.navigation:', 'comgooglemaps://', 'geo:'],
+  NavigationApp.waze: ['waze://'],
+  NavigationApp.baiduMaps: ['baidumap://'],
+  NavigationApp.gaodeMaps: ['androidamap://', 'iosamap://', 'amapuri://'],
+  NavigationApp.tencentMaps: ['qqmap://'],
+  NavigationApp.yahooCarNavi: ['yjnav://', 'yjcnav://'],
+  NavigationApp.navitime: ['navitime://'],
+};

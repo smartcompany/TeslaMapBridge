@@ -50,6 +50,13 @@
         <package android:name="com.nhn.android.nmap" />
         <package android:name="net.daum.android.map" />
         <package android:name="net.daum.mobile.map" />
+        <package android:name="com.google.android.apps.maps" />
+        <package android:name="com.waze" />
+        <package android:name="com.baidu.BaiduMap" />
+        <package android:name="com.autonavi.minimap" />
+        <package android:name="com.tencent.map" />
+        <package android:name="jp.co.yahoo.android.apps.navi" />
+        <package android:name="com.navitime.local.navitime" />
         <!-- URL schemes for navigation apps -->
         <intent>
             <action android:name="android.intent.action.VIEW" />
@@ -66,6 +73,46 @@
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="kakaonavi" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="google.navigation" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="comgooglemaps" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="geo" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="waze" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="baidumap" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="androidamap" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="amapuri" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="qqmap" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="yjnav" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="navitime" />
         </intent>
     </queries>
     <!-- Internet permission for API calls -->

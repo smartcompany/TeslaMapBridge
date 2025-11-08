@@ -55,6 +55,16 @@
 		<string>nmap</string>
 		<string>kakaomap</string>
 		<string>kakaonavi</string>
+		<string>comgooglemaps</string>
+		<string>google.navigation</string>
+		<string>waze</string>
+		<string>baidumap</string>
+		<string>iosamap</string>
+		<string>amapuri</string>
+		<string>qqmap</string>
+		<string>yjnav</string>
+		<string>yjcnav</string>
+		<string>navitime</string>
 	</array>
 </dict>
 </plist>

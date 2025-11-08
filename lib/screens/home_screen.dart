@@ -406,7 +406,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       fillColor: Colors.white,
                     ),
                     debounceTime: 400,
-                    countries: const ['kr'],
+                    countries: const ['kr', 'us', 'jp', 'cn'],
                     isLatLngRequired: true,
                     getPlaceDetailWithLatLng: (prediction) {
                       _onPlaceSelected(prediction);
