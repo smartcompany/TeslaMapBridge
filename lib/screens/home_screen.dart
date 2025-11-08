@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_places_flutter/google_places_flutter.dart';
 import 'package:google_places_flutter/model/prediction.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/destination.dart';
 import '../services/navigation_service.dart';
 import '../services/tesla_auth_service.dart';
@@ -16,9 +17,13 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  static const String _recentDestinationsKey = 'recent_destinations';
+
   final _navigationService = NavigationService();
   final _teslaAuthService = TeslaAuthService();
   final _placesController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+  late final VoidCallback _focusListener;
   Destination? _selectedDestination;
   NavigationApp _selectedApp = NavigationApp.tmap;
   bool _isLoading = false;
@@ -27,12 +32,40 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _userEmail;
   List<Map<String, dynamic>> _vehicles = [];
   String? _selectedVehicleId;
+  List<Destination> _recentDestinations = [];
 
   @override
   void initState() {
     super.initState();
+    _focusListener = () => setState(() {});
+    _searchFocusNode.addListener(_focusListener);
+    _loadDefaultNavigationApp();
     _loadUserEmail();
     _loadTeslaVehicles();
+    _loadRecentDestinations();
+  }
+
+  Future<void> _loadDefaultNavigationApp() async {
+    final prefs = await SharedPreferences.getInstance();
+    final stored = prefs.getString(kDefaultNavigationAppKey);
+    if (stored != null) {
+      final app = NavigationApp.values.firstWhere(
+        (item) => item.name == stored,
+        orElse: () => NavigationApp.tmap,
+      );
+      if (mounted) {
+        setState(() {
+          _selectedApp = app;
+        });
+      }
+    }
+  }
+
+  Future<void> _openSettings() async {
+    final result = await Navigator.of(context).pushNamed('/settings');
+    if (result == true) {
+      await _loadDefaultNavigationApp();
+    }
   }
 
   Future<void> _loadUserEmail() async {
@@ -42,6 +75,57 @@ class _HomeScreenState extends State<HomeScreen> {
         _userEmail = email;
       });
     }
+  }
+
+  Future<void> _loadRecentDestinations() async {
+    final prefs = await SharedPreferences.getInstance();
+    final stored = prefs.getStringList(_recentDestinationsKey) ?? [];
+    final destinations = stored
+        .map((item) => Destination.fromMap(jsonDecode(item)))
+        .toList();
+    if (!mounted) return;
+    setState(() {
+      _recentDestinations = destinations;
+    });
+  }
+
+  Future<void> _saveRecentDestination(Destination destination) async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _recentDestinations.removeWhere((item) {
+        if (item.placeId != null && destination.placeId != null) {
+          return item.placeId == destination.placeId;
+        }
+        return item.latitude == destination.latitude &&
+            item.longitude == destination.longitude;
+      });
+      _recentDestinations.insert(0, destination);
+      if (_recentDestinations.length > 5) {
+        _recentDestinations = _recentDestinations.sublist(0, 5);
+      }
+    });
+    await prefs.setStringList(
+      _recentDestinationsKey,
+      _recentDestinations.map((d) => jsonEncode(d.toMap())).toList(),
+    );
+  }
+
+  Future<void> _applySelectedDestination(Destination destination) async {
+    setState(() {
+      _selectedDestination = destination;
+      _placesController.text = destination.name;
+    });
+
+    if (_mapController != null) {
+      await _mapController!.animateCamera(
+        CameraUpdate.newLatLngZoom(
+          LatLng(destination.latitude, destination.longitude),
+          15.0,
+        ),
+      );
+    }
+
+    await _saveRecentDestination(destination);
   }
 
   Future<void> _handleLogout() async {
@@ -154,7 +238,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    _searchFocusNode.removeListener(_focusListener);
     _placesController.dispose();
+    _searchFocusNode.dispose();
     _mapController?.dispose();
     super.dispose();
   }
@@ -171,20 +257,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final placeDetails = await _getPlaceDetails(prediction.placeId!);
 
       if (placeDetails != null) {
-        setState(() {
-          _selectedDestination = placeDetails;
-          _placesController.text = placeDetails.name;
-        });
-
-        // Move map camera to destination
-        if (_mapController != null) {
-          await _mapController!.animateCamera(
-            CameraUpdate.newLatLngZoom(
-              LatLng(placeDetails.latitude, placeDetails.longitude),
-              15.0,
-            ),
-          );
-        }
+        await _applySelectedDestination(placeDetails);
       }
     } catch (e) {
       if (mounted) {
@@ -296,6 +369,11 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('테슬라 맵 브릿지'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            tooltip: '설정',
+            onPressed: _openSettings,
+          ),
           if (_userEmail != null)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -310,297 +388,257 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Search bar
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: GooglePlaceAutoCompleteTextField(
-              textEditingController: _placesController,
-              googleAPIKey: _googlePlacesApiKey,
-              textInputAction: TextInputAction.done,
-              formSubmitCallback: () {
-                FocusScope.of(context).unfocus();
-              },
-              inputDecoration: InputDecoration(
-                hintText: '목적지를 검색하세요',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                fillColor: Colors.grey.shade50,
-              ),
-              debounceTime: 400,
-              countries: const ['kr'],
-              isLatLngRequired: true,
-              getPlaceDetailWithLatLng: (prediction) {
-                _onPlaceSelected(prediction);
-              },
-              itemClick: (prediction) {
-                _placesController.text = prediction.description ?? '';
-                FocusScope.of(context).unfocus();
-                _onPlaceSelected(prediction);
-              },
-              itemBuilder: (context, index, prediction) {
-                return Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.place, size: 20),
-                      const SizedBox(width: 8),
-                      Expanded(child: Text(prediction.description ?? '')),
-                    ],
-                  ),
-                );
-              },
-              seperatedBuilder: const Divider(),
-              containerHorizontalPadding: 10,
-            ),
-          ),
-          // Map
-          Expanded(
-            flex: 2,
-            child: GoogleMap(
-              initialCameraPosition: const CameraPosition(
-                target: LatLng(37.5665, 126.9780), // Seoul
-                zoom: 12,
-              ),
-              onMapCreated: (controller) {
-                _mapController = controller;
-              },
-              markers: _selectedDestination != null
-                  ? {
-                      Marker(
-                        markerId: const MarkerId('destination'),
-                        position: LatLng(
-                          _selectedDestination!.latitude,
-                          _selectedDestination!.longitude,
-                        ),
-                        infoWindow: InfoWindow(
-                          title: _selectedDestination!.name,
-                          snippet: _selectedDestination!.address,
-                        ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: GooglePlaceAutoCompleteTextField(
+                    textEditingController: _placesController,
+                    googleAPIKey: _googlePlacesApiKey,
+                    focusNode: _searchFocusNode,
+                    textInputAction: TextInputAction.done,
+                    formSubmitCallback: () {
+                      _searchFocusNode.unfocus();
+                      FocusManager.instance.primaryFocus?.unfocus();
+                    },
+                    inputDecoration: InputDecoration(
+                      hintText: '목적지를 검색하세요',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                    }
-                  : {},
-            ),
-          ),
-          // Navigation app selection
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.all(16.0),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, -2),
-                  ),
-                ],
-              ),
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (_selectedDestination != null) ...[
-                      Card(
-                        child: ListTile(
-                          leading: const Icon(
-                            Icons.location_on,
-                            color: Colors.red,
-                          ),
-                          title: Text(
-                            _selectedDestination!.name,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          subtitle: Text(_selectedDestination!.address),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                    const Text(
-                      '네비게이션 앱 선택',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
                     ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildAppButton(
-                            NavigationApp.tmap,
-                            'T맵',
-                            Icons.directions,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _buildAppButton(
-                            NavigationApp.naver,
-                            '네이버 네비',
-                            Icons.navigation,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _buildAppButton(
-                            NavigationApp.kakao,
-                            '카카오 네비',
-                            Icons.map,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    if (_userEmail != null) ...[
-                      const Text(
-                        '테슬라 차량 선택',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      if (_vehicles.isNotEmpty)
-                        DropdownButtonFormField<String>(
-                          value: _selectedVehicleId,
-                          decoration: InputDecoration(
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            filled: true,
-                            fillColor: Colors.white,
-                          ),
-                          items: _vehicles
-                              .map((vehicle) {
-                                final id =
-                                    (vehicle['id_s'] ??
-                                            vehicle['id']?.toString())
-                                        ?.toString();
-                                if (id == null || id.isEmpty) {
-                                  return null;
-                                }
-                                final name =
-                                    vehicle['display_name'] as String? ??
-                                    vehicle['vin'] as String? ??
-                                    '차량 ${vehicle['id']}';
-                                return DropdownMenuItem<String>(
-                                  value: id,
-                                  child: Text(name),
-                                );
-                              })
-                              .whereType<DropdownMenuItem<String>>()
-                              .toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedVehicleId = value;
-                            });
-                          },
-                        )
-                      else
-                        Card(
-                          color: Colors.grey.shade200,
-                          child: Padding(
-                            padding: const EdgeInsets.all(12.0),
-                            child: Text(
-                              '등록된 차량이 없거나 불러오지 못했습니다.\nTesla 앱에서 차량을 확인한 후 새로고침하세요.',
-                              style: TextStyle(color: Colors.grey.shade700),
-                            ),
-                          ),
-                        ),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton.icon(
-                          onPressed: _isLoading ? null : _loadTeslaVehicles,
-                          icon: const Icon(Icons.refresh),
-                          label: const Text('차량 새로고침'),
-                        ),
-                      ),
-                      if (_isSendingToTesla)
-                        Row(
-                          children: const [
-                            SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                            SizedBox(width: 8),
-                            Text('테슬라 차량으로 전송 중...'),
+                    debounceTime: 400,
+                    countries: const ['kr'],
+                    isLatLngRequired: true,
+                    getPlaceDetailWithLatLng: (prediction) {
+                      _onPlaceSelected(prediction);
+                    },
+                    itemClick: (prediction) {
+                      _placesController.text = prediction.description ?? '';
+                      _searchFocusNode.unfocus();
+                      FocusManager.instance.primaryFocus?.unfocus();
+                      _onPlaceSelected(prediction);
+                    },
+                    itemBuilder: (context, index, prediction) {
+                      return Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.place, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(child: Text(prediction.description ?? '')),
                           ],
                         ),
-                      const SizedBox(height: 16),
-                    ],
-                    ElevatedButton.icon(
-                      onPressed: _isLoading || _selectedDestination == null
-                          ? null
-                          : _startNavigation,
-                      icon: _isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.directions_car),
-                      label: const Text('길 안내 시작'),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      );
+                    },
+                    seperatedBuilder: const Divider(),
+                    containerHorizontalPadding: 10,
+                  ),
+                ),
+                if (_recentDestinations.isNotEmpty &&
+                    _searchFocusNode.hasFocus &&
+                    _placesController.text.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Card(
+                      elevation: 2,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.all(12.0),
+                            child: Text(
+                              '최근 검색한 장소',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          const Divider(height: 1),
+                          ..._recentDestinations.map(
+                            (destination) => ListTile(
+                              leading: const Icon(Icons.history),
+                              title: Text(destination.name),
+                              subtitle: destination.address.isNotEmpty
+                                  ? Text(destination.address)
+                                  : null,
+                              trailing: const Icon(Icons.north_east),
+                              onTap: () {
+                                _searchFocusNode.unfocus();
+                                FocusManager.instance.primaryFocus?.unfocus();
+                                _applySelectedDestination(destination);
+                              },
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
+                  ),
+                SizedBox(
+                  height: 320,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: GoogleMap(
+                      initialCameraPosition: const CameraPosition(
+                        target: LatLng(37.5665, 126.9780),
+                        zoom: 12,
+                      ),
+                      onMapCreated: (controller) {
+                        _mapController = controller;
+                      },
+                      markers: _selectedDestination != null
+                          ? {
+                              Marker(
+                                markerId: const MarkerId('destination'),
+                                position: LatLng(
+                                  _selectedDestination!.latitude,
+                                  _selectedDestination!.longitude,
+                                ),
+                                infoWindow: InfoWindow(
+                                  title: _selectedDestination!.name,
+                                  snippet: _selectedDestination!.address,
+                                ),
+                              ),
+                            }
+                          : {},
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (_selectedDestination != null) ...[
+                        Card(
+                          child: ListTile(
+                            leading: const Icon(
+                              Icons.location_on,
+                              color: Colors.red,
+                            ),
+                            title: Text(
+                              _selectedDestination!.name,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            subtitle: Text(_selectedDestination!.address),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                      if (_userEmail != null) ...[
+                        const Text(
+                          '테슬라 차량 선택',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        if (_vehicles.isNotEmpty)
+                          DropdownButtonFormField<String>(
+                            value: _selectedVehicleId,
+                            decoration: InputDecoration(
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              filled: true,
+                              fillColor: Colors.white,
+                            ),
+                            items: _vehicles
+                                .map((vehicle) {
+                                  final id =
+                                      (vehicle['id_s'] ??
+                                              vehicle['id']?.toString())
+                                          ?.toString();
+                                  if (id == null || id.isEmpty) {
+                                    return null;
+                                  }
+                                  final name =
+                                      vehicle['display_name'] as String? ??
+                                      vehicle['vin'] as String? ??
+                                      '차량 ${vehicle['id']}';
+                                  return DropdownMenuItem<String>(
+                                    value: id,
+                                    child: Text(name),
+                                  );
+                                })
+                                .whereType<DropdownMenuItem<String>>()
+                                .toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedVehicleId = value;
+                              });
+                            },
+                          )
+                        else
+                          Card(
+                            color: Colors.grey.shade200,
+                            child: Padding(
+                              padding: const EdgeInsets.all(12.0),
+                              child: Text(
+                                '등록된 차량이 없거나 불러오지 못했습니다.\nTesla 앱에서 차량을 확인한 후 새로고침하세요.',
+                                style: TextStyle(color: Colors.grey.shade700),
+                              ),
+                            ),
+                          ),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton.icon(
+                            onPressed: _isLoading ? null : _loadTeslaVehicles,
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('차량 새로고침'),
+                          ),
+                        ),
+                        if (_isSendingToTesla)
+                          Row(
+                            children: const [
+                              SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                              SizedBox(width: 8),
+                              Text('테슬라 차량으로 전송 중...'),
+                            ],
+                          ),
+                        const SizedBox(height: 16),
+                      ],
+                      ElevatedButton.icon(
+                        onPressed: _isLoading || _selectedDestination == null
+                            ? null
+                            : _startNavigation,
+                        icon: _isLoading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.directions_car),
+                        label: const Text('길 안내 시작'),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAppButton(NavigationApp app, String label, IconData icon) {
-    final isSelected = _selectedApp == app;
-    return OutlinedButton(
-      onPressed: () {
-        setState(() {
-          _selectedApp = app;
-        });
-      },
-      style: OutlinedButton.styleFrom(
-        backgroundColor: isSelected
-            ? Theme.of(context).colorScheme.primaryContainer
-            : null,
-        side: BorderSide(
-          color: isSelected
-              ? Theme.of(context).colorScheme.primary
-              : Colors.grey.shade300,
-          width: isSelected ? 2 : 1,
         ),
-        padding: const EdgeInsets.symmetric(vertical: 12),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            color: isSelected
-                ? Theme.of(context).colorScheme.primary
-                : Colors.grey,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: isSelected
-                  ? Theme.of(context).colorScheme.primary
-                  : Colors.grey.shade700,
-            ),
-          ),
-        ],
       ),
     );
   }

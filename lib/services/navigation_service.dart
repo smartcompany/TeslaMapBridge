@@ -1,5 +1,7 @@
 import 'package:url_launcher/url_launcher.dart';
 
+const String kDefaultNavigationAppKey = 'default_navigation_app';
+
 enum NavigationApp { tmap, naver, kakao }
 
 class NavigationService {
