@@ -39,6 +39,9 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _focusListener = () => setState(() {});
     _searchFocusNode.addListener(_focusListener);
+    _placesController.addListener(() {
+      debugPrint('onChanged: ${_placesController.text}');
+    });
     _loadDefaultNavigationApp();
     _loadUserEmail();
     _loadTeslaVehicles();

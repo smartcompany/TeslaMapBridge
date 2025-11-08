@@ -235,10 +235,9 @@ packages:
   google_places_flutter:
     dependency: "direct main"
     description:
-      name: google_places_flutter
-      sha256: "37bd64221cf4a5aa97eb3a33dc2d40f6326aa5ae4e2f2a9a7116bdc1a14f5194"
-      url: "https://pub.dev"
-    source: hosted
+      path: "packages/google_places_flutter_2_1_1_fixed"
+      relative: true
+    source: path
     version: "2.1.1"
   html:
     dependency: transitive
