@@ -1,2 +1,3 @@
 "CFBundleDisplayName" = "テスラマップブリッジ";
 "NSLocationWhenInUseUsageDescription" = "現在地からルート案内を行うために Tesla Map Bridge が位置情報を利用します。";
+"ITSAppUsesNonExemptEncryption" = "false";

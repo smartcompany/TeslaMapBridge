@@ -1,2 +1,3 @@
 "CFBundleDisplayName" = "AI Car Map Bridge";
 "NSLocationWhenInUseUsageDescription" = "Allow Tesla Map Bridge to access your location so it can plan routes from your current position.";
+"ITSAppUsesNonExemptEncryption" = "false";
