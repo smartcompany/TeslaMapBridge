@@ -568,6 +568,120 @@ class TeslaAuthService {
     }
   }
 
+  Future<bool> makeNavigationRequest(
+    String token,
+    String vehicleId,
+    String destinationName,
+    double latitude,
+    double longitude,
+  ) async {
+    final navigationUri = await _buildFleetUri(
+      '/api/1/vehicles/$vehicleId/command/navigation_request',
+    );
+
+    final localeTag = ui.PlatformDispatcher.instance.locale.toLanguageTag();
+    final textValue = destinationName.trim().isEmpty
+        ? '$latitude,$longitude'
+        : destinationName;
+
+    final response = await http.post(
+      navigationUri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'type': 'share_ext_content_raw',
+        'value': {
+          'android.intent.ACTION': 'android.intent.action.SEND',
+          'android.intent.TYPE': 'text/plain',
+          'android.intent.TEXT': textValue,
+          'android.intent.extra.TEXT': textValue,
+        },
+        'locale': localeTag,
+        'timestamp_ms': DateTime.now().millisecondsSinceEpoch.toString(),
+      }),
+    );
+
+    final success = response.statusCode == 200 || response.statusCode == 202;
+    if (!success) {
+      print(
+        '[TeslaSend] navigation_request failed '
+        'status=${response.statusCode} body=${response.body}',
+      );
+      return false;
+    }
+
+    print('[TeslaSend] navigation_request success.');
+    return true;
+  }
+
+  Future<bool> makeNavigationGpsRequest({
+    required String vehicleId,
+    required double latitude,
+    required double longitude,
+    int order = 1,
+  }) async {
+    try {
+      if (!await isLoggedIn()) {
+        print('[TeslaGPS] not logged in when trying to send GPS request.');
+        return false;
+      }
+
+      final accessToken = await getAccessToken();
+      if (accessToken == null) {
+        print('[TeslaGPS] access token missing after login check.');
+        return false;
+      }
+
+      Future<http.Response> makeRequest(String token) async {
+        final gpsUri = await _buildFleetUri(
+          '/api/1/vehicles/$vehicleId/command/navigation_gps_request',
+        );
+        return http.post(
+          gpsUri,
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({'lat': latitude, 'lon': longitude, 'order': order}),
+        );
+      }
+
+      var tokenToUse = accessToken;
+      var response = await makeRequest(tokenToUse);
+
+      if (response.statusCode == 401) {
+        final refreshed = await refreshToken();
+        if (!refreshed) {
+          print('[TeslaGPS] 401 when sending GPS request and refresh failed.');
+          return false;
+        }
+        final newAccessToken = await getAccessToken();
+        if (newAccessToken == null) {
+          print('[TeslaGPS] Refreshed token was null after 401 (GPS request).');
+          return false;
+        }
+        tokenToUse = newAccessToken;
+        response = await makeRequest(tokenToUse);
+      }
+
+      final success = response.statusCode == 200 || response.statusCode == 202;
+      if (!success) {
+        print(
+          '[TeslaGPS] navigation_gps_request failed '
+          'status=${response.statusCode} body=${response.body}',
+        );
+      } else {
+        print('[TeslaGPS] navigation_gps_request success.');
+      }
+      return success;
+    } catch (e) {
+      print('[TeslaGPS] navigation_gps_request error: $e');
+      return false;
+    }
+  }
+
   /// Send destination to a Tesla vehicle
   Future<bool> sendDestinationToVehicle(
     String vehicleId,
@@ -592,62 +706,14 @@ class TeslaAuthService {
         'lat=$latitude lon=$longitude name=$destinationName',
       );
 
-      Future<http.Response> makeRequest(String token) async {
-        final navigationUri = await _buildFleetUri(
-          '/api/1/vehicles/$vehicleId/command/navigation_request',
-        );
-        final localeTag = ui.PlatformDispatcher.instance.locale.toLanguageTag();
-        final textValue = destinationName.trim().isEmpty
-            ? '$latitude,$longitude'
-            : destinationName;
+      final success = await makeNavigationRequest(
+        accessToken,
+        vehicleId,
+        destinationName,
+        latitude,
+        longitude,
+      );
 
-        return http.post(
-          navigationUri,
-          headers: {
-            'Authorization': 'Bearer $token',
-            'Content-Type': 'application/json',
-          },
-          body: jsonEncode({
-            'type': 'share_ext_content_raw',
-            'value': {
-              'android.intent.ACTION': 'android.intent.action.SEND',
-              'android.intent.TYPE': 'text/plain',
-              'android.intent.TEXT': textValue,
-              'android.intent.extra.TEXT': textValue,
-            },
-            'locale': localeTag,
-            'timestamp_ms': DateTime.now().millisecondsSinceEpoch.toString(),
-          }),
-        );
-      }
-
-      var tokenToUse = accessToken;
-      var response = await makeRequest(tokenToUse);
-
-      if (response.statusCode == 401) {
-        final refreshed = await refreshToken();
-        if (!refreshed) {
-          print('[TeslaSend] 401 when sending destination and refresh failed.');
-          return false;
-        }
-        final newAccessToken = await getAccessToken();
-        if (newAccessToken == null) {
-          print('[TeslaSend] Refreshed token was null after 401.');
-          return false;
-        }
-        tokenToUse = newAccessToken;
-        response = await makeRequest(tokenToUse);
-      }
-
-      final success = response.statusCode == 200 || response.statusCode == 202;
-      if (!success) {
-        print(
-          '[TeslaSend] navigation_request failed '
-          'status=${response.statusCode} body=${response.body}',
-        );
-      } else {
-        print('[TeslaSend] navigation_request success.');
-      }
       return success;
     } catch (e) {
       print('[TeslaSend] Send destination error: $e');
