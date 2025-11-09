@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/app_localizations.dart';
+import '../models/tesla_navigation_mode.dart';
 import '../services/navigation_service.dart';
 import '../services/tesla_auth_service.dart';
 
@@ -15,6 +16,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final TeslaAuthService _teslaAuthService = TeslaAuthService();
   NavigationApp _selectedApp = NavigationApp.tmap;
+  TeslaNavigationMode _navigationMode = TeslaNavigationMode.destination;
   bool _isLoading = true;
   bool _hasChanges = false;
   bool _isLoggingOut = false;
@@ -28,6 +30,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
     final stored = prefs.getString(kDefaultNavigationAppKey);
+    final modeMatch = await _teslaAuthService.getNavigationModePreference();
+
     if (!mounted) return;
 
     setState(() {
@@ -38,6 +42,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         );
         _selectedApp = match;
       }
+      _navigationMode = modeMatch;
       _isLoading = false;
     });
   }
@@ -64,6 +69,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         duration: const Duration(seconds: 2),
       ),
+    );
+  }
+
+  Future<void> _setNavigationMode(TeslaNavigationMode mode) async {
+    if (_navigationMode == mode) return;
+
+    setState(() {
+      _navigationMode = mode;
+      _hasChanges = true;
+    });
+
+    await _teslaAuthService.setNavigationModePreference(mode);
+
+    if (!mounted) return;
+    final loc = AppLocalizations.of(context)!;
+    final message = mode == TeslaNavigationMode.destination
+        ? loc.teslaNavigationModeDestination
+        : loc.teslaNavigationModeGps;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
     );
   }
 
@@ -151,6 +176,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         }
                       },
                     ),
+                  ),
+                  const SizedBox(height: 32),
+                  Text(
+                    AppLocalizations.of(context)!.teslaNavigationModeTitle,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  RadioListTile<TeslaNavigationMode>(
+                    title: Text(
+                      AppLocalizations.of(
+                        context,
+                      )!.teslaNavigationModeDestination,
+                    ),
+                    value: TeslaNavigationMode.destination,
+                    groupValue: _navigationMode,
+                    onChanged: (value) {
+                      if (value != null) {
+                        _setNavigationMode(value);
+                      }
+                    },
+                  ),
+                  RadioListTile<TeslaNavigationMode>(
+                    title: Text(
+                      AppLocalizations.of(context)!.teslaNavigationModeGps,
+                    ),
+                    value: TeslaNavigationMode.gps,
+                    groupValue: _navigationMode,
+                    onChanged: (value) {
+                      if (value != null) {
+                        _setNavigationMode(value);
+                      }
+                    },
                   ),
                   const SizedBox(height: 32),
                   Card(

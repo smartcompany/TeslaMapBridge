@@ -3,6 +3,9 @@
   "appTitle": "テスラマップブリッジ",
   "settingsTitle": "設定",
   "defaultNavigationApp": "デフォルトのナビアプリ",
+  "teslaNavigationModeTitle": "テスラナビゲーション方式",
+  "teslaNavigationModeDestination": "目的地情報を送信",
+  "teslaNavigationModeGps": "GPS 座標を送信",
   "navigationSetConfirmation": "{appName} をデフォルトのナビアプリに設定しました。",
   "@navigationSetConfirmation": {
     "placeholders": {

@@ -7,6 +7,8 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+import '../models/tesla_navigation_mode.dart';
+
 class TeslaAuthService {
   static const _storage = FlutterSecureStorage();
   static const _accessTokenKey = 'tesla_access_token';
@@ -16,6 +18,7 @@ class TeslaAuthService {
   static const _codeVerifierKey = 'tesla_code_verifier';
   static const _partnerAccessTokenKey = 'tesla_partner_access_token';
   static const _partnerExpiresAtKey = 'tesla_partner_expires_at';
+  static const kTeslaNavigationModeKey = 'tesla_navigation_mode';
 
   // Tesla OAuth endpoints
   static const String _authBaseUrl = 'https://auth.tesla.com';
@@ -144,6 +147,24 @@ class TeslaAuthService {
       return Uri.parse('$baseUrl/$path');
     }
     return Uri.parse('$baseUrl$path');
+  }
+
+  Future<TeslaNavigationMode> getNavigationModePreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    final stored = prefs.getString(kTeslaNavigationModeKey);
+    if (stored != null) {
+      for (final mode in TeslaNavigationMode.values) {
+        if (mode.name == stored) {
+          return mode;
+        }
+      }
+    }
+    return TeslaNavigationMode.destination;
+  }
+
+  Future<void> setNavigationModePreference(TeslaNavigationMode mode) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(kTeslaNavigationModeKey, mode.name);
   }
 
   Future<String?> getPartnerAccessToken() async {
@@ -606,13 +627,13 @@ class TeslaAuthService {
     final success = response.statusCode == 200 || response.statusCode == 202;
     if (!success) {
       print(
-        '[TeslaSend] navigation_request failed '
+        '[TeslaNav] navigation_request failed '
         'status=${response.statusCode} body=${response.body}',
       );
       return false;
     }
 
-    print('[TeslaSend] navigation_request success.');
+    print('[TeslaNav] navigation_request success.');
     return true;
   }
 
@@ -654,12 +675,12 @@ class TeslaAuthService {
       if (response.statusCode == 401) {
         final refreshed = await refreshToken();
         if (!refreshed) {
-          print('[TeslaGPS] 401 when sending GPS request and refresh failed.');
+          print('[TeslaNav] 401 when sending GPS request and refresh failed.');
           return false;
         }
         final newAccessToken = await getAccessToken();
         if (newAccessToken == null) {
-          print('[TeslaGPS] Refreshed token was null after 401 (GPS request).');
+          print('[TeslaNav] Refreshed token was null after 401 (GPS request).');
           return false;
         }
         tokenToUse = newAccessToken;
@@ -669,15 +690,15 @@ class TeslaAuthService {
       final success = response.statusCode == 200 || response.statusCode == 202;
       if (!success) {
         print(
-          '[TeslaGPS] navigation_gps_request failed '
+          '[TeslaNav] navigation_gps_request failed '
           'status=${response.statusCode} body=${response.body}',
         );
       } else {
-        print('[TeslaGPS] navigation_gps_request success.');
+        print('[TeslaNav] navigation_gps_request success.');
       }
       return success;
     } catch (e) {
-      print('[TeslaGPS] navigation_gps_request error: $e');
+      print('[TeslaNav] navigation_gps_request error: $e');
       return false;
     }
   }
@@ -687,8 +708,9 @@ class TeslaAuthService {
     String vehicleId,
     double latitude,
     double longitude,
-    String destinationName,
-  ) async {
+    String destinationName, {
+    TeslaNavigationMode mode = TeslaNavigationMode.destination,
+  }) async {
     try {
       if (!await isLoggedIn()) {
         print('[TeslaSend] not logged in when trying to send destination.');
@@ -706,15 +728,21 @@ class TeslaAuthService {
         'lat=$latitude lon=$longitude name=$destinationName',
       );
 
-      final success = await makeNavigationRequest(
+      if (mode == TeslaNavigationMode.gps) {
+        return await makeNavigationGpsRequest(
+          vehicleId: vehicleId,
+          latitude: latitude,
+          longitude: longitude,
+        );
+      }
+
+      return await makeNavigationRequest(
         accessToken,
         vehicleId,
         destinationName,
         latitude,
         longitude,
       );
-
-      return success;
     } catch (e) {
       print('[TeslaSend] Send destination error: $e');
       return false;

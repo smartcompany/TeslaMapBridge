@@ -3,6 +3,9 @@
   "appTitle": "Tesla Map Bridge",
   "settingsTitle": "Settings",
   "defaultNavigationApp": "Default navigation app",
+  "teslaNavigationModeTitle": "Tesla navigation preference",
+  "teslaNavigationModeDestination": "Use destination details",
+  "teslaNavigationModeGps": "Use GPS coordinates",
   "navigationSetConfirmation": "{appName} has been set as the default navigation app.",
   "@navigationSetConfirmation": {
     "placeholders": {

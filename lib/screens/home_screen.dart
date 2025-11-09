@@ -4,6 +4,7 @@ import 'package:google_places_flutter/model/prediction.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../l10n/app_localizations.dart';
 import '../models/destination.dart';
+import '../models/tesla_navigation_mode.dart';
 import '../services/navigation_service.dart';
 import '../services/tesla_auth_service.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -27,6 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
   late final VoidCallback _focusListener;
   Destination? _selectedDestination;
   NavigationApp _selectedApp = NavigationApp.tmap;
+  TeslaNavigationMode _navigationMode = TeslaNavigationMode.destination;
   bool _isLoading = false;
   bool _isSendingToTesla = false;
   GoogleMapController? _mapController;
@@ -47,6 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     });
     _loadDefaultNavigationApp();
+    _loadNavigationMode();
     _loadUserEmail();
     _loadTeslaVehicles();
     _loadRecentDestinations();
@@ -68,10 +71,20 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _loadNavigationMode() async {
+    final mode = await _teslaAuthService.getNavigationModePreference();
+    if (mounted) {
+      setState(() {
+        _navigationMode = mode;
+      });
+    }
+  }
+
   Future<void> _openSettings() async {
     final result = await Navigator.of(context).pushNamed('/settings');
     if (result == true) {
       await _loadDefaultNavigationApp();
+      await _loadNavigationMode();
     }
   }
 
@@ -195,6 +208,7 @@ class _HomeScreenState extends State<HomeScreen> {
       destination.latitude,
       destination.longitude,
       destination.name,
+      mode: _navigationMode,
     );
 
     if (mounted) {

@@ -18,6 +18,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get defaultNavigationApp => 'Default navigation app';
 
   @override
+  String get teslaNavigationModeTitle => 'Tesla navigation preference';
+
+  @override
+  String get teslaNavigationModeDestination => 'Use destination details';
+
+  @override
+  String get teslaNavigationModeGps => 'Use GPS coordinates';
+
+  @override
   String navigationSetConfirmation(Object appName) {
     return '$appName has been set as the default navigation app.';
   }

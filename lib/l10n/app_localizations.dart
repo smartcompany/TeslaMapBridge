@@ -120,6 +120,24 @@ abstract class AppLocalizations {
   /// **'Default navigation app'**
   String get defaultNavigationApp;
 
+  /// No description provided for @teslaNavigationModeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tesla navigation preference'**
+  String get teslaNavigationModeTitle;
+
+  /// No description provided for @teslaNavigationModeDestination.
+  ///
+  /// In en, this message translates to:
+  /// **'Use destination details'**
+  String get teslaNavigationModeDestination;
+
+  /// No description provided for @teslaNavigationModeGps.
+  ///
+  /// In en, this message translates to:
+  /// **'Use GPS coordinates'**
+  String get teslaNavigationModeGps;
+
   /// No description provided for @navigationSetConfirmation.
   ///
   /// In en, this message translates to:

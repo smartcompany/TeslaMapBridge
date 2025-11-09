@@ -3,6 +3,9 @@
   "appTitle": "테슬라 맵 브리지",
   "settingsTitle": "설정",
   "defaultNavigationApp": "기본 네비게이션 앱",
+  "teslaNavigationModeTitle": "테슬라 내비게이션 방식",
+  "teslaNavigationModeDestination": "목적지 정보 전송",
+  "teslaNavigationModeGps": "GPS 좌표 전송",
   "navigationSetConfirmation": "{appName}가 기본 네비게이션으로 설정되었습니다.",
   "@navigationSetConfirmation": {
     "placeholders": {

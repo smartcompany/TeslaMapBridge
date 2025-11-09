@@ -1,0 +1,1 @@
+enum TeslaNavigationMode { destination, gps }

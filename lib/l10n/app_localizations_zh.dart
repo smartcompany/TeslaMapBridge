@@ -18,6 +18,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get defaultNavigationApp => '默认导航应用';
 
   @override
+  String get teslaNavigationModeTitle => '特斯拉导航方式';
+
+  @override
+  String get teslaNavigationModeDestination => '发送目的地信息';
+
+  @override
+  String get teslaNavigationModeGps => '发送 GPS 坐标';
+
+  @override
   String navigationSetConfirmation(Object appName) {
     return '$appName 已设为默认导航应用。';
   }

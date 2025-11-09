@@ -18,6 +18,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get defaultNavigationApp => 'デフォルトのナビアプリ';
 
   @override
+  String get teslaNavigationModeTitle => 'テスラナビゲーション方式';
+
+  @override
+  String get teslaNavigationModeDestination => '目的地情報を送信';
+
+  @override
+  String get teslaNavigationModeGps => 'GPS 座標を送信';
+
+  @override
   String navigationSetConfirmation(Object appName) {
     return '$appName をデフォルトのナビアプリに設定しました。';
   }

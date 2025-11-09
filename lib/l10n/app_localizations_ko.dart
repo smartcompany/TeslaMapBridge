@@ -18,6 +18,15 @@ class AppLocalizationsKo extends AppLocalizations {
   String get defaultNavigationApp => '기본 네비게이션 앱';
 
   @override
+  String get teslaNavigationModeTitle => '테슬라 내비게이션 방식';
+
+  @override
+  String get teslaNavigationModeDestination => '목적지 정보 전송';
+
+  @override
+  String get teslaNavigationModeGps => 'GPS 좌표 전송';
+
+  @override
   String navigationSetConfirmation(Object appName) {
     return '$appName가 기본 네비게이션으로 설정되었습니다.';
   }
