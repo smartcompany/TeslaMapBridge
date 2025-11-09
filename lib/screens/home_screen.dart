@@ -33,7 +33,6 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isSendingToTesla = false;
   GoogleMapController? _mapController;
   String? _userEmail;
-  List<Map<String, dynamic>> _vehicles = [];
   String? _selectedVehicleId;
   List<Destination> _recentDestinations = [];
 
@@ -52,6 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadNavigationMode();
     _loadUserEmail();
     _loadRecentDestinations();
+    _loadSelectedVehicleId();
   }
 
   Future<void> _loadDefaultNavigationApp() async {
@@ -84,6 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (result == true) {
       await _loadDefaultNavigationApp();
       await _loadNavigationMode();
+      await _loadSelectedVehicleId();
     }
   }
 
@@ -127,6 +128,14 @@ class _HomeScreenState extends State<HomeScreen> {
       _recentDestinationsKey,
       _recentDestinations.map((d) => jsonEncode(d.toMap())).toList(),
     );
+  }
+
+  Future<void> _loadSelectedVehicleId() async {
+    final storedId = await _teslaAuthService.getSelectedVehicleId();
+    if (!mounted) return;
+    setState(() {
+      _selectedVehicleId = storedId;
+    });
   }
 
   Future<void> _applySelectedDestination(Destination destination) async {

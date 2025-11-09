@@ -20,6 +20,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _isLoading = true;
   bool _hasChanges = false;
   bool _isLoggingOut = false;
+  List<Map<String, dynamic>> _vehicles = [];
+  String? _selectedVehicleId;
 
   @override
   void initState() {
@@ -28,9 +30,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _loadPreferences() async {
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
     final prefs = await SharedPreferences.getInstance();
     final stored = prefs.getString(kDefaultNavigationAppKey);
     final modeMatch = await _teslaAuthService.getNavigationModePreference();
+    final vehicles = await _teslaAuthService.getVehicles();
+    final storedVehicleId = await _teslaAuthService.getSelectedVehicleId();
+
+    final availableIds = <String>[];
+    for (final vehicle in vehicles) {
+      final id = _vehicleId(vehicle);
+      if (id != null) {
+        availableIds.add(id);
+      }
+    }
+
+    String? resolvedVehicleId = storedVehicleId;
+    if (availableIds.isEmpty) {
+      resolvedVehicleId = null;
+    } else if (resolvedVehicleId == null ||
+        !availableIds.contains(resolvedVehicleId)) {
+      resolvedVehicleId = availableIds.first;
+    }
 
     if (!mounted) return;
 
@@ -43,8 +68,74 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _selectedApp = match;
       }
       _navigationMode = modeMatch;
+      _vehicles = vehicles;
+      _selectedVehicleId = resolvedVehicleId;
+      if (resolvedVehicleId != storedVehicleId) {
+        _hasChanges = true;
+      }
       _isLoading = false;
     });
+
+    if (resolvedVehicleId != storedVehicleId) {
+      await _teslaAuthService.setSelectedVehicleId(resolvedVehicleId);
+    }
+  }
+
+  String? _vehicleId(Map<String, dynamic> vehicle) {
+    final id = vehicle['id'] ?? vehicle['vehicle_id'];
+    if (id != null) {
+      return id.toString();
+    }
+    final vin = vehicle['vin'];
+    if (vin is String && vin.isNotEmpty) {
+      return vin;
+    }
+    return null;
+  }
+
+  String _vehicleDisplayName(
+    Map<String, dynamic> vehicle,
+    AppLocalizations loc,
+  ) {
+    final displayName = vehicle['display_name'];
+    if (displayName is String && displayName.trim().isNotEmpty) {
+      return displayName.trim();
+    }
+    final nickname = vehicle['name'];
+    if (nickname is String && nickname.trim().isNotEmpty) {
+      return nickname.trim();
+    }
+    final vin = vehicle['vin'];
+    if (vin is String && vin.isNotEmpty) {
+      return vin;
+    }
+    final id = _vehicleId(vehicle) ?? '';
+    return loc.vehicleDefaultName(id);
+  }
+
+  String? _vehicleDetail(Map<String, dynamic> vehicle) {
+    final vin = vehicle['vin'];
+    if (vin is String && vin.isNotEmpty) {
+      return vin;
+    }
+    final model = vehicle['trim_badging'] ?? vehicle['option_codes'];
+    if (model is String && model.isNotEmpty) {
+      return model;
+    }
+    return null;
+  }
+
+  Future<void> _setSelectedVehicle(String vehicleId) async {
+    if (_selectedVehicleId == vehicleId) {
+      return;
+    }
+    setState(() {
+      _selectedVehicleId = vehicleId;
+      _hasChanges = true;
+      _isLoading = true;
+    });
+    await _teslaAuthService.setSelectedVehicleId(vehicleId);
+    await _loadPreferences();
   }
 
   Future<void> _setDefaultNavigationApp(NavigationApp app) async {
@@ -140,11 +231,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+    final vehicleIds = _vehicles.map(_vehicleId).whereType<String>().toList();
+    final dropdownInitialValue = vehicleIds.contains(_selectedVehicleId)
+        ? _selectedVehicleId
+        : null;
     return WillPopScope(
       onWillPop: _handleWillPop,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(AppLocalizations.of(context)!.settingsTitle),
+          title: Text(loc.settingsTitle),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () {
@@ -158,7 +254,58 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 padding: const EdgeInsets.all(16),
                 children: [
                   Text(
-                    AppLocalizations.of(context)!.defaultNavigationApp,
+                    loc.teslaVehicleSelection,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  if (_vehicles.isEmpty)
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Text(
+                          loc.noVehiclesMessage,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    DropdownButtonFormField<String>(
+                      initialValue: dropdownInitialValue,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      items: _vehicles
+                          .map((vehicle) {
+                            final id = _vehicleId(vehicle);
+                            if (id == null) return null;
+                            final name = _vehicleDisplayName(vehicle, loc);
+                            final detail = _vehicleDetail(vehicle);
+                            final label = detail != null
+                                ? '$name • $detail'
+                                : name;
+                            return DropdownMenuItem<String>(
+                              value: id,
+                              child: Text(label),
+                            );
+                          })
+                          .whereType<DropdownMenuItem<String>>()
+                          .toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          _setSelectedVehicle(value);
+                        }
+                      },
+                    ),
+                  const SizedBox(height: 32),
+                  Text(
+                    loc.defaultNavigationApp,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -179,7 +326,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 32),
                   Text(
-                    AppLocalizations.of(context)!.teslaNavigationModeTitle,
+                    loc.teslaNavigationModeTitle,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -187,11 +334,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 8),
                   RadioListTile<TeslaNavigationMode>(
-                    title: Text(
-                      AppLocalizations.of(
-                        context,
-                      )!.teslaNavigationModeDestination,
-                    ),
+                    title: Text(loc.teslaNavigationModeDestination),
                     value: TeslaNavigationMode.destination,
                     groupValue: _navigationMode,
                     onChanged: (value) {
@@ -201,9 +344,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     },
                   ),
                   RadioListTile<TeslaNavigationMode>(
-                    title: Text(
-                      AppLocalizations.of(context)!.teslaNavigationModeGps,
-                    ),
+                    title: Text(loc.teslaNavigationModeGps),
                     value: TeslaNavigationMode.gps,
                     groupValue: _navigationMode,
                     onChanged: (value) {
@@ -222,14 +363,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.logout),
-                      title: Text(AppLocalizations.of(context)!.logoutTitle),
-                      subtitle: Text(
-                        AppLocalizations.of(context)!.logoutDescription,
-                      ),
+                      title: Text(loc.logoutTitle),
+                      subtitle: Text(loc.logoutDescription),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: _isLoggingOut ? null : _handleLogout,
                     ),
                   ),
+                  const SizedBox(height: 32),
                 ],
               ),
       ),

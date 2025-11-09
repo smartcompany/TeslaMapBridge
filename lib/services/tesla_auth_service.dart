@@ -19,6 +19,7 @@ class TeslaAuthService {
   static const _partnerAccessTokenKey = 'tesla_partner_access_token';
   static const _partnerExpiresAtKey = 'tesla_partner_expires_at';
   static const kTeslaNavigationModeKey = 'tesla_navigation_mode';
+  static const _selectedVehicleIdKey = 'tesla_selected_vehicle_id';
 
   // Tesla OAuth endpoints
   static const String _authBaseUrl = 'https://auth.tesla.com';
@@ -199,6 +200,20 @@ class TeslaAuthService {
   Future<void> setNavigationModePreference(TeslaNavigationMode mode) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(kTeslaNavigationModeKey, mode.name);
+  }
+
+  Future<String?> getSelectedVehicleId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_selectedVehicleIdKey);
+  }
+
+  Future<void> setSelectedVehicleId(String? vehicleId) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (vehicleId == null || vehicleId.isEmpty) {
+      await prefs.remove(_selectedVehicleIdKey);
+    } else {
+      await prefs.setString(_selectedVehicleIdKey, vehicleId);
+    }
   }
 
   Future<String?> getPartnerAccessToken() async {
