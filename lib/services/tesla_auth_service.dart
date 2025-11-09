@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:math';
+import 'dart:ui' as ui;
 import 'package:crypto/crypto.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
@@ -13,28 +14,44 @@ class TeslaAuthService {
   static const _expiresAtKey = 'tesla_expires_at';
   static const _emailKey = 'tesla_email';
   static const _codeVerifierKey = 'tesla_code_verifier';
+  static const _partnerAccessTokenKey = 'tesla_partner_access_token';
+  static const _partnerExpiresAtKey = 'tesla_partner_expires_at';
 
   // Tesla OAuth endpoints
   static const String _authBaseUrl = 'https://auth.tesla.com';
-  static const String _ownerApiUrl = 'https://owner-api.teslamotors.com';
+  static const String _defaultFleetApiUrl =
+      'https://fleet-api.prd.na.vn.cloud.tesla.com';
   static const String _redirectUri = 'https://auth.tesla.com/void/callback';
+  static const String _fleetAuthBaseUrl =
+      'https://fleet-auth.prd.na.vn.cloud.tesla.com';
 
   // Tesla Fleet API Client Credentials
   // Tesla Developer Portal (https://developer.tesla.com/)에서 등록 후 발급받은 값으로 교체하세요
   static const String _clientId = '3a036053-105d-4f0b-b315-15e7b38e2df8';
   static const String _clientSecret = 'ta-secret.+rCpCXAHo1VSAT+b';
+  static const String _apiBaseUrlKey = 'tesla_api_base_url';
 
   /// Check if user is logged in
   Future<bool> isLoggedIn() async {
     final accessToken = await _storage.read(key: _accessTokenKey);
-    if (accessToken == null) return false;
+    final storedRefreshToken = await _storage.read(key: _refreshTokenKey);
 
-    // Check if token is expired
+    if (storedRefreshToken == null && accessToken == null) {
+      return false;
+    }
+
+    if (accessToken == null) {
+      return await refreshToken();
+    }
+
+    // Check if token is expired (or close to expiring)
     final expiresAtStr = await _storage.read(key: _expiresAtKey);
     if (expiresAtStr != null) {
       final expiresAt = DateTime.parse(expiresAtStr);
-      if (DateTime.now().isAfter(expiresAt)) {
-        // Try to refresh token
+      // Refresh one minute before expiry to avoid race conditions on API calls.
+      if (DateTime.now().isAfter(
+        expiresAt.subtract(const Duration(minutes: 1)),
+      )) {
         return await refreshToken();
       }
     }
@@ -50,6 +67,199 @@ class TeslaAuthService {
   /// Get stored email
   Future<String?> getEmail() async {
     return await _storage.read(key: _emailKey);
+  }
+
+  Future<void> _clearPartnerAuthTokens() async {
+    await _storage.delete(key: _partnerAccessTokenKey);
+    await _storage.delete(key: _partnerExpiresAtKey);
+  }
+
+  Future<void> _storeFleetApiBaseUrl(Map<String, dynamic> responseData) async {
+    try {
+      final fleetUrl = _extractFleetAudience(responseData);
+      if (fleetUrl != null && fleetUrl.isNotEmpty) {
+        await _storage.write(key: _apiBaseUrlKey, value: fleetUrl);
+      }
+    } catch (e) {
+      print('Failed to store fleet api base url: $e');
+    }
+  }
+
+  String? resolve(dynamic candidate) {
+    if (candidate is String && _isFleetUrl(candidate)) {
+      return candidate;
+    }
+    if (candidate is List) {
+      for (final value in candidate.whereType<String>()) {
+        if (_isFleetUrl(value)) {
+          return value;
+        }
+      }
+    }
+    return null;
+  }
+
+  String? _extractFleetAudience(Map<String, dynamic> responseData) {
+    final directAudience = resolve(responseData['aud']);
+    if (directAudience != null) {
+      return directAudience;
+    }
+
+    final accessToken = responseData['access_token'] as String?;
+    if (accessToken == null) return null;
+
+    try {
+      final parts = accessToken.split('.');
+      if (parts.length < 2) return null;
+
+      String normalize(String input) {
+        final padding = (4 - input.length % 4) % 4;
+        return input.padRight(input.length + padding, '=');
+      }
+
+      final payloadSegment = normalize(parts[1]);
+      final payloadJson = utf8.decode(base64Url.decode(payloadSegment));
+      final payloadMap = jsonDecode(payloadJson) as Map<String, dynamic>;
+      return resolve(payloadMap['aud']);
+    } catch (e) {
+      print('Failed to decode access token audience: $e');
+      return null;
+    }
+  }
+
+  bool _isFleetUrl(String value) {
+    return value.startsWith('https://fleet-api.') &&
+        value.contains('.vn.cloud.tesla.com');
+  }
+
+  Future<String> _getFleetApiBaseUrl() async {
+    return await _storage.read(key: _apiBaseUrlKey) ?? _defaultFleetApiUrl;
+  }
+
+  Future<Uri> _buildFleetUri(String path) async {
+    final baseUrl = await _getFleetApiBaseUrl();
+    if (baseUrl.endsWith('/') && path.startsWith('/')) {
+      return Uri.parse('$baseUrl${path.substring(1)}');
+    } else if (!baseUrl.endsWith('/') && !path.startsWith('/')) {
+      return Uri.parse('$baseUrl/$path');
+    }
+    return Uri.parse('$baseUrl$path');
+  }
+
+  Future<String?> getPartnerAccessToken() async {
+    final existingToken = await _storage.read(key: _partnerAccessTokenKey);
+    final expiresAtStr = await _storage.read(key: _partnerExpiresAtKey);
+
+    if (existingToken != null && expiresAtStr != null) {
+      final expiresAt = DateTime.tryParse(expiresAtStr);
+      if (expiresAt != null &&
+          DateTime.now().isBefore(
+            expiresAt.subtract(const Duration(minutes: 1)),
+          )) {
+        return existingToken;
+      }
+    }
+
+    return await _requestPartnerAccessToken();
+  }
+
+  Future<String?> _requestPartnerAccessToken() async {
+    try {
+      final fleetBaseUrl = await _getFleetApiBaseUrl();
+      final formBody =
+          {
+                'grant_type': 'client_credentials',
+                'client_id': _clientId,
+                'client_secret': _clientSecret,
+                'scope':
+                    'openid vehicle_device_data vehicle_cmds vehicle_charging_cmds',
+                'audience': fleetBaseUrl,
+              }.entries
+              .map(
+                (entry) =>
+                    '${Uri.encodeComponent(entry.key)}=${Uri.encodeComponent(entry.value)}',
+              )
+              .join('&');
+
+      final response = await http.post(
+        Uri.parse('$_fleetAuthBaseUrl/oauth2/v3/token'),
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: formBody,
+      );
+
+      if (response.statusCode != 200) {
+        print(
+          '[TeslaAuth] Partner token request failed: '
+          '${response.statusCode} ${response.body}',
+        );
+        return null;
+      }
+
+      final responseData = jsonDecode(response.body);
+      final partnerAccessToken = responseData['access_token'] as String?;
+      final expiresIn = responseData['expires_in'] as int?;
+
+      if (partnerAccessToken == null || expiresIn == null) {
+        print(
+          '[TeslaAuth] Partner token response missing data: ${response.body}',
+        );
+        return null;
+      }
+
+      final expiresAt = DateTime.now().add(Duration(seconds: expiresIn));
+      await _storage.write(
+        key: _partnerAccessTokenKey,
+        value: partnerAccessToken,
+      );
+      await _storage.write(
+        key: _partnerExpiresAtKey,
+        value: expiresAt.toIso8601String(),
+      );
+
+      return partnerAccessToken;
+    } catch (e) {
+      print('[TeslaAuth] Partner token request error: $e');
+      return null;
+    }
+  }
+
+  Future<bool> registerPartnerAccount(String domain) async {
+    try {
+      final partnerToken = await getPartnerAccessToken();
+      if (partnerToken == null) {
+        print(
+          '[TeslaAuth] Cannot register partner account: partner token null',
+        );
+        return false;
+      }
+
+      final registerUri = await _buildFleetUri('/api/1/partner_accounts');
+      final response = await http.post(
+        registerUri,
+        headers: {
+          'Authorization': 'Bearer $partnerToken',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'domain': domain}),
+      );
+
+      if (response.statusCode == 200 ||
+          response.statusCode == 201 ||
+          response.statusCode == 204 ||
+          response.statusCode == 409) {
+        // 409: 이미 등록된 경우.
+        return true;
+      }
+
+      print(
+        '[TeslaAuth] Partner account registration failed: '
+        '${response.statusCode} ${response.body}',
+      );
+      return false;
+    } catch (e) {
+      print('[TeslaAuth] Partner account registration error: $e');
+      return false;
+    }
   }
 
   /// Generate PKCE code verifier and challenge
@@ -129,18 +339,18 @@ class TeslaAuthService {
         return false;
       }
 
+      final fleetAudience = await _getFleetApiBaseUrl();
+
       final body = {
         'grant_type': 'authorization_code',
         'client_id': _clientId,
         'code': authorizationCode,
         'code_verifier': codeVerifier,
         'redirect_uri': _redirectUri,
+        'audience': fleetAudience,
       };
 
-      // Add client_secret if it's set
-      if (_clientSecret != 'YOUR_CLIENT_SECRET_HERE') {
-        body['client_secret'] = _clientSecret;
-      }
+      body['client_secret'] = _clientSecret;
 
       final formBody = body.entries
           .map(
@@ -160,6 +370,8 @@ class TeslaAuthService {
         final accessToken = responseData['access_token'] as String;
         final refreshToken = responseData['refresh_token'] as String;
         final expiresIn = responseData['expires_in'] as int;
+
+        await _storeFleetApiBaseUrl(responseData);
 
         // Store tokens
         await _storage.write(key: _accessTokenKey, value: accessToken);
@@ -196,8 +408,9 @@ class TeslaAuthService {
       final accessToken = await getAccessToken();
       if (accessToken == null) return;
 
+      final usersMeUri = await _buildFleetUri('/api/1/users/me');
       final response = await http.get(
-        Uri.parse('$_ownerApiUrl/api/1/users/me'),
+        usersMeUri,
         headers: {'Authorization': 'Bearer $accessToken'},
       );
 
@@ -216,19 +429,22 @@ class TeslaAuthService {
   /// Refresh access token using refresh token
   Future<bool> refreshToken() async {
     try {
+      print('refreshToken = ${await _storage.read(key: _refreshTokenKey)}');
+      print('accessToken = ${await _storage.read(key: _accessTokenKey)}');
+
       final refreshToken = await _storage.read(key: _refreshTokenKey);
       if (refreshToken == null) return false;
+
+      final fleetAudience = await _getFleetApiBaseUrl();
 
       final body = {
         'grant_type': 'refresh_token',
         'client_id': _clientId,
         'refresh_token': refreshToken,
+        'audience': fleetAudience,
       };
 
-      // Add client_secret if it's set
-      if (_clientSecret != 'YOUR_CLIENT_SECRET_HERE') {
-        body['client_secret'] = _clientSecret;
-      }
+      body['client_secret'] = _clientSecret;
 
       final formBody = body.entries
           .map(
@@ -245,13 +461,18 @@ class TeslaAuthService {
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
-        final accessToken = responseData['access_token'] as String;
-        final newRefreshToken =
-            responseData['refresh_token'] as String? ?? refreshToken;
+        final newAccessToken = responseData['access_token'] as String;
+        final newRefreshToken = responseData['refresh_token'] as String;
         final expiresIn = responseData['expires_in'] as int;
 
+        await _storeFleetApiBaseUrl(responseData);
+
+        print('newAccessToken = $newAccessToken');
+        print('newRefreshToken = $newRefreshToken');
+        print('expiresIn = $expiresIn');
+
         // Update tokens
-        await _storage.write(key: _accessTokenKey, value: accessToken);
+        await _storage.write(key: _accessTokenKey, value: newAccessToken);
         await _storage.write(key: _refreshTokenKey, value: newRefreshToken);
 
         // Update expiration time
@@ -263,11 +484,14 @@ class TeslaAuthService {
 
         return true;
       } else {
-        print('Token refresh failed: ${response.statusCode}');
+        print(
+          '[TeslaAuth] Token refresh failed: ${response.statusCode} '
+          '${response.body}',
+        );
         return false;
       }
     } catch (e) {
-      print('Token refresh error: $e');
+      print('[TeslaAuth] Token refresh error: $e');
       return false;
     }
   }
@@ -278,6 +502,8 @@ class TeslaAuthService {
     await _storage.delete(key: _refreshTokenKey);
     await _storage.delete(key: _expiresAtKey);
     await _storage.delete(key: _emailKey);
+    await _storage.delete(key: _apiBaseUrlKey);
+    await _clearPartnerAuthTokens();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_codeVerifierKey);
     try {
@@ -292,22 +518,48 @@ class TeslaAuthService {
   /// Get list of vehicles
   Future<List<Map<String, dynamic>>> getVehicles() async {
     try {
-      final accessToken = await getAccessToken();
-      if (accessToken == null) return [];
-
       if (!await isLoggedIn()) {
         return [];
       }
 
-      final response = await http.get(
-        Uri.parse('$_ownerApiUrl/api/1/vehicles'),
-        headers: {'Authorization': 'Bearer $accessToken'},
-      );
+      final accessToken = await getAccessToken();
+      if (accessToken == null) return [];
+
+      Future<http.Response> makeRequest(String token) async {
+        final vehiclesUri = await _buildFleetUri('/api/1/vehicles');
+        return http.get(
+          vehiclesUri,
+          headers: {'Authorization': 'Bearer $token'},
+        );
+      }
+
+      var tokenToUse = accessToken;
+      var response = await makeRequest(tokenToUse);
+
+      print('Get vehicles response: ${response.statusCode} ${response.body}');
+      if (response.statusCode != 200) {
+        final refreshed = await refreshToken();
+        if (!refreshed) {
+          print('[TeslaAuth] 401 when fetching vehicles and refresh failed.');
+          return [];
+        }
+        final newAccessToken = await getAccessToken();
+        if (newAccessToken == null) {
+          print(
+            '[TeslaAuth] 401 when fetching vehicles and refreshed token null.',
+          );
+          return [];
+        }
+        tokenToUse = newAccessToken;
+        response = await makeRequest(tokenToUse);
+      }
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return List<Map<String, dynamic>>.from(data['response'] ?? []);
       }
+
+      print('Get vehicles error: ${response.statusCode} ${response.body}');
 
       return [];
     } catch (e) {
@@ -324,34 +576,92 @@ class TeslaAuthService {
     String destinationName,
   ) async {
     try {
-      final accessToken = await getAccessToken();
-      if (accessToken == null) return false;
-
       if (!await isLoggedIn()) {
+        print('[TeslaSend] not logged in when trying to send destination.');
         return false;
       }
 
-      final response = await http.post(
-        Uri.parse('$_ownerApiUrl/api/1/vehicles/$vehicleId/command/share'),
-        headers: {
-          'Authorization': 'Bearer $accessToken',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'type': 'share_ext_content_raw',
-          'value': {
-            'android.intent.ACTION_VIEW':
-                'geo:$latitude,$longitude?q=$destinationName',
-            'lat': latitude,
-            'lon': longitude,
-            'label': destinationName,
-          },
-        }),
+      final accessToken = await getAccessToken();
+      if (accessToken == null) {
+        print('[TeslaSend] access token missing after login check.');
+        return false;
+      }
+
+      print(
+        '[TeslaSend] Sending to vehicle=$vehicleId '
+        'lat=$latitude lon=$longitude name=$destinationName',
       );
 
-      return response.statusCode == 200;
+      Future<http.Response> makeRequest(String token) async {
+        final shareUri = await _buildFleetUri(
+          '/api/1/vehicles/$vehicleId/command/share',
+        );
+        final encodedName = Uri.encodeComponent(destinationName);
+        final localeTag = ui.PlatformDispatcher.instance.locale.toLanguageTag();
+        final navQuery = 'google.navigation:q=$latitude,$longitude';
+        final geoUri = 'geo:$latitude,$longitude?q=$encodedName';
+
+        return http.post(
+          shareUri,
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'type': 'share_ext_content_raw',
+            'value': {
+              'locale': localeTag,
+              'subject': destinationName,
+              'title': destinationName,
+              'text': destinationName,
+              'type': 'text/plain',
+              'android.intent.action': 'android.intent.action.VIEW',
+              'android.intent.data': navQuery,
+              'android.intent.extra.SUBJECT': destinationName,
+              'android.intent.extra.TEXT': navQuery,
+              'android.intent.extra.TITLE': destinationName,
+              'android.intent.extra.MAP_URL': geoUri,
+              'content': {
+                'name': destinationName,
+                'lat': latitude,
+                'lon': longitude,
+                'label': destinationName,
+              },
+            },
+          }),
+        );
+      }
+
+      var tokenToUse = accessToken;
+      var response = await makeRequest(tokenToUse);
+
+      if (response.statusCode == 401) {
+        final refreshed = await refreshToken();
+        if (!refreshed) {
+          print('[TeslaSend] 401 when sending destination and refresh failed.');
+          return false;
+        }
+        final newAccessToken = await getAccessToken();
+        if (newAccessToken == null) {
+          print('[TeslaSend] Refreshed token was null after 401.');
+          return false;
+        }
+        tokenToUse = newAccessToken;
+        response = await makeRequest(tokenToUse);
+      }
+
+      final success = response.statusCode == 200 || response.statusCode == 202;
+      if (!success) {
+        print(
+          '[TeslaSend] command/share failed '
+          'status=${response.statusCode} body=${response.body}',
+        );
+      } else {
+        print('[TeslaSend] command/share success.');
+      }
+      return success;
     } catch (e) {
-      print('Send destination error: $e');
+      print('[TeslaSend] Send destination error: $e');
       return false;
     }
   }

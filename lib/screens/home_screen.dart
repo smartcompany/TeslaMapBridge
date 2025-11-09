@@ -41,7 +41,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _focusListener = () => setState(() {});
     _searchFocusNode.addListener(_focusListener);
     _placesController.addListener(() {
-      debugPrint('onChanged: ${_placesController.text}');
+      print('onChanged: ${_placesController.text}');
       if (mounted) {
         setState(() {});
       }
@@ -198,6 +198,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
 
     if (mounted) {
+      print(
+        '[TeslaSend] vehicleId=$vehicleId '
+        'lat=${destination.latitude} lon=${destination.longitude} '
+        'name=${destination.name} success=$success',
+      );
       setState(() {
         _isSendingToTesla = false;
       });
@@ -299,6 +304,9 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
+    final destination = _selectedDestination!;
+    await _sendDestinationToTesla(destination);
+
     setState(() {
       _isLoading = true;
     });
@@ -324,10 +332,6 @@ class _HomeScreenState extends State<HomeScreen> {
               backgroundColor: Colors.green,
             ),
           );
-          final destination = _selectedDestination!;
-          if (_vehicles.isNotEmpty) {
-            await _sendDestinationToTesla(destination);
-          }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -471,9 +475,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   : null,
                               trailing: const Icon(Icons.north_east),
                               onTap: () {
-                                debugPrint(
-                                  '[Recent] tapped ${destination.name}',
-                                );
+                                print('[Recent] tapped ${destination.name}');
                                 _searchFocusNode.unfocus();
                                 FocusManager.instance.primaryFocus?.unfocus();
                                 _applySelectedDestination(destination);

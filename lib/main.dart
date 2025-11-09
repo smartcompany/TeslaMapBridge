@@ -20,22 +20,27 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  await runZonedGuarded(
+    () async {
+      WidgetsFlutterBinding.ensureInitialized();
+      await Firebase.initializeApp();
 
-  await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
+      FirebaseMessaging.onBackgroundMessage(
+        _firebaseMessagingBackgroundHandler,
+      );
 
-  FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
-  PlatformDispatcher.instance.onError = (error, stack) {
-    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-    return true;
-  };
+      FlutterError.onError =
+          FirebaseCrashlytics.instance.recordFlutterFatalError;
+      PlatformDispatcher.instance.onError = (error, stack) {
+        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+        return true;
+      };
 
-  await PushNotificationService.initialize();
+      await PushNotificationService.initialize();
 
-  runZonedGuarded(
-    () => runApp(const MyApp()),
+      runApp(const MyApp());
+    },
     (error, stack) =>
         FirebaseCrashlytics.instance.recordError(error, stack, fatal: true),
   );
@@ -46,6 +51,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print('MyApp build');
     final analyticsObserver = FirebaseAnalyticsObserver(
       analytics: FirebaseAnalytics.instance,
     );

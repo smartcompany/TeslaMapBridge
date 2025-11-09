@@ -1,3 +1,6 @@
+import 'dart:io' show Platform;
+
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 
@@ -27,9 +30,28 @@ class PushNotificationService {
       _handleOpenedAppMessage(initialMessage);
     }
 
-    if (!kIsWeb) {
+    if (Platform.isIOS) {
+      final apnsToken = await _messaging.getAPNSToken();
+      print('APNS token: $apnsToken');
+
+      try {
+        final token = await _messaging.getToken();
+        print('FCM token: $token');
+      } on FirebaseException catch (e) {
+        if (e.plugin == 'firebase_messaging' &&
+            e.code == 'apns-token-not-set') {
+          print(
+            'FCM token unavailable: APNS token not set yet (simulator or notifications disabled).',
+          );
+        } else {
+          rethrow;
+        }
+      }
+    } else if (Platform.isAndroid) {
       final token = await _messaging.getToken();
-      debugPrint('FCM token: $token');
+      print('FCM token: $token');
+    } else {
+      print('Push notifications are not configured for this platform.');
     }
   }
 
@@ -46,10 +68,10 @@ class PushNotificationService {
   }
 
   static void _handleForegroundMessage(RemoteMessage message) {
-    debugPrint('FCM foreground message: ${message.messageId}');
+    print('FCM foreground message: ${message.messageId}');
   }
 
   static void _handleOpenedAppMessage(RemoteMessage message) {
-    debugPrint('FCM opened app from notification: ${message.messageId}');
+    print('FCM opened app from notification: ${message.messageId}');
   }
 }
