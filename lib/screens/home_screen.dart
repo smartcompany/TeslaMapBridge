@@ -539,12 +539,89 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Widget _buildSearchField(AppLocalizations loc) {
+    return GooglePlaceAutoCompleteTextField(
+      textEditingController: _placesController,
+      googleAPIKey: _googlePlacesApiKey,
+      focusNode: _searchFocusNode,
+      textInputAction: TextInputAction.done,
+      formSubmitCallback: () {
+        _searchFocusNode.unfocus();
+        FocusManager.instance.primaryFocus?.unfocus();
+      },
+      boxDecoration: const BoxDecoration(color: Colors.transparent),
+      containerHorizontalPadding: 0,
+      containerVerticalPadding: 0,
+      inputDecoration: InputDecoration(
+        hintText: loc.searchHint,
+        prefixIcon: const Icon(Icons.search),
+        suffixIcon: _placesController.text.isEmpty
+            ? null
+            : IconButton(
+                icon: const Icon(Icons.clear),
+                onPressed: () {
+                  setState(() {
+                    _placesController.clear();
+                  });
+                  _searchFocusNode.requestFocus();
+                },
+              ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Theme.of(context).primaryColor),
+        ),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(vertical: 0),
+      ),
+      debounceTime: 400,
+      countries: const ['kr', 'us', 'jp', 'cn'],
+      isLatLngRequired: true,
+      isCrossBtnShown: false,
+      getPlaceDetailWithLatLng: (prediction) {
+        _onPlaceSelected(prediction);
+      },
+      itemClick: (prediction) {
+        _placesController.text = prediction.description ?? '';
+        _searchFocusNode.unfocus();
+        FocusManager.instance.primaryFocus?.unfocus();
+        _onPlaceSelected(prediction);
+      },
+      itemBuilder: (context, index, prediction) {
+        return Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            children: [
+              const Icon(Icons.place, size: 20),
+              const SizedBox(width: 8),
+              Expanded(child: Text(prediction.description ?? '')),
+            ],
+          ),
+        );
+      },
+      seperatedBuilder: const Divider(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: Text(loc.appTitle),
+        titleSpacing: 0,
+        toolbarHeight: 72,
+        title: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: SizedBox(height: 48, child: _buildSearchField(loc)),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.settings),
@@ -560,69 +637,6 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: GooglePlaceAutoCompleteTextField(
-                    textEditingController: _placesController,
-                    googleAPIKey: _googlePlacesApiKey,
-                    focusNode: _searchFocusNode,
-                    textInputAction: TextInputAction.done,
-                    formSubmitCallback: () {
-                      _searchFocusNode.unfocus();
-                      FocusManager.instance.primaryFocus?.unfocus();
-                    },
-                    boxDecoration: const BoxDecoration(
-                      color: Colors.transparent,
-                    ),
-                    containerHorizontalPadding: 0,
-                    containerVerticalPadding: 0,
-                    inputDecoration: InputDecoration(
-                      hintText: loc.searchHint,
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color: Theme.of(context).primaryColor,
-                        ),
-                      ),
-                      filled: true,
-                      fillColor: Colors.white,
-                    ),
-                    debounceTime: 400,
-                    countries: const ['kr', 'us', 'jp', 'cn'],
-                    isLatLngRequired: true,
-                    getPlaceDetailWithLatLng: (prediction) {
-                      _onPlaceSelected(prediction);
-                    },
-                    itemClick: (prediction) {
-                      _placesController.text = prediction.description ?? '';
-                      _searchFocusNode.unfocus();
-                      FocusManager.instance.primaryFocus?.unfocus();
-                      _onPlaceSelected(prediction);
-                    },
-                    itemBuilder: (context, index, prediction) {
-                      return Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.place, size: 20),
-                            const SizedBox(width: 8),
-                            Expanded(child: Text(prediction.description ?? '')),
-                          ],
-                        ),
-                      );
-                    },
-                    seperatedBuilder: const Divider(),
-                  ),
-                ),
                 if (_recentDestinations.isNotEmpty &&
                     _searchFocusNode.hasFocus &&
                     _placesController.text.isEmpty)
@@ -664,7 +678,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 SizedBox(
-                  height: 320,
+                  height: 500,
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(16),
                     child: GoogleMap(
