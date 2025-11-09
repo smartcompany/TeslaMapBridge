@@ -51,7 +51,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadDefaultNavigationApp();
     _loadNavigationMode();
     _loadUserEmail();
-    _loadTeslaVehicles();
     _loadRecentDestinations();
   }
 
@@ -150,38 +149,6 @@ class _HomeScreenState extends State<HomeScreen> {
       await _mapController!.animateCamera(
         CameraUpdate.newLatLngZoom(LatLng(dest.latitude, dest.longitude), 15.0),
       );
-    }
-  }
-
-  Future<void> _loadTeslaVehicles() async {
-    final loggedIn = await _teslaAuthService.isLoggedIn();
-    if (!loggedIn) {
-      if (mounted) {
-        setState(() {
-          _vehicles = [];
-          _selectedVehicleId = null;
-        });
-      }
-      return;
-    }
-
-    final vehicles = await _teslaAuthService.getVehicles();
-    if (mounted) {
-      setState(() {
-        _vehicles = vehicles;
-        if (vehicles.isNotEmpty) {
-          final firstValidId = vehicles
-              .map(
-                (vehicle) =>
-                    (vehicle['id_s'] ?? vehicle['id']?.toString())?.toString(),
-              )
-              .firstWhere(
-                (id) => id != null && id.isNotEmpty,
-                orElse: () => null,
-              );
-          _selectedVehicleId ??= firstValidId;
-        }
-      });
     }
   }
 
@@ -326,10 +293,6 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     try {
-      if (_vehicles.isEmpty) {
-        await _loadTeslaVehicles();
-      }
-
       final navSuccess = await _navigationService.launchNavigation(
         _selectedApp,
         _selectedDestination!.latitude,
@@ -381,13 +344,6 @@ class _HomeScreenState extends State<HomeScreen> {
             tooltip: loc.settingsTitle,
             onPressed: _openSettings,
           ),
-          if (_userEmail != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: Center(
-                child: Text(_userEmail!, style: const TextStyle(fontSize: 12)),
-              ),
-            ),
         ],
       ),
       body: SafeArea(
@@ -555,74 +511,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         const SizedBox(height: 16),
                       ],
-                      if (_userEmail != null) ...[
-                        Text(
-                          loc.teslaVehicleSelection,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        if (_vehicles.isNotEmpty)
-                          DropdownButtonFormField<String>(
-                            value: _selectedVehicleId,
-                            decoration: InputDecoration(
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              filled: true,
-                              fillColor: Colors.white,
-                            ),
-                            items: _vehicles
-                                .map((vehicle) {
-                                  final id =
-                                      (vehicle['id_s'] ??
-                                              vehicle['id']?.toString())
-                                          ?.toString();
-                                  if (id == null || id.isEmpty) {
-                                    return null;
-                                  }
-                                  final name =
-                                      vehicle['display_name'] as String? ??
-                                      vehicle['vin'] as String? ??
-                                      loc.vehicleDefaultName(
-                                        (vehicle['id'] ?? '').toString(),
-                                      );
-                                  return DropdownMenuItem<String>(
-                                    value: id,
-                                    child: Text(name),
-                                  );
-                                })
-                                .whereType<DropdownMenuItem<String>>()
-                                .toList(),
-                            onChanged: (value) {
-                              setState(() {
-                                _selectedVehicleId = value;
-                              });
-                            },
-                          )
-                        else
-                          Card(
-                            color: Colors.grey.shade200,
-                            child: Padding(
-                              padding: const EdgeInsets.all(12.0),
-                              child: Text(
-                                loc.noVehiclesMessage,
-                                style: TextStyle(color: Colors.grey.shade700),
-                              ),
-                            ),
-                          ),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton.icon(
-                            onPressed: _isLoading ? null : _loadTeslaVehicles,
-                            icon: const Icon(Icons.refresh),
-                            label: Text(loc.refreshVehicles),
-                          ),
-                        ),
-                        if (_isSendingToTesla)
-                          Row(
+                      if (_isSendingToTesla)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: Row(
                             children: [
                               const SizedBox(
                                 width: 18,
@@ -635,8 +527,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               Text(loc.sendingToTesla),
                             ],
                           ),
-                        const SizedBox(height: 16),
-                      ],
+                        ),
                       ElevatedButton.icon(
                         onPressed: _isLoading || _selectedDestination == null
                             ? null

@@ -30,9 +30,12 @@ class TeslaAuthService {
 
   // Tesla Fleet API Client Credentials
   // Tesla Developer Portal (https://developer.tesla.com/)에서 등록 후 발급받은 값으로 교체하세요
-  static const String _clientId = '3a036053-105d-4f0b-b315-15e7b38e2df8';
-  static const String _clientSecret = 'ta-secret.+rCpCXAHo1VSAT+b';
   static const String _apiBaseUrlKey = 'tesla_api_base_url';
+  static const String _credentialsEndpoint =
+      "https://tesla-map-bridge.vercel.app/api/tesla/credentials";
+
+  String? _clientId;
+  String? _clientSecret;
 
   /// Check if user is logged in
   Future<bool> isLoggedIn() async {
@@ -149,6 +152,37 @@ class TeslaAuthService {
     return Uri.parse('$baseUrl$path');
   }
 
+  Future<void> _ensureCredentialsLoaded() async {
+    if (_clientId != null && _clientSecret != null) {
+      return;
+    }
+
+    try {
+      final response = await http.get(Uri.parse(_credentialsEndpoint));
+      if (response.statusCode != 200) {
+        throw Exception(
+          'Failed to load Tesla credentials: ${response.statusCode} ${response.body}',
+        );
+      }
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final clientId = data['clientId'] as String?;
+      final clientSecret = data['clientSecret'] as String?;
+
+      if (clientId == null ||
+          clientId.isEmpty ||
+          clientSecret == null ||
+          clientSecret.isEmpty) {
+        throw Exception('Tesla credentials response is invalid.');
+      }
+
+      _clientId = clientId;
+      _clientSecret = clientSecret;
+    } catch (e) {
+      throw Exception('Unable to fetch Tesla credentials: $e');
+    }
+  }
+
   Future<TeslaNavigationMode> getNavigationModePreference() async {
     final prefs = await SharedPreferences.getInstance();
     final stored = prefs.getString(kTeslaNavigationModeKey);
@@ -186,12 +220,14 @@ class TeslaAuthService {
 
   Future<String?> _requestPartnerAccessToken() async {
     try {
+      await _ensureCredentialsLoaded();
+
       final fleetBaseUrl = await _getFleetApiBaseUrl();
       final formBody =
           {
                 'grant_type': 'client_credentials',
-                'client_id': _clientId,
-                'client_secret': _clientSecret,
+                'client_id': _clientId!,
+                'client_secret': _clientSecret!,
                 'scope':
                     'openid vehicle_device_data vehicle_cmds vehicle_charging_cmds',
                 'audience': fleetBaseUrl,
@@ -303,11 +339,7 @@ class TeslaAuthService {
 
   /// Generate OAuth authorization URL with PKCE
   Future<String> getAuthorizationUrl() async {
-    if (_clientId == 'YOUR_CLIENT_ID_HERE') {
-      throw Exception(
-        'Client ID가 설정되지 않았습니다. lib/services/tesla_auth_service.dart에서 _clientId를 설정하세요.',
-      );
-    }
+    await _ensureCredentialsLoaded();
 
     final pkce = _generatePKCE();
     final codeVerifier = pkce['code_verifier']!;
@@ -318,7 +350,7 @@ class TeslaAuthService {
     await prefs.setString(_codeVerifierKey, codeVerifier);
 
     final params = {
-      'client_id': _clientId,
+      'client_id': _clientId!,
       'redirect_uri': _redirectUri,
       'response_type': 'code',
       'scope':
@@ -352,6 +384,8 @@ class TeslaAuthService {
   /// Exchange authorization code for access token with PKCE
   Future<bool> exchangeCodeForToken(String authorizationCode) async {
     try {
+      await _ensureCredentialsLoaded();
+
       // Get stored code verifier
       final prefs = await SharedPreferences.getInstance();
       final codeVerifier = prefs.getString(_codeVerifierKey);
@@ -364,14 +398,14 @@ class TeslaAuthService {
 
       final body = {
         'grant_type': 'authorization_code',
-        'client_id': _clientId,
+        'client_id': _clientId!,
         'code': authorizationCode,
         'code_verifier': codeVerifier,
         'redirect_uri': _redirectUri,
         'audience': fleetAudience,
       };
 
-      body['client_secret'] = _clientSecret;
+      body['client_secret'] = _clientSecret!;
 
       final formBody = body.entries
           .map(
@@ -450,6 +484,8 @@ class TeslaAuthService {
   /// Refresh access token using refresh token
   Future<bool> refreshToken() async {
     try {
+      await _ensureCredentialsLoaded();
+
       print('refreshToken = ${await _storage.read(key: _refreshTokenKey)}');
       print('accessToken = ${await _storage.read(key: _accessTokenKey)}');
 
@@ -460,12 +496,12 @@ class TeslaAuthService {
 
       final body = {
         'grant_type': 'refresh_token',
-        'client_id': _clientId,
+        'client_id': _clientId!,
         'refresh_token': refreshToken,
         'audience': fleetAudience,
       };
 
-      body['client_secret'] = _clientSecret;
+      body['client_secret'] = _clientSecret!;
 
       final formBody = body.entries
           .map(
