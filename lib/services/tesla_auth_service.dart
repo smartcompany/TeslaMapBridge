@@ -593,16 +593,16 @@ class TeslaAuthService {
       );
 
       Future<http.Response> makeRequest(String token) async {
-        final shareUri = await _buildFleetUri(
-          '/api/1/vehicles/$vehicleId/command/share',
+        final navigationUri = await _buildFleetUri(
+          '/api/1/vehicles/$vehicleId/command/navigation_request',
         );
-        final encodedName = Uri.encodeComponent(destinationName);
         final localeTag = ui.PlatformDispatcher.instance.locale.toLanguageTag();
-        final navQuery = 'google.navigation:q=$latitude,$longitude';
-        final geoUri = 'geo:$latitude,$longitude?q=$encodedName';
+        final textValue = destinationName.trim().isEmpty
+            ? '$latitude,$longitude'
+            : destinationName;
 
         return http.post(
-          shareUri,
+          navigationUri,
           headers: {
             'Authorization': 'Bearer $token',
             'Content-Type': 'application/json',
@@ -610,24 +610,13 @@ class TeslaAuthService {
           body: jsonEncode({
             'type': 'share_ext_content_raw',
             'value': {
-              'locale': localeTag,
-              'subject': destinationName,
-              'title': destinationName,
-              'text': destinationName,
-              'type': 'text/plain',
-              'android.intent.action': 'android.intent.action.VIEW',
-              'android.intent.data': navQuery,
-              'android.intent.extra.SUBJECT': destinationName,
-              'android.intent.extra.TEXT': navQuery,
-              'android.intent.extra.TITLE': destinationName,
-              'android.intent.extra.MAP_URL': geoUri,
-              'content': {
-                'name': destinationName,
-                'lat': latitude,
-                'lon': longitude,
-                'label': destinationName,
-              },
+              'android.intent.ACTION': 'android.intent.action.SEND',
+              'android.intent.TYPE': 'text/plain',
+              'android.intent.TEXT': textValue,
+              'android.intent.extra.TEXT': textValue,
             },
+            'locale': localeTag,
+            'timestamp_ms': DateTime.now().millisecondsSinceEpoch.toString(),
           }),
         );
       }
@@ -653,11 +642,11 @@ class TeslaAuthService {
       final success = response.statusCode == 200 || response.statusCode == 202;
       if (!success) {
         print(
-          '[TeslaSend] command/share failed '
+          '[TeslaSend] navigation_request failed '
           'status=${response.statusCode} body=${response.body}',
         );
       } else {
-        print('[TeslaSend] command/share success.');
+        print('[TeslaSend] navigation_request success.');
       }
       return success;
     } catch (e) {
