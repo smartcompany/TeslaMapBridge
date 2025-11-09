@@ -341,10 +341,17 @@ class _GooglePlaceAutoCompleteTextFieldState
       isCrossBtn = false;
     });
 
-    if (this._overlayEntry != null) {
+    if (_overlayEntry != null) {
       try {
-        this._overlayEntry?.remove();
-      } catch (e) {}
+        if (_overlayEntry!.mounted) {
+          _overlayEntry!.remove();
+        }
+      } catch (_) {}
+      _overlayEntry = null;
+    }
+
+    if (widget.focusNode != null) {
+      widget.focusNode!.requestFocus();
     }
   }
 
