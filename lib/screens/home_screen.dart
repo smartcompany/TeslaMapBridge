@@ -144,12 +144,31 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _moveCameraToSelectedDestination() async {
-    if (_mapController != null && _selectedDestination != null) {
-      final dest = _selectedDestination!;
-      await _mapController!.animateCamera(
-        CameraUpdate.newLatLngZoom(LatLng(dest.latitude, dest.longitude), 15.0),
-      );
+    if (_mapController == null || _selectedDestination == null) {
+      return;
     }
+    final dest = _selectedDestination!;
+    final controller = _mapController!;
+    final currentZoom = await controller.getZoomLevel();
+    await controller.animateCamera(
+      CameraUpdate.newLatLngZoom(
+        LatLng(dest.latitude, dest.longitude),
+        currentZoom,
+      ),
+    );
+  }
+
+  String _currentLanguageParam() {
+    if (!mounted) {
+      return 'en';
+    }
+    final locale = Localizations.localeOf(context);
+    final tag = locale.toLanguageTag();
+    if (tag.isNotEmpty) {
+      return tag;
+    }
+    final code = locale.languageCode;
+    return code.isNotEmpty ? code : 'en';
   }
 
   Future<void> _sendDestinationToTesla(Destination destination) async {
@@ -240,11 +259,189 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<Destination?> _getPlaceDetails(String placeId) async {
+  Future<Destination?> _getDestinationFromLatLng(LatLng latLng) async {
     try {
+      final languageParam = _currentLanguageParam();
       final response = await http.get(
         Uri.parse(
-          'https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&key=$_googlePlacesApiKey&language=ko',
+          'https://maps.googleapis.com/maps/api/geocode/json'
+          '?latlng=${latLng.latitude},${latLng.longitude}'
+          '&key=$_googlePlacesApiKey&language=$languageParam',
+        ),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final results = data['results'] as List<dynamic>? ?? [];
+        debugPrint(
+          '[ReverseGeocode] got ${results.length} results for '
+          '${latLng.latitude},${latLng.longitude}',
+        );
+        if (results.isNotEmpty) {
+          Map<String, dynamic>? pick;
+          for (final result in results) {
+            if (result is! Map<String, dynamic>) continue;
+            final types = result['types'] as List<dynamic>? ?? const [];
+            if (types.contains('point_of_interest') ||
+                types.contains('establishment') ||
+                types.contains('transit_station')) {
+              pick = result;
+              debugPrint(
+                '[ReverseGeocode] selected by type: ${pick['name']} '
+                'types=$types place_id=${pick['place_id']}',
+              );
+              break;
+            }
+          }
+          pick ??= results.first as Map<String, dynamic>;
+
+          final placeId = pick['place_id'] as String?;
+          if (placeId != null) {
+            debugPrint('[ReverseGeocode] fetching details for $placeId');
+            final details = await _getPlaceDetails(placeId);
+            if (details != null) {
+              return details;
+            }
+            debugPrint('[ReverseGeocode] details lookup returned null');
+          }
+
+          final address = pick['formatted_address'] as String? ?? '';
+          String name = address;
+          if (pick['address_components'] is List) {
+            final components = pick['address_components'] as List<dynamic>;
+            if (components.isNotEmpty) {
+              name = components.first['long_name'] as String? ?? address;
+            }
+          }
+          debugPrint(
+            '[ReverseGeocode] fallback name=$name address=$address '
+            'placeId=$placeId',
+          );
+
+          return Destination(
+            name: name.isEmpty
+                ? AppLocalizations.of(context)!.unknownPlace
+                : name,
+            address: address,
+            latitude: latLng.latitude,
+            longitude: latLng.longitude,
+            placeId: placeId,
+          );
+        }
+      }
+      if (response.statusCode != 200) {
+        debugPrint(
+          '[ReverseGeocode] HTTP ${response.statusCode}: ${response.body}',
+        );
+      }
+    } catch (e, st) {
+      debugPrint('Error reverse geocoding: $e');
+      debugPrint('$st');
+    }
+
+    final nearby = await _getNearbyPlace(latLng);
+    if (nearby != null) {
+      return nearby;
+    }
+
+    return Destination(
+      name: AppLocalizations.of(context)!.unknownPlace,
+      address:
+          '${latLng.latitude.toStringAsFixed(5)}, ${latLng.longitude.toStringAsFixed(5)}',
+      latitude: latLng.latitude,
+      longitude: latLng.longitude,
+    );
+  }
+
+  Future<Destination?> _getNearbyPlace(LatLng latLng) async {
+    try {
+      final languageParam = _currentLanguageParam();
+      final response = await http.get(
+        Uri.parse(
+          'https://maps.googleapis.com/maps/api/place/nearbysearch/json'
+          '?location=${latLng.latitude},${latLng.longitude}'
+          '&rankby=distance'
+          '&key=$_googlePlacesApiKey'
+          '&language=$languageParam'
+          '&type=point_of_interest',
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final results = data['results'] as List<dynamic>? ?? [];
+        debugPrint(
+          '[NearbySearch] got ${results.length} results for '
+          '${latLng.latitude},${latLng.longitude}',
+        );
+        if (results.isNotEmpty) {
+          final first = results.first as Map<String, dynamic>;
+          debugPrint(
+            '[NearbySearch] picked ${first['name']} '
+            'place_id=${first['place_id']} types=${first['types']}',
+          );
+          final placeId = first['place_id'] as String?;
+          if (placeId != null) {
+            final details = await _getPlaceDetails(placeId);
+            if (details != null) {
+              return details;
+            }
+          }
+
+          final name =
+              first['name'] as String? ??
+              AppLocalizations.of(context)!.unknownPlace;
+          final vicinity = first['vicinity'] as String? ?? '';
+          return Destination(
+            name: name,
+            address: vicinity.isNotEmpty ? vicinity : name,
+            latitude: latLng.latitude,
+            longitude: latLng.longitude,
+            placeId: placeId,
+          );
+        }
+      } else {
+        debugPrint(
+          '[NearbySearch] HTTP ${response.statusCode}: ${response.body}',
+        );
+      }
+    } catch (e, st) {
+      debugPrint('Error nearby search: $e');
+      debugPrint('$st');
+    }
+    return null;
+  }
+
+  Future<void> _onMapTapped(LatLng latLng) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final destination = await _getDestinationFromLatLng(latLng);
+      if (destination != null) {
+        await _applySelectedDestination(destination);
+      }
+    } catch (e) {
+      if (mounted) {
+        final loc = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(loc.errorWithMessage('$e'))));
+      }
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<Destination?> _getPlaceDetails(String placeId) async {
+    try {
+      final languageParam = _currentLanguageParam();
+      final response = await http.get(
+        Uri.parse(
+          'https://maps.googleapis.com/maps/api/place/details/json'
+          '?place_id=$placeId&key=$_googlePlacesApiKey&language=$languageParam',
         ),
       );
 
@@ -255,6 +452,7 @@ class _HomeScreenState extends State<HomeScreen> {
         final name =
             result['name'] as String? ??
             AppLocalizations.of(context)!.unknownPlace;
+        debugPrint('[PlaceDetails] $placeId name=$name');
         final address = result['formatted_address'] as String? ?? '';
         final geometry = result['geometry'] as Map<String, dynamic>;
         final location = geometry['location'] as Map<String, dynamic>;
@@ -270,7 +468,7 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       }
     } catch (e) {
-      print('Error getting place details: $e');
+      debugPrint('Error getting place details: $e');
     }
     return null;
   }
@@ -469,6 +667,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         _mapController = controller;
                         _moveCameraToSelectedDestination();
                       },
+                      onTap: _onMapTapped,
                       markers: _selectedDestination != null
                           ? {
                               Marker(
