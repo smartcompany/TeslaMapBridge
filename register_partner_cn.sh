@@ -3,9 +3,9 @@ set -euo pipefail
 
 export CLIENT_ID="3a036053-105d-4f0b-b315-15e7b38e2df8"
 export CLIENT_SECRET="ta-secret.+rCpCXAHo1VSAT+b"
-export AUDIENCE="https://fleet-api.prd.na.vn.cloud.tesla.com"
+export AUDIENCE="https://fleet-api.prd.cn.vn.cloud.tesla.com"
 export FLEET_AUTH="https://fleet-auth.prd.vn.cloud.tesla.com/oauth2/v3/token"
-export PARTNER_DOMAIN="tesla-map-na-github-io.vercel.app"
+export PARTNER_DOMAIN="tesla-map-cn-github-io.vercel.app"
 
 echo "Requesting partner access token..."
 RESPONSE=$(
