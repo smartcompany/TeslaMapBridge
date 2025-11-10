@@ -36,6 +36,11 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _selectedVehicleId;
   List<Destination> _recentDestinations = [];
 
+  bool get _shouldShowRecentSuggestions =>
+      _recentDestinations.isNotEmpty &&
+      _searchFocusNode.hasFocus &&
+      _placesController.text.isEmpty;
+
   @override
   void initState() {
     super.initState();
@@ -611,10 +616,144 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildMap() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: GoogleMap(
+          initialCameraPosition: const CameraPosition(
+            target: LatLng(37.5665, 126.9780),
+            zoom: 12,
+          ),
+          onMapCreated: (controller) {
+            _mapController = controller;
+            _moveCameraToSelectedDestination();
+          },
+          onTap: _onMapTapped,
+          markers: _selectedDestination != null
+              ? {
+                  Marker(
+                    markerId: const MarkerId('destination'),
+                    position: LatLng(
+                      _selectedDestination!.latitude,
+                      _selectedDestination!.longitude,
+                    ),
+                    infoWindow: InfoWindow(
+                      title: _selectedDestination!.name,
+                      snippet: _selectedDestination!.address,
+                    ),
+                  ),
+                }
+              : {},
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecentDestinationsOverlay(AppLocalizations loc) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxHeight: 320),
+      child: Card(
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Text(
+                  loc.recentSearches,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              const Divider(height: 1),
+              ..._recentDestinations.map(
+                (destination) => ListTile(
+                  leading: const Icon(Icons.history),
+                  title: Text(destination.name),
+                  subtitle: destination.address.isNotEmpty
+                      ? Text(destination.address)
+                      : null,
+                  trailing: const Icon(Icons.north_east),
+                  onTap: () {
+                    print('[Recent] tapped ${destination.name}');
+                    _searchFocusNode.unfocus();
+                    FocusManager.instance.primaryFocus?.unfocus();
+                    _applySelectedDestination(destination);
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomSection(AppLocalizations loc) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (_selectedDestination != null) ...[
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.location_on, color: Colors.red),
+                title: Text(
+                  _selectedDestination!.name,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Text(_selectedDestination!.address),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+          if (_isSendingToTesla)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Row(
+                children: [
+                  const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(loc.sendingToTesla),
+                ],
+              ),
+            ),
+          ElevatedButton.icon(
+            onPressed: _isLoading || _selectedDestination == null
+                ? null
+                : _startNavigation,
+            icon: _isLoading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.directions_car),
+            label: Text(loc.startNavigation),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         titleSpacing: 0,
         toolbarHeight: 72,
@@ -631,149 +770,26 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (_recentDestinations.isNotEmpty &&
-                    _searchFocusNode.hasFocus &&
-                    _placesController.text.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Card(
-                      elevation: 2,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(12.0),
-                            child: Text(
-                              loc.recentSearches,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          const Divider(height: 1),
-                          ..._recentDestinations.map(
-                            (destination) => ListTile(
-                              leading: const Icon(Icons.history),
-                              title: Text(destination.name),
-                              subtitle: destination.address.isNotEmpty
-                                  ? Text(destination.address)
-                                  : null,
-                              trailing: const Icon(Icons.north_east),
-                              onTap: () {
-                                print('[Recent] tapped ${destination.name}');
-                                _searchFocusNode.unfocus();
-                                FocusManager.instance.primaryFocus?.unfocus();
-                                _applySelectedDestination(destination);
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Positioned.fill(child: _buildMap()),
+                  if (_shouldShowRecentSuggestions)
+                    Positioned(
+                      left: 16,
+                      right: 16,
+                      top: 0,
+                      child: _buildRecentDestinationsOverlay(loc),
                     ),
-                  ),
-                SizedBox(
-                  height: 500,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: GoogleMap(
-                      initialCameraPosition: const CameraPosition(
-                        target: LatLng(37.5665, 126.9780),
-                        zoom: 12,
-                      ),
-                      onMapCreated: (controller) {
-                        _mapController = controller;
-                        _moveCameraToSelectedDestination();
-                      },
-                      onTap: _onMapTapped,
-                      markers: _selectedDestination != null
-                          ? {
-                              Marker(
-                                markerId: const MarkerId('destination'),
-                                position: LatLng(
-                                  _selectedDestination!.latitude,
-                                  _selectedDestination!.longitude,
-                                ),
-                                infoWindow: InfoWindow(
-                                  title: _selectedDestination!.name,
-                                  snippet: _selectedDestination!.address,
-                                ),
-                              ),
-                            }
-                          : {},
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (_selectedDestination != null) ...[
-                        Card(
-                          child: ListTile(
-                            leading: const Icon(
-                              Icons.location_on,
-                              color: Colors.red,
-                            ),
-                            title: Text(
-                              _selectedDestination!.name,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            subtitle: Text(_selectedDestination!.address),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                      if (_isSendingToTesla)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: Row(
-                            children: [
-                              const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(loc.sendingToTesla),
-                            ],
-                          ),
-                        ),
-                      ElevatedButton.icon(
-                        onPressed: _isLoading || _selectedDestination == null
-                            ? null
-                            : _startNavigation,
-                        icon: _isLoading
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.directions_car),
-                        label: Text(loc.startNavigation),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
+            _buildBottomSection(loc),
+          ],
         ),
       ),
     );
