@@ -50,7 +50,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get searchHint => '목적지를 검색하세요';
 
   @override
-  String get recentSearches => '최근 검색한 장소';
+  String get recentSearches => '최근 주행한 장소';
 
   @override
   String get teslaVehicleSelection => '테슬라 차량 선택';

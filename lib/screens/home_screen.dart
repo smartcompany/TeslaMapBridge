@@ -41,6 +41,37 @@ class _HomeScreenState extends State<HomeScreen> {
       _searchFocusNode.hasFocus &&
       _placesController.text.isEmpty;
 
+  List<Destination> get _recentDestinationsForDisplay {
+    if (_recentDestinations.isEmpty) return const <Destination>[];
+
+    Destination? prioritized;
+    int? minDifference;
+    final now = DateTime.now();
+    final nowMinutes = _minutesSinceMidnight(now);
+
+    for (final destination in _recentDestinations) {
+      final navigatedAt = destination.lastNavigatedAt;
+      if (navigatedAt == null) continue;
+      final diff = _timeOfDayDifference(
+        nowMinutes,
+        _minutesSinceMidnight(navigatedAt),
+      );
+      if (minDifference == null || diff < minDifference) {
+        minDifference = diff;
+        prioritized = destination;
+      }
+    }
+
+    if (prioritized == null) {
+      return List.unmodifiable(_recentDestinations);
+    }
+
+    final remaining = _recentDestinations
+        .where((destination) => destination != prioritized)
+        .toList();
+    return [prioritized, ...remaining];
+  }
+
   @override
   void initState() {
     super.initState();
@@ -114,17 +145,25 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  Future<void> _saveRecentDestination(Destination destination) async {
+  Future<void> _recordDrivenDestination(Destination destination) async {
     final prefs = await SharedPreferences.getInstance();
+    final timestamped = Destination(
+      name: destination.name,
+      address: destination.address,
+      latitude: destination.latitude,
+      longitude: destination.longitude,
+      placeId: destination.placeId,
+      lastNavigatedAt: DateTime.now(),
+    );
     setState(() {
       _recentDestinations.removeWhere((item) {
-        if (item.placeId != null && destination.placeId != null) {
-          return item.placeId == destination.placeId;
+        if (item.placeId != null && timestamped.placeId != null) {
+          return item.placeId == timestamped.placeId;
         }
-        return item.latitude == destination.latitude &&
-            item.longitude == destination.longitude;
+        return item.latitude == timestamped.latitude &&
+            item.longitude == timestamped.longitude;
       });
-      _recentDestinations.insert(0, destination);
+      _recentDestinations.insert(0, timestamped);
       if (_recentDestinations.length > 5) {
         _recentDestinations = _recentDestinations.sublist(0, 5);
       }
@@ -153,8 +192,6 @@ class _HomeScreenState extends State<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _moveCameraToSelectedDestination();
     });
-
-    await _saveRecentDestination(destination);
   }
 
   Future<void> _moveCameraToSelectedDestination() async {
@@ -542,6 +579,8 @@ class _HomeScreenState extends State<HomeScreen> {
         _isLoading = false;
       });
     }
+
+    await _recordDrivenDestination(destination);
   }
 
   Widget _buildSearchField(AppLocalizations loc) {
@@ -670,7 +709,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const Divider(height: 1),
-              ..._recentDestinations.map(
+              ..._recentDestinationsForDisplay.map(
                 (destination) => ListTile(
                   leading: const Icon(Icons.history),
                   title: Text(destination.name),
@@ -793,5 +832,12 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  int _minutesSinceMidnight(DateTime time) => time.hour * 60 + time.minute;
+
+  int _timeOfDayDifference(int lhsMinutes, int rhsMinutes) {
+    final diff = (lhsMinutes - rhsMinutes).abs();
+    return diff > 720 ? 1440 - diff : diff;
   }
 }

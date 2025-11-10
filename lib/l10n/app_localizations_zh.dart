@@ -50,7 +50,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get searchHint => '搜索目的地';
 
   @override
-  String get recentSearches => '最近搜索';
+  String get recentSearches => '最近行驶地点';
 
   @override
   String get teslaVehicleSelection => '选择特斯拉车辆';

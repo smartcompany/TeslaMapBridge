@@ -18,7 +18,7 @@
   "cancel": "取消",
   "logoutButton": "注销",
   "searchHint": "搜索目的地",
-  "recentSearches": "最近搜索",
+  "recentSearches": "最近行驶地点",
   "teslaVehicleSelection": "选择特斯拉车辆",
   "noVehiclesMessage": "未找到车辆或加载失败。\n请在 Tesla 应用中确认后刷新。",
   "refreshVehicles": "刷新车辆",

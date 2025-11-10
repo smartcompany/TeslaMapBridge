@@ -18,7 +18,7 @@
   "cancel": "キャンセル",
   "logoutButton": "ログアウト",
   "searchHint": "目的地を検索",
-  "recentSearches": "最近の検索",
+  "recentSearches": "最近のドライブ地点",
   "teslaVehicleSelection": "テスラ車を選択",
   "noVehiclesMessage": "登録済みの車両がないか読み込めませんでした。\nTesla アプリを確認して更新してください。",
   "refreshVehicles": "車両を更新",

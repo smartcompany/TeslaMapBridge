@@ -183,7 +183,7 @@ abstract class AppLocalizations {
   /// No description provided for @recentSearches.
   ///
   /// In en, this message translates to:
-  /// **'Recent searches'**
+  /// **'Recent drives'**
   String get recentSearches;
 
   /// No description provided for @teslaVehicleSelection.

@@ -50,7 +50,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchHint => 'Search for a destination';
 
   @override
-  String get recentSearches => 'Recent searches';
+  String get recentSearches => 'Recent drives';
 
   @override
   String get teslaVehicleSelection => 'Select Tesla vehicle';

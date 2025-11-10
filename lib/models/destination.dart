@@ -4,6 +4,7 @@ class Destination {
   final double latitude;
   final double longitude;
   final String? placeId;
+  final DateTime? lastNavigatedAt;
 
   Destination({
     required this.name,
@@ -11,6 +12,7 @@ class Destination {
     required this.latitude,
     required this.longitude,
     this.placeId,
+    this.lastNavigatedAt,
   });
 
   Map<String, dynamic> toMap() {
@@ -20,6 +22,7 @@ class Destination {
       'latitude': latitude,
       'longitude': longitude,
       'placeId': placeId,
+      'lastNavigatedAt': lastNavigatedAt?.toIso8601String(),
     };
   }
 
@@ -30,6 +33,9 @@ class Destination {
       latitude: (map['latitude'] as num).toDouble(),
       longitude: (map['longitude'] as num).toDouble(),
       placeId: map['placeId'] as String?,
+      lastNavigatedAt: map['lastNavigatedAt'] != null
+          ? DateTime.tryParse(map['lastNavigatedAt'] as String)
+          : null,
     );
   }
 

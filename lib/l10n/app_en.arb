@@ -18,7 +18,7 @@
   "cancel": "Cancel",
   "logoutButton": "Log out",
   "searchHint": "Search for a destination",
-  "recentSearches": "Recent searches",
+  "recentSearches": "Recent drives",
   "teslaVehicleSelection": "Select Tesla vehicle",
   "noVehiclesMessage": "No vehicles found or failed to load.\nCheck the Tesla app and refresh.",
   "refreshVehicles": "Refresh vehicles",
