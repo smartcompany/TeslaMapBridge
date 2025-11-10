@@ -1,8 +1,7 @@
 import 'dart:io' show Platform;
 
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 class PushNotificationService {
   PushNotificationService._();
@@ -30,8 +29,21 @@ class PushNotificationService {
       _handleOpenedAppMessage(initialMessage);
     }
 
+    _messaging.onTokenRefresh.listen((token) {
+      if (token.isNotEmpty) {
+        print('FCM token (refresh): $token');
+      }
+    });
+
     if (Platform.isIOS) {
       final apnsToken = await _messaging.getAPNSToken();
+      if (apnsToken == null) {
+        print(
+          'APNS token is not available yet. Waiting for APNS registration callback before requesting FCM token.',
+        );
+        return;
+      }
+
       print('APNS token: $apnsToken');
 
       try {
@@ -41,7 +53,7 @@ class PushNotificationService {
         if (e.plugin == 'firebase_messaging' &&
             e.code == 'apns-token-not-set') {
           print(
-            'FCM token unavailable: APNS token not set yet (simulator or notifications disabled).',
+            'FCM token unavailable: APNS token not set yet (possible notification registration issue).',
           );
         } else {
           rethrow;

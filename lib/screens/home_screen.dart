@@ -10,6 +10,7 @@ import '../services/tesla_auth_service.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:geolocator/geolocator.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -35,6 +36,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _userEmail;
   String? _selectedVehicleId;
   List<Destination> _recentDestinations = [];
+  bool _locationPermissionGranted = false;
 
   bool get _shouldShowRecentSuggestions =>
       _recentDestinations.isNotEmpty &&
@@ -88,6 +90,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadUserEmail();
     _loadRecentDestinations();
     _loadSelectedVehicleId();
+    _initLocationServices();
   }
 
   Future<void> _loadDefaultNavigationApp() async {
@@ -207,6 +210,70 @@ class _HomeScreenState extends State<HomeScreen> {
         currentZoom,
       ),
     );
+  }
+
+  Future<void> _moveCameraToUserLocation() async {
+    if (!_locationPermissionGranted || _mapController == null) {
+      return;
+    }
+
+    try {
+      Position? position = await Geolocator.getLastKnownPosition();
+      position ??= await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      final target = LatLng(position.latitude, position.longitude);
+      double? zoom;
+      try {
+        zoom = await _mapController!.getZoomLevel();
+      } catch (_) {
+        zoom = null;
+      }
+
+      await _mapController!.animateCamera(
+        CameraUpdate.newLatLngZoom(target, zoom ?? 15),
+      );
+    } catch (e, stack) {
+      debugPrint('[Location] Failed to move camera to user location: $e');
+      debugPrint('$stack');
+    }
+  }
+
+  Future<void> _initLocationServices() async {
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        debugPrint('[Location] Services are disabled.');
+        return;
+      }
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        debugPrint('[Location] Permission denied: $permission');
+        if (mounted) {
+          setState(() {
+            _locationPermissionGranted = false;
+          });
+        }
+        return;
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _locationPermissionGranted = true;
+      });
+
+      await _moveCameraToUserLocation();
+    } catch (e, stack) {
+      debugPrint('[Location] Error initializing location services: $e');
+      debugPrint('$stack');
+    }
   }
 
   String _currentLanguageParam() {
@@ -668,8 +735,11 @@ class _HomeScreenState extends State<HomeScreen> {
           onMapCreated: (controller) {
             _mapController = controller;
             _moveCameraToSelectedDestination();
+            _moveCameraToUserLocation();
           },
           onTap: _onMapTapped,
+          myLocationEnabled: _locationPermissionGranted,
+          myLocationButtonEnabled: _locationPermissionGranted,
           markers: _selectedDestination != null
               ? {
                   Marker(
