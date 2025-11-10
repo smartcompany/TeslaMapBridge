@@ -11,6 +11,7 @@ enum NavigationApp {
   tmap,
   naver,
   kakao,
+  atlan,
   googleMaps,
   waze,
   baiduMaps,
@@ -30,10 +31,14 @@ class NavigationService {
   ) async {
     final urls = _buildNavigationUrls(app, lat, lng, name);
     for (final url in urls) {
+      debugPrint('[Navigation] Trying ${app.name} URL → $url');
       if (await _launchUrl(url)) {
+        debugPrint('[Navigation] Launch succeeded for $url');
         return true;
       }
+      debugPrint('[Navigation] Launch failed for $url');
     }
+    debugPrint('[Navigation] No URLs succeeded for ${app.name}');
     return false;
   }
 
@@ -61,6 +66,26 @@ class NavigationService {
           'kakaonavi://navigate?name=$encodedName&x=$lng&y=$lat',
           'https://map.kakao.com/link/to/$encodedName,$lat,$lng',
         ];
+      case NavigationApp.atlan:
+        final urls = <String>[];
+        if (Platform.isAndroid) {
+          urls.add(
+            'intent://route?dlat=$lat&dlng=$lng&dname=$encodedName#Intent;scheme=atlan;package=com.thinkwaresolution.atlan3d;end',
+          );
+          urls.add('market://details?id=com.thinkwaresolution.atlan3d');
+          urls.add(
+            'https://play.google.com/store/apps/details?id=com.thinkwaresolution.atlan3d',
+          );
+        } else {
+          urls.add('atlanapp://navigate?lat=$lat&lon=$lng&name=$encodedName');
+          urls.add(
+            'https://apps.apple.com/kr/app/3d%EC%A7%80%EB%8F%84-%EC%95%84%ED%8B%80%EB%9E%80/id542287735',
+          );
+        }
+        urls.add(
+          'https://map.atlan.co.kr/mobile/route?lat=$lat&lon=$lng&name=$encodedName',
+        );
+        return urls;
       case NavigationApp.googleMaps:
         return [
           if (Platform.isAndroid) 'google.navigation:q=$lat,$lng&mode=d',
@@ -110,9 +135,14 @@ class NavigationService {
   Future<bool> _launchUrl(String url) async {
     final uri = Uri.parse(url);
     if (!await canLaunchUrl(uri)) {
+      debugPrint('[Navigation] Scheme not available: $url');
       return false;
     }
-    return launchUrl(uri, mode: LaunchMode.externalApplication);
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!launched) {
+      debugPrint('[Navigation] launchUrl returned false for $url');
+    }
+    return launched;
   }
 
   // Check if navigation app is installed
@@ -121,9 +151,11 @@ class NavigationService {
     for (final scheme in schemes) {
       final uri = Uri.parse(scheme);
       if (await canLaunchUrl(uri)) {
+        debugPrint('[Navigation] Scheme available for ${app.name}: $scheme');
         return true;
       }
     }
+    debugPrint('[Navigation] No preferred schemes found for ${app.name}');
     return false;
   }
 
@@ -136,6 +168,8 @@ class NavigationService {
         return loc.navAppNaver;
       case NavigationApp.kakao:
         return loc.navAppKakao;
+      case NavigationApp.atlan:
+        return loc.navAppAtlan;
       case NavigationApp.googleMaps:
         return loc.navAppGoogleMaps;
       case NavigationApp.waze:
@@ -158,6 +192,7 @@ const Map<NavigationApp, List<String>> _preferredSchemes = {
   NavigationApp.tmap: ['tmap://'],
   NavigationApp.naver: ['nmap://'],
   NavigationApp.kakao: ['kakaomap://', 'kakaonavi://'],
+  NavigationApp.atlan: ['atlan://', 'atlanapp://'],
   NavigationApp.googleMaps: ['google.navigation:', 'comgooglemaps://', 'geo:'],
   NavigationApp.waze: ['waze://'],
   NavigationApp.baiduMaps: ['baidumap://'],

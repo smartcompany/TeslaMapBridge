@@ -136,6 +136,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get navAppKakao => 'カカオナビ';
 
   @override
+  String get navAppAtlan => 'アトラン';
+
+  @override
   String get navAppGoogleMaps => 'Google マップ';
 
   @override
