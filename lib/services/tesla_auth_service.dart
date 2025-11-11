@@ -337,7 +337,7 @@ class TeslaAuthService {
       'redirect_uri': _redirectUri,
       'response_type': 'code',
       'scope':
-          'openid offline_access user_data vehicle_device_data vehicle_cmds vehicle_charging_cmds',
+          'openid email offline_access user_data vehicle_device_data vehicle_cmds vehicle_charging_cmds',
       'state': DateTime.now().millisecondsSinceEpoch.toString(),
       'code_challenge': codeChallenge,
       'code_challenge_method': 'S256',

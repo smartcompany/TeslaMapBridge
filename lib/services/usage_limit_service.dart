@@ -36,14 +36,22 @@ class UsageLimitService {
     return UsageStatus(userId: userId, quota: quota);
   }
 
-  Future<UsageStatus> fetchStatus(String userId) async {
+  Future<UsageStatus> fetchStatus({
+    required String userId,
+    required String accessToken,
+  }) async {
     if (userId.isEmpty) {
       throw ArgumentError('userId cannot be empty');
+    }
+
+    if (accessToken.isEmpty) {
+      throw ArgumentError('accessToken cannot be empty');
     }
 
     try {
       final response = await _client.get(
         _quotaUri.replace(queryParameters: {'userId': userId}),
+        headers: {'Authorization': 'Bearer $accessToken'},
       );
 
       if (response.statusCode != 200) {

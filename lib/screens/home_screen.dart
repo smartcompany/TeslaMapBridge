@@ -38,9 +38,9 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Destination> _recentDestinations = [];
   final UsageLimitService _usageLimitService = UsageLimitService();
   String? _userId;
-  int _totalQuota = 10;
   bool _isQuotaLoaded = false;
   bool _locationPermissionGranted = false;
+  int _quota = 0;
 
   bool get _shouldShowRecentSuggestions =>
       _recentDestinations.isNotEmpty &&
@@ -218,7 +218,17 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadUsageData() async {
     final userId = await _ensureUserId();
     if (userId == null) {
-      _totalQuota = 0;
+      if (mounted) {
+        setState(() {
+          _isQuotaLoaded = true;
+        });
+      }
+      return;
+    }
+
+    final accessToken = await _teslaAuthService.getAccessToken();
+    if (accessToken == null || accessToken.isEmpty) {
+      debugPrint('[Usage] Missing access token when loading quota');
       if (mounted) {
         setState(() {
           _isQuotaLoaded = true;
@@ -228,10 +238,15 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     try {
-      final status = await _usageLimitService.fetchStatus(userId);
+      final status = await _usageLimitService.fetchStatus(
+        userId: userId,
+        accessToken: accessToken,
+      );
+
+      _quota = status.quota;
+
       if (!mounted) return;
       setState(() {
-        _totalQuota = status.quota;
         _isQuotaLoaded = true;
       });
     } on UsageLimitException catch (error) {
@@ -251,11 +266,6 @@ class _HomeScreenState extends State<HomeScreen> {
       await _loadUsageData();
     }
 
-    if (_totalQuota <= 0) {
-      await _showSubscriptionDialog();
-      return false;
-    }
-
     final accessToken = await _teslaAuthService.getAccessToken();
     if (accessToken == null || accessToken.isEmpty) {
       return false;
@@ -266,6 +276,7 @@ class _HomeScreenState extends State<HomeScreen> {
         userId: _userId!,
         accessToken: accessToken,
       );
+
       if (!result.success) {
         if (mounted && result.errorMessage != null) {
           ScaffoldMessenger.of(
@@ -274,7 +285,6 @@ class _HomeScreenState extends State<HomeScreen> {
         }
         if (mounted) {
           setState(() {
-            _totalQuota = result.status.quota;
             _isQuotaLoaded = true;
           });
         }
@@ -282,9 +292,10 @@ class _HomeScreenState extends State<HomeScreen> {
         return false;
       }
 
+      _quota = result.status.quota;
+
       if (mounted) {
         setState(() {
-          _totalQuota = result.status.quota;
           _isQuotaLoaded = true;
         });
       }
@@ -307,7 +318,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final loc = AppLocalizations.of(context)!;
     final parentContext = context;
-    final total = _totalQuota;
 
     await showModalBottomSheet<void>(
       context: parentContext,
@@ -335,10 +345,10 @@ class _HomeScreenState extends State<HomeScreen> {
               Text(loc.subscriptionRequiredMessage),
               const SizedBox(height: 16),
               Text(loc.subscriptionDescription),
-              if (total > 0) ...[
+              if (_quota > 0) ...[
                 const SizedBox(height: 16),
                 Text(
-                  loc.subscriptionUsageStatus(total),
+                  loc.subscriptionUsageStatus(_quota),
                   style: Theme.of(
                     sheetContext,
                   ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
@@ -1040,11 +1050,11 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.symmetric(vertical: 16),
             ),
           ),
-          if (_isQuotaLoaded && _totalQuota > 0)
+          if (_isQuotaLoaded && _quota > 0)
             Padding(
               padding: const EdgeInsets.only(top: 12),
               child: Text(
-                loc.remainingFreeDrives((_totalQuota).toInt()),
+                loc.remainingFreeDrives(_quota),
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodySmall,
               ),
