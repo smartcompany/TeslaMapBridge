@@ -37,7 +37,6 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _selectedVehicleId;
   List<Destination> _recentDestinations = [];
   final UsageLimitService _usageLimitService = UsageLimitService();
-  String? _accessToken;
   String? _userId;
   int _totalQuota = 10;
   bool _isQuotaLoaded = false;
@@ -197,27 +196,6 @@ class _HomeScreenState extends State<HomeScreen> {
     await _loadUsageData();
   }
 
-  Future<String?> _ensureAccessToken() async {
-    String? token = _accessToken;
-    if (token != null && token.isNotEmpty) {
-      return token;
-    }
-
-    token = await _teslaAuthService.getAccessToken();
-    if (token == null || token.isEmpty) {
-      return null;
-    }
-
-    if (mounted) {
-      setState(() {
-        _accessToken = token;
-      });
-    } else {
-      _accessToken = token;
-    }
-    return token;
-  }
-
   Future<String?> _ensureUserId() async {
     if (_userId != null && _userId!.isNotEmpty) {
       return _userId;
@@ -278,10 +256,15 @@ class _HomeScreenState extends State<HomeScreen> {
       return false;
     }
 
+    final accessToken = await _teslaAuthService.getAccessToken();
+    if (accessToken == null || accessToken.isEmpty) {
+      return false;
+    }
+
     try {
       final result = await _usageLimitService.consume(
         userId: _userId!,
-        accessToken: _accessToken!,
+        accessToken: accessToken,
       );
       if (!result.success) {
         if (mounted && result.errorMessage != null) {
