@@ -177,8 +177,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get subscriptionSectionTitle => 'サブスクリプションとプラン';
 
   @override
-  String get subscriptionDescription =>
-      '無料で 10 回まで利用できます。アップグレードすると無制限のナビゲーション、端末間の履歴同期、今後追加予定の自動化機能が利用できます。';
+  String get subscriptionDescription => '';
 
   @override
   String subscriptionUsageStatus(int total) {

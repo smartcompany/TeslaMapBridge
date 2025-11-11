@@ -417,7 +417,7 @@ abstract class AppLocalizations {
   /// No description provided for @subscriptionDescription.
   ///
   /// In en, this message translates to:
-  /// **'Enjoy 10 free trips on us. Upgrade to unlock unlimited navigation, cross-device history sync, and upcoming automation features.'**
+  /// **''**
   String get subscriptionDescription;
 
   /// No description provided for @subscriptionUsageStatus.

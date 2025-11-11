@@ -77,7 +77,7 @@
     }
   },
   "subscriptionSectionTitle": "Subscription & plans",
-  "subscriptionDescription": "Enjoy 10 free trips on us. Upgrade to unlock unlimited navigation, cross-device history sync, and upcoming automation features.",
+  "subscriptionDescription": "",
   "subscriptionUsageStatus": "{total} free trips remaining",
   "@subscriptionUsageStatus": {
     "placeholders": {

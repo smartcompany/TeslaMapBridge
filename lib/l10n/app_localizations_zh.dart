@@ -176,8 +176,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get subscriptionSectionTitle => '订阅与方案';
 
   @override
-  String get subscriptionDescription =>
-      '我们为您提供 10 次免费使用。升级后可解锁无限次导航、跨设备历史同步以及即将上线的自动化功能。';
+  String get subscriptionDescription => '';
 
   @override
   String subscriptionUsageStatus(int total) {

@@ -179,8 +179,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get subscriptionSectionTitle => 'Subscription & plans';
 
   @override
-  String get subscriptionDescription =>
-      'Enjoy 10 free trips on us. Upgrade to unlock unlimited navigation, cross-device history sync, and upcoming automation features.';
+  String get subscriptionDescription => '';
 
   @override
   String subscriptionUsageStatus(int total) {

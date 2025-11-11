@@ -178,8 +178,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get subscriptionSectionTitle => '구독 및 요금제';
 
   @override
-  String get subscriptionDescription =>
-      '무료 10회 이용이 제공됩니다. 업그레이드하면 무제한 길 안내, 기기 간 기록 동기화, 자동화 기능을 사용할 수 있습니다.';
+  String get subscriptionDescription => '';
 
   @override
   String subscriptionUsageStatus(int total) {

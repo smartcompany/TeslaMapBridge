@@ -77,7 +77,7 @@
     }
   },
   "subscriptionSectionTitle": "订阅与方案",
-  "subscriptionDescription": "我们为您提供 10 次免费使用。升级后可解锁无限次导航、跨设备历史同步以及即将上线的自动化功能。",
+  "subscriptionDescription": "",
   "subscriptionUsageStatus": "剩余 {total} 次免费导航",
   "@subscriptionUsageStatus": {
     "placeholders": {

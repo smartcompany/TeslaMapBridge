@@ -77,7 +77,7 @@
     }
   },
   "subscriptionSectionTitle": "구독 및 요금제",
-  "subscriptionDescription": "무료 10회 이용이 제공됩니다. 업그레이드하면 무제한 길 안내, 기기 간 기록 동기화, 자동화 기능을 사용할 수 있습니다.",
+  "subscriptionDescription": "",
   "subscriptionUsageStatus": "무료 이용 {total}회가 남았습니다",
   "@subscriptionUsageStatus": {
     "placeholders": {
