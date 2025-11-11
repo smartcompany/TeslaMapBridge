@@ -23,8 +23,6 @@ class TeslaAuthService {
 
   // Tesla OAuth endpoints
   static const String _authBaseUrl = 'https://auth.tesla.com';
-  static const String _fleetAuthUrl =
-      'https://fleet-auth.prd.na.vn.cloud.tesla.com';
   static const String _redirectUri = 'https://auth.tesla.com/void/callback';
 
   // Tesla Fleet API Client Credentials
@@ -92,6 +90,10 @@ class TeslaAuthService {
     }
   }
 
+  Future<String?> getFleetAuthUrl() async {
+    return await _storage.read(key: _apiBaseUrlKey);
+  }
+
   String? resolve(dynamic candidate) {
     if (candidate is String && _isFleetUrl(candidate)) {
       return candidate;
@@ -140,12 +142,18 @@ class TeslaAuthService {
   }
 
   Future<Uri> _buildFleetUri(String path) async {
-    if (_fleetAuthUrl.endsWith('/') && path.startsWith('/')) {
-      return Uri.parse('$_fleetAuthUrl${path.substring(1)}');
-    } else if (!_fleetAuthUrl.endsWith('/') && !path.startsWith('/')) {
-      return Uri.parse('$_fleetAuthUrl/$path');
+    final fleetAuthUrl = await getFleetAuthUrl();
+    if (fleetAuthUrl == null || fleetAuthUrl.isEmpty) {
+      print('[TeslaAuth] Fleet auth url not found');
+      throw Exception('Fleet auth url not found');
     }
-    return Uri.parse('$_fleetAuthUrl$path');
+
+    if (fleetAuthUrl.endsWith('/') && path.startsWith('/')) {
+      return Uri.parse('$fleetAuthUrl${path.substring(1)}');
+    } else if (!fleetAuthUrl.endsWith('/') && !path.startsWith('/')) {
+      return Uri.parse('$fleetAuthUrl/$path');
+    }
+    return Uri.parse('$fleetAuthUrl$path');
   }
 
   Future<void> _ensureCredentialsLoaded() async {
@@ -231,6 +239,11 @@ class TeslaAuthService {
   Future<String?> _requestPartnerAccessToken() async {
     try {
       await _ensureCredentialsLoaded();
+      final fleetAuthUrl = await getFleetAuthUrl();
+      if (fleetAuthUrl == null || fleetAuthUrl.isEmpty) {
+        print('[TeslaAuth] Fleet auth url not found');
+        return null;
+      }
 
       final formBody =
           {
@@ -239,7 +252,7 @@ class TeslaAuthService {
                 'client_secret': _clientSecret!,
                 'scope':
                     'openid vehicle_device_data vehicle_cmds vehicle_charging_cmds',
-                'audience': _fleetAuthUrl,
+                'audience': fleetAuthUrl,
               }.entries
               .map(
                 (entry) =>
@@ -248,7 +261,7 @@ class TeslaAuthService {
               .join('&');
 
       final response = await http.post(
-        Uri.parse('$_fleetAuthUrl/oauth2/v3/token'),
+        Uri.parse('$fleetAuthUrl/oauth2/v3/token'),
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: formBody,
       );
@@ -286,45 +299,6 @@ class TeslaAuthService {
     } catch (e) {
       print('[TeslaAuth] Partner token request error: $e');
       return null;
-    }
-  }
-
-  Future<bool> registerPartnerAccount(String domain) async {
-    try {
-      final partnerToken = await getPartnerAccessToken();
-      if (partnerToken == null) {
-        print(
-          '[TeslaAuth] Cannot register partner account: partner token null',
-        );
-        return false;
-      }
-
-      final registerUri = await _buildFleetUri('/api/1/partner_accounts');
-      final response = await http.post(
-        registerUri,
-        headers: {
-          'Authorization': 'Bearer $partnerToken',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({'domain': domain}),
-      );
-
-      if (response.statusCode == 200 ||
-          response.statusCode == 201 ||
-          response.statusCode == 204 ||
-          response.statusCode == 409) {
-        // 409: 이미 등록된 경우.
-        return true;
-      }
-
-      print(
-        '[TeslaAuth] Partner account registration failed: '
-        '${response.statusCode} ${response.body}',
-      );
-      return false;
-    } catch (e) {
-      print('[TeslaAuth] Partner account registration error: $e');
-      return false;
     }
   }
 
@@ -403,13 +377,19 @@ class TeslaAuthService {
         return false;
       }
 
+      // final fleetAuthUrl = await getFleetAuthUrl();
+      // if (fleetAuthUrl == null || fleetAuthUrl.isEmpty) {
+      //   print('[TeslaAuth] Fleet auth url not found');
+      //   return false;
+      // }
+
       final body = {
         'grant_type': 'authorization_code',
         'client_id': _clientId!,
         'code': authorizationCode,
         'code_verifier': codeVerifier,
         'redirect_uri': _redirectUri,
-        'audience': _fleetAuthUrl,
+        // 'audience': fleetAuthUrl,
       };
 
       body['client_secret'] = _clientSecret!;
@@ -499,11 +479,17 @@ class TeslaAuthService {
       final refreshToken = await _storage.read(key: _refreshTokenKey);
       if (refreshToken == null) return false;
 
+      final fleetAuthUrl = await getFleetAuthUrl();
+      if (fleetAuthUrl == null || fleetAuthUrl.isEmpty) {
+        print('[TeslaAuth] Fleet auth url not found');
+        return false;
+      }
+
       final body = {
         'grant_type': 'refresh_token',
         'client_id': _clientId!,
         'refresh_token': refreshToken,
-        'audience': _fleetAuthUrl,
+        'audience': fleetAuthUrl,
       };
 
       body['client_secret'] = _clientSecret!;
