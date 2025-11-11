@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/app_localizations.dart';
@@ -22,11 +24,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _isLoggingOut = false;
   List<Map<String, dynamic>> _vehicles = [];
   String? _selectedVehicleId;
+  String? _debugAccessToken;
 
   @override
   void initState() {
     super.initState();
     _loadPreferences();
+    if (kDebugMode) {
+      _loadDebugAccessToken();
+    }
   }
 
   Future<void> _loadPreferences() async {
@@ -57,8 +63,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       resolvedVehicleId = availableIds.first;
     }
 
-    if (!mounted) return;
-
     setState(() {
       if (stored != null) {
         final match = NavigationApp.values.firstWhere(
@@ -79,6 +83,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (resolvedVehicleId != storedVehicleId) {
       await _teslaAuthService.setSelectedVehicleId(resolvedVehicleId);
     }
+    if (kDebugMode) {
+      _loadDebugAccessToken();
+    }
+  }
+
+  Future<void> _loadDebugAccessToken() async {
+    final token = await _teslaAuthService.getAccessToken();
+    if (!mounted) return;
+    setState(() {
+      _debugAccessToken = token;
+    });
   }
 
   String? _vehicleId(Map<String, dynamic> vehicle) {
@@ -216,6 +231,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       try {
         await _teslaAuthService.logout();
         if (!mounted) return;
+        if (kDebugMode) {
+          setState(() {
+            _debugAccessToken = null;
+          });
+        }
         Navigator.of(
           context,
         ).pushNamedAndRemoveUntil('/login', (route) => false);
@@ -370,6 +390,93 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                   const SizedBox(height: 32),
+                  if (kDebugMode)
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              loc.debugAccessTokenTitle,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            if ((_debugAccessToken ?? '').isEmpty)
+                              Text(
+                                loc.debugAccessTokenEmpty,
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: Theme.of(context).hintColor,
+                                    ),
+                              )
+                            else
+                              SelectableText(
+                                _debugAccessToken!,
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                TextButton(
+                                  onPressed: () async {
+                                    if (!mounted) return;
+                                    final messenger = ScaffoldMessenger.of(
+                                      context,
+                                    );
+                                    final localized = AppLocalizations.of(
+                                      context,
+                                    )!;
+                                    await _loadDebugAccessToken();
+                                    if (!mounted) return;
+                                    messenger.showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          localized.debugAccessTokenRefreshed,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  child: Text(loc.debugAccessTokenRefresh),
+                                ),
+                                const SizedBox(width: 8),
+                                ElevatedButton(
+                                  onPressed: (_debugAccessToken ?? '').isEmpty
+                                      ? null
+                                      : () async {
+                                          if (!mounted) return;
+                                          final messenger =
+                                              ScaffoldMessenger.of(context);
+                                          final localized = AppLocalizations.of(
+                                            context,
+                                          )!;
+                                          await Clipboard.setData(
+                                            ClipboardData(
+                                              text: _debugAccessToken!,
+                                            ),
+                                          );
+                                          if (!mounted) return;
+                                          messenger.showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                localized
+                                                    .debugAccessTokenCopied,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                  child: Text(loc.debugAccessTokenCopy),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  if (kDebugMode) const SizedBox(height: 32),
                 ],
               ),
       ),

@@ -383,6 +383,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'NAVITIME'**
   String get navAppNavitime;
+
+  /// No description provided for @subscriptionRequiredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription required'**
+  String get subscriptionRequiredTitle;
+
+  /// No description provided for @subscriptionRequiredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You have used all free trips. Subscribe to continue using navigation.'**
+  String get subscriptionRequiredMessage;
+
+  /// No description provided for @subscriptionRequiredButton.
+  ///
+  /// In en, this message translates to:
+  /// **'View plans'**
+  String get subscriptionRequiredButton;
+
+  /// No description provided for @remainingFreeDrives.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} free trips left'**
+  String remainingFreeDrives(Object count);
+
+  /// No description provided for @subscriptionSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription & plans'**
+  String get subscriptionSectionTitle;
+
+  /// No description provided for @subscriptionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Enjoy 10 free trips on us. Upgrade to unlock unlimited navigation, cross-device history sync, and upcoming automation features.'**
+  String get subscriptionDescription;
+
+  /// No description provided for @subscriptionUsageStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'{total} free trips remaining'**
+  String subscriptionUsageStatus(int total);
+
+  /// No description provided for @subscriptionUpgradeButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrade plan'**
+  String get subscriptionUpgradeButton;
+
+  /// No description provided for @subscriptionComingSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'In-app subscriptions are coming soon. We\'ll notify you when purchasing is available.'**
+  String get subscriptionComingSoon;
+
+  /// No description provided for @subscriptionLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking your plan...'**
+  String get subscriptionLoading;
+
+  /// No description provided for @debugAccessTokenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Debug: Tesla access token'**
+  String get debugAccessTokenTitle;
+
+  /// No description provided for @debugAccessTokenCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy token'**
+  String get debugAccessTokenCopy;
+
+  /// No description provided for @debugAccessTokenCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Access token copied to clipboard.'**
+  String get debugAccessTokenCopied;
+
+  /// No description provided for @debugAccessTokenRefresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get debugAccessTokenRefresh;
+
+  /// No description provided for @debugAccessTokenRefreshed.
+  ///
+  /// In en, this message translates to:
+  /// **'Access token refreshed.'**
+  String get debugAccessTokenRefreshed;
+
+  /// No description provided for @debugAccessTokenEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with Tesla to view the access token.'**
+  String get debugAccessTokenEmpty;
 }
 
 class _AppLocalizationsDelegate

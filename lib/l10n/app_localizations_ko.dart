@@ -158,4 +158,58 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get navAppNavitime => 'NAVITIME';
+
+  @override
+  String get subscriptionRequiredTitle => '구독이 필요합니다';
+
+  @override
+  String get subscriptionRequiredMessage =>
+      '무료 사용 횟수를 모두 사용했습니다. 계속 이용하려면 구독하세요.';
+
+  @override
+  String get subscriptionRequiredButton => '구독 보기';
+
+  @override
+  String remainingFreeDrives(Object count) {
+    return '무료 이용 $count회 남았습니다';
+  }
+
+  @override
+  String get subscriptionSectionTitle => '구독 및 요금제';
+
+  @override
+  String get subscriptionDescription =>
+      '무료 10회 이용이 제공됩니다. 업그레이드하면 무제한 길 안내, 기기 간 기록 동기화, 자동화 기능을 사용할 수 있습니다.';
+
+  @override
+  String subscriptionUsageStatus(int total) {
+    return '무료 이용 $total회가 남았습니다';
+  }
+
+  @override
+  String get subscriptionUpgradeButton => '요금제 업그레이드';
+
+  @override
+  String get subscriptionComingSoon => '인앱 구독은 곧 제공될 예정입니다. 사용 가능해지면 알려드릴게요.';
+
+  @override
+  String get subscriptionLoading => '플랜을 확인하는 중...';
+
+  @override
+  String get debugAccessTokenTitle => '디버그: Tesla 액세스 토큰';
+
+  @override
+  String get debugAccessTokenCopy => '토큰 복사';
+
+  @override
+  String get debugAccessTokenCopied => '액세스 토큰을 클립보드에 복사했어요.';
+
+  @override
+  String get debugAccessTokenRefresh => '새로고침';
+
+  @override
+  String get debugAccessTokenRefreshed => '액세스 토큰을 새로고침했습니다.';
+
+  @override
+  String get debugAccessTokenEmpty => '액세스 토큰을 보려면 Tesla 계정으로 로그인하세요.';
 }

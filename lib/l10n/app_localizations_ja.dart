@@ -158,4 +158,58 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get navAppNavitime => 'NAVITIME';
+
+  @override
+  String get subscriptionRequiredTitle => 'サブスクリプションが必要です';
+
+  @override
+  String get subscriptionRequiredMessage => '無料利用回数を使い切りました。ナビを続けるには購読してください。';
+
+  @override
+  String get subscriptionRequiredButton => 'プランを見る';
+
+  @override
+  String remainingFreeDrives(Object count) {
+    return '無料利用残り$count回';
+  }
+
+  @override
+  String get subscriptionSectionTitle => 'サブスクリプションとプラン';
+
+  @override
+  String get subscriptionDescription =>
+      '無料で 10 回まで利用できます。アップグレードすると無制限のナビゲーション、端末間の履歴同期、今後追加予定の自動化機能が利用できます。';
+
+  @override
+  String subscriptionUsageStatus(int total) {
+    return '無料利用残り $total 回';
+  }
+
+  @override
+  String get subscriptionUpgradeButton => 'プランをアップグレード';
+
+  @override
+  String get subscriptionComingSoon =>
+      'アプリ内サブスクリプションは近日提供予定です。利用可能になり次第お知らせします。';
+
+  @override
+  String get subscriptionLoading => 'プランを確認しています...';
+
+  @override
+  String get debugAccessTokenTitle => 'デバッグ: Tesla アクセストークン';
+
+  @override
+  String get debugAccessTokenCopy => 'トークンをコピー';
+
+  @override
+  String get debugAccessTokenCopied => 'アクセストークンをクリップボードにコピーしました。';
+
+  @override
+  String get debugAccessTokenRefresh => '更新';
+
+  @override
+  String get debugAccessTokenRefreshed => 'アクセストークンを更新しました。';
+
+  @override
+  String get debugAccessTokenEmpty => 'アクセストークンを表示するには Tesla アカウントでログインしてください。';
 }

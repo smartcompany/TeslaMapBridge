@@ -66,6 +66,34 @@
   "navAppGaodeMaps": "Gaode (AMap)",
   "navAppTencentMaps": "Tencent Maps",
   "navAppYahooCarNavi": "Yahoo! Car Navi",
-  "navAppNavitime": "NAVITIME"
+  "navAppNavitime": "NAVITIME",
+  "subscriptionRequiredTitle": "Subscription required",
+  "subscriptionRequiredMessage": "You have used all free trips. Subscribe to continue using navigation.",
+  "subscriptionRequiredButton": "View plans",
+  "remainingFreeDrives": "{count} free trips left",
+  "@remainingFreeDrives": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "subscriptionSectionTitle": "Subscription & plans",
+  "subscriptionDescription": "Enjoy 10 free trips on us. Upgrade to unlock unlimited navigation, cross-device history sync, and upcoming automation features.",
+  "subscriptionUsageStatus": "{total} free trips remaining",
+  "@subscriptionUsageStatus": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "subscriptionUpgradeButton": "Upgrade plan",
+  "subscriptionComingSoon": "In-app subscriptions are coming soon. We'll notify you when purchasing is available.",
+  "subscriptionLoading": "Checking your plan...",
+  "debugAccessTokenTitle": "Debug: Tesla access token",
+  "debugAccessTokenCopy": "Copy token",
+  "debugAccessTokenCopied": "Access token copied to clipboard.",
+  "debugAccessTokenRefresh": "Refresh",
+  "debugAccessTokenRefreshed": "Access token refreshed.",
+  "debugAccessTokenEmpty": "Sign in with Tesla to view the access token."
 }
 

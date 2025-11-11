@@ -157,4 +157,57 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get navAppNavitime => 'NAVITIME';
+
+  @override
+  String get subscriptionRequiredTitle => '需要订阅';
+
+  @override
+  String get subscriptionRequiredMessage => '您已用完所有免费次数。订阅后即可继续使用导航。';
+
+  @override
+  String get subscriptionRequiredButton => '查看方案';
+
+  @override
+  String remainingFreeDrives(Object count) {
+    return '剩余 $count 次免费导航';
+  }
+
+  @override
+  String get subscriptionSectionTitle => '订阅与方案';
+
+  @override
+  String get subscriptionDescription =>
+      '我们为您提供 10 次免费使用。升级后可解锁无限次导航、跨设备历史同步以及即将上线的自动化功能。';
+
+  @override
+  String subscriptionUsageStatus(int total) {
+    return '剩余 $total 次免费导航';
+  }
+
+  @override
+  String get subscriptionUpgradeButton => '升级方案';
+
+  @override
+  String get subscriptionComingSoon => '应用内订阅即将上线，功能开放后我们会第一时间通知您。';
+
+  @override
+  String get subscriptionLoading => '正在检查您的方案...';
+
+  @override
+  String get debugAccessTokenTitle => '调试：Tesla 访问令牌';
+
+  @override
+  String get debugAccessTokenCopy => '复制令牌';
+
+  @override
+  String get debugAccessTokenCopied => '访问令牌已复制到剪贴板。';
+
+  @override
+  String get debugAccessTokenRefresh => '刷新';
+
+  @override
+  String get debugAccessTokenRefreshed => '访问令牌已刷新。';
+
+  @override
+  String get debugAccessTokenEmpty => '请使用 Tesla 帐号登录后查看访问令牌。';
 }

@@ -7,6 +7,7 @@ import '../models/destination.dart';
 import '../models/tesla_navigation_mode.dart';
 import '../services/navigation_service.dart';
 import '../services/tesla_auth_service.dart';
+import '../services/usage_limit_service.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -33,9 +34,13 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = false;
   bool _isSendingToTesla = false;
   GoogleMapController? _mapController;
-  String? _userEmail;
   String? _selectedVehicleId;
   List<Destination> _recentDestinations = [];
+  final UsageLimitService _usageLimitService = UsageLimitService();
+  String? _accessToken;
+  String? _userId;
+  int _totalQuota = 10;
+  bool _isQuotaLoaded = false;
   bool _locationPermissionGranted = false;
 
   bool get _shouldShowRecentSuggestions =>
@@ -87,10 +92,10 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     _loadDefaultNavigationApp();
     _loadNavigationMode();
-    _loadUserEmail();
     _loadRecentDestinations();
     _loadSelectedVehicleId();
     _initLocationServices();
+    _initializeUsageTracking();
   }
 
   Future<void> _loadDefaultNavigationApp() async {
@@ -124,15 +129,6 @@ class _HomeScreenState extends State<HomeScreen> {
       await _loadDefaultNavigationApp();
       await _loadNavigationMode();
       await _loadSelectedVehicleId();
-    }
-  }
-
-  Future<void> _loadUserEmail() async {
-    final email = await _teslaAuthService.getEmail();
-    if (mounted) {
-      setState(() {
-        _userEmail = email;
-      });
     }
   }
 
@@ -195,6 +191,209 @@ class _HomeScreenState extends State<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _moveCameraToSelectedDestination();
     });
+  }
+
+  Future<void> _initializeUsageTracking() async {
+    await _loadUsageData();
+  }
+
+  Future<String?> _ensureAccessToken() async {
+    String? token = _accessToken;
+    if (token != null && token.isNotEmpty) {
+      return token;
+    }
+
+    token = await _teslaAuthService.getAccessToken();
+    if (token == null || token.isEmpty) {
+      return null;
+    }
+
+    if (mounted) {
+      setState(() {
+        _accessToken = token;
+      });
+    } else {
+      _accessToken = token;
+    }
+    return token;
+  }
+
+  Future<String?> _ensureUserId() async {
+    if (_userId != null && _userId!.isNotEmpty) {
+      return _userId;
+    }
+
+    final email = await _teslaAuthService.getEmail();
+    if (email != null && email.isNotEmpty) {
+      if (mounted) {
+        setState(() {
+          _userId = email.trim().toLowerCase();
+        });
+      } else {
+        _userId = email.trim().toLowerCase();
+      }
+      return _userId;
+    }
+    return null;
+  }
+
+  Future<void> _loadUsageData() async {
+    final userId = await _ensureUserId();
+    if (userId == null) {
+      _totalQuota = 0;
+      if (mounted) {
+        setState(() {
+          _isQuotaLoaded = true;
+        });
+      }
+      return;
+    }
+
+    try {
+      final status = await _usageLimitService.fetchStatus(userId);
+      if (!mounted) return;
+      setState(() {
+        _totalQuota = status.quota;
+        _isQuotaLoaded = true;
+      });
+    } on UsageLimitException catch (error) {
+      debugPrint('[Usage] Failed to load quota: $error');
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
+      }
+    } catch (error) {
+      debugPrint('[Usage] Failed to load quota: $error');
+    }
+  }
+
+  Future<bool> _checkAndConsumeNavigationQuota() async {
+    if (!_isQuotaLoaded) {
+      await _loadUsageData();
+    }
+
+    if (_totalQuota <= 0) {
+      await _showSubscriptionDialog();
+      return false;
+    }
+
+    try {
+      final result = await _usageLimitService.consume(
+        userId: _userId!,
+        accessToken: _accessToken!,
+      );
+      if (!result.success) {
+        if (mounted && result.errorMessage != null) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(result.errorMessage!)));
+        }
+        if (mounted) {
+          setState(() {
+            _totalQuota = result.status.quota;
+            _isQuotaLoaded = true;
+          });
+        }
+        await _showSubscriptionDialog();
+        return false;
+      }
+
+      if (mounted) {
+        setState(() {
+          _totalQuota = result.status.quota;
+          _isQuotaLoaded = true;
+        });
+      }
+      return true;
+    } on UsageLimitException catch (error) {
+      debugPrint('[Usage] consume failed: $error');
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
+      }
+      return false;
+    }
+  }
+
+  Future<void> _showSubscriptionDialog() async {
+    if (!mounted) {
+      return;
+    }
+
+    final loc = AppLocalizations.of(context)!;
+    final parentContext = context;
+    final total = _totalQuota;
+
+    await showModalBottomSheet<void>(
+      context: parentContext,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            24,
+            24,
+            24,
+            24 + MediaQuery.of(sheetContext).viewInsets.bottom,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                loc.subscriptionSectionTitle,
+                style: Theme.of(sheetContext).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 12),
+              Text(loc.subscriptionRequiredMessage),
+              const SizedBox(height: 16),
+              Text(loc.subscriptionDescription),
+              if (total > 0) ...[
+                const SizedBox(height: 16),
+                Text(
+                  loc.subscriptionUsageStatus(total),
+                  style: Theme.of(
+                    sheetContext,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+              ],
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(sheetContext).pop();
+                  if (mounted) {
+                    ScaffoldMessenger.of(parentContext).showSnackBar(
+                      SnackBar(content: Text(loc.subscriptionComingSoon)),
+                    );
+                  }
+                },
+                child: Text(loc.subscriptionUpgradeButton),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                loc.subscriptionComingSoon,
+                style: Theme.of(sheetContext).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(sheetContext).hintColor,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => Navigator.of(sheetContext).pop(),
+                  child: Text(loc.cancel),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _moveCameraToSelectedDestination() async {
@@ -601,6 +800,11 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
+    final canNavigate = await _checkAndConsumeNavigationQuota();
+    if (!canNavigate) {
+      return;
+    }
+
     final destination = _selectedDestination!;
     await _sendDestinationToTesla(destination);
 
@@ -853,6 +1057,15 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.symmetric(vertical: 16),
             ),
           ),
+          if (_isQuotaLoaded && _totalQuota > 0)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Text(
+                loc.remainingFreeDrives((_totalQuota).toInt()),
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
         ],
       ),
     );

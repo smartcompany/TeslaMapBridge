@@ -66,6 +66,34 @@
   "navAppGaodeMaps": "高徳地図 (AMap)",
   "navAppTencentMaps": "テンセント地図",
   "navAppYahooCarNavi": "Yahoo!カーナビ",
-  "navAppNavitime": "NAVITIME"
+  "navAppNavitime": "NAVITIME",
+  "subscriptionRequiredTitle": "サブスクリプションが必要です",
+  "subscriptionRequiredMessage": "無料利用回数を使い切りました。ナビを続けるには購読してください。",
+  "subscriptionRequiredButton": "プランを見る",
+  "remainingFreeDrives": "無料利用残り{count}回",
+  "@remainingFreeDrives": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "subscriptionSectionTitle": "サブスクリプションとプラン",
+  "subscriptionDescription": "無料で 10 回まで利用できます。アップグレードすると無制限のナビゲーション、端末間の履歴同期、今後追加予定の自動化機能が利用できます。",
+  "subscriptionUsageStatus": "無料利用残り {total} 回",
+  "@subscriptionUsageStatus": {
+    "placeholders": {
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "subscriptionUpgradeButton": "プランをアップグレード",
+  "subscriptionComingSoon": "アプリ内サブスクリプションは近日提供予定です。利用可能になり次第お知らせします。",
+  "subscriptionLoading": "プランを確認しています...",
+  "debugAccessTokenTitle": "デバッグ: Tesla アクセストークン",
+  "debugAccessTokenCopy": "トークンをコピー",
+  "debugAccessTokenCopied": "アクセストークンをクリップボードにコピーしました。",
+  "debugAccessTokenRefresh": "更新",
+  "debugAccessTokenRefreshed": "アクセストークンを更新しました。",
+  "debugAccessTokenEmpty": "アクセストークンを表示するには Tesla アカウントでログインしてください。"
 }
 

@@ -23,17 +23,17 @@ class TeslaAuthService {
 
   // Tesla OAuth endpoints
   static const String _authBaseUrl = 'https://auth.tesla.com';
-  static const String _defaultFleetApiUrl =
-      'https://fleet-api.prd.na.vn.cloud.tesla.com';
-  static const String _redirectUri = 'https://auth.tesla.com/void/callback';
-  static const String _fleetAuthBaseUrl =
+  static const String _fleetAuthUrl =
       'https://fleet-auth.prd.na.vn.cloud.tesla.com';
+  static const String _redirectUri = 'https://auth.tesla.com/void/callback';
 
   // Tesla Fleet API Client Credentials
   // Tesla Developer Portal (https://developer.tesla.com/)에서 등록 후 발급받은 값으로 교체하세요
   static const String _apiBaseUrlKey = 'tesla_api_base_url';
+  static const String apiBaseHost = 'https://tesla-map-bridge.vercel.app';
+
   static const String _credentialsEndpoint =
-      "https://tesla-map-bridge.vercel.app/api/tesla/credentials";
+      "$apiBaseHost/api/tesla/credentials";
 
   String? _clientId;
   String? _clientSecret;
@@ -139,18 +139,13 @@ class TeslaAuthService {
         value.contains('.vn.cloud.tesla.com');
   }
 
-  Future<String> _getFleetApiBaseUrl() async {
-    return await _storage.read(key: _apiBaseUrlKey) ?? _defaultFleetApiUrl;
-  }
-
   Future<Uri> _buildFleetUri(String path) async {
-    final baseUrl = await _getFleetApiBaseUrl();
-    if (baseUrl.endsWith('/') && path.startsWith('/')) {
-      return Uri.parse('$baseUrl${path.substring(1)}');
-    } else if (!baseUrl.endsWith('/') && !path.startsWith('/')) {
-      return Uri.parse('$baseUrl/$path');
+    if (_fleetAuthUrl.endsWith('/') && path.startsWith('/')) {
+      return Uri.parse('$_fleetAuthUrl${path.substring(1)}');
+    } else if (!_fleetAuthUrl.endsWith('/') && !path.startsWith('/')) {
+      return Uri.parse('$_fleetAuthUrl/$path');
     }
-    return Uri.parse('$baseUrl$path');
+    return Uri.parse('$_fleetAuthUrl$path');
   }
 
   Future<void> _ensureCredentialsLoaded() async {
@@ -237,7 +232,6 @@ class TeslaAuthService {
     try {
       await _ensureCredentialsLoaded();
 
-      final fleetBaseUrl = await _getFleetApiBaseUrl();
       final formBody =
           {
                 'grant_type': 'client_credentials',
@@ -245,7 +239,7 @@ class TeslaAuthService {
                 'client_secret': _clientSecret!,
                 'scope':
                     'openid vehicle_device_data vehicle_cmds vehicle_charging_cmds',
-                'audience': fleetBaseUrl,
+                'audience': _fleetAuthUrl,
               }.entries
               .map(
                 (entry) =>
@@ -254,7 +248,7 @@ class TeslaAuthService {
               .join('&');
 
       final response = await http.post(
-        Uri.parse('$_fleetAuthBaseUrl/oauth2/v3/token'),
+        Uri.parse('$_fleetAuthUrl/oauth2/v3/token'),
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: formBody,
       );
@@ -409,15 +403,13 @@ class TeslaAuthService {
         return false;
       }
 
-      final fleetAudience = await _getFleetApiBaseUrl();
-
       final body = {
         'grant_type': 'authorization_code',
         'client_id': _clientId!,
         'code': authorizationCode,
         'code_verifier': codeVerifier,
         'redirect_uri': _redirectUri,
-        'audience': fleetAudience,
+        'audience': _fleetAuthUrl,
       };
 
       body['client_secret'] = _clientSecret!;
@@ -507,13 +499,11 @@ class TeslaAuthService {
       final refreshToken = await _storage.read(key: _refreshTokenKey);
       if (refreshToken == null) return false;
 
-      final fleetAudience = await _getFleetApiBaseUrl();
-
       final body = {
         'grant_type': 'refresh_token',
         'client_id': _clientId!,
         'refresh_token': refreshToken,
-        'audience': fleetAudience,
+        'audience': _fleetAuthUrl,
       };
 
       body['client_secret'] = _clientSecret!;

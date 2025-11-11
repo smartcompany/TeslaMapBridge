@@ -159,4 +159,60 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get navAppNavitime => 'NAVITIME';
+
+  @override
+  String get subscriptionRequiredTitle => 'Subscription required';
+
+  @override
+  String get subscriptionRequiredMessage =>
+      'You have used all free trips. Subscribe to continue using navigation.';
+
+  @override
+  String get subscriptionRequiredButton => 'View plans';
+
+  @override
+  String remainingFreeDrives(Object count) {
+    return '$count free trips left';
+  }
+
+  @override
+  String get subscriptionSectionTitle => 'Subscription & plans';
+
+  @override
+  String get subscriptionDescription =>
+      'Enjoy 10 free trips on us. Upgrade to unlock unlimited navigation, cross-device history sync, and upcoming automation features.';
+
+  @override
+  String subscriptionUsageStatus(int total) {
+    return '$total free trips remaining';
+  }
+
+  @override
+  String get subscriptionUpgradeButton => 'Upgrade plan';
+
+  @override
+  String get subscriptionComingSoon =>
+      'In-app subscriptions are coming soon. We\'ll notify you when purchasing is available.';
+
+  @override
+  String get subscriptionLoading => 'Checking your plan...';
+
+  @override
+  String get debugAccessTokenTitle => 'Debug: Tesla access token';
+
+  @override
+  String get debugAccessTokenCopy => 'Copy token';
+
+  @override
+  String get debugAccessTokenCopied => 'Access token copied to clipboard.';
+
+  @override
+  String get debugAccessTokenRefresh => 'Refresh';
+
+  @override
+  String get debugAccessTokenRefreshed => 'Access token refreshed.';
+
+  @override
+  String get debugAccessTokenEmpty =>
+      'Sign in with Tesla to view the access token.';
 }
