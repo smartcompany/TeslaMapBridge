@@ -377,19 +377,12 @@ class TeslaAuthService {
         return false;
       }
 
-      // final fleetAuthUrl = await getFleetAuthUrl();
-      // if (fleetAuthUrl == null || fleetAuthUrl.isEmpty) {
-      //   print('[TeslaAuth] Fleet auth url not found');
-      //   return false;
-      // }
-
       final body = {
         'grant_type': 'authorization_code',
         'client_id': _clientId!,
         'code': authorizationCode,
         'code_verifier': codeVerifier,
         'redirect_uri': _redirectUri,
-        // 'audience': fleetAuthUrl,
       };
 
       body['client_secret'] = _clientSecret!;
