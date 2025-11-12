@@ -1,3 +1,4 @@
 "CFBundleDisplayName" = "特斯拉地图桥";
 "NSLocationWhenInUseUsageDescription" = "Tesla Map Bridge 需要使用您的位置来从当前位置规划路线。";
+"NSLocationAlwaysAndWhenInUseUsageDescription" = "即使在后台运行时，Tesla Map Bridge 也需要使用您的位置，以保持导航准确。";
 "ITSAppUsesNonExemptEncryption" = "false";
