@@ -27,9 +27,18 @@ class NavigationService {
     NavigationApp app,
     double lat,
     double lng,
-    String? name,
-  ) async {
-    final urls = _buildNavigationUrls(app, lat, lng, name);
+    String? name, {
+    double? startLat,
+    double? startLng,
+  }) async {
+    final urls = _buildNavigationUrls(
+      app,
+      lat,
+      lng,
+      name,
+      startLat: startLat,
+      startLng: startLng,
+    );
     for (final url in urls) {
       debugPrint('[Navigation] Trying ${app.name} URL → $url');
       if (await _launchUrl(url)) {
@@ -46,9 +55,12 @@ class NavigationService {
     NavigationApp app,
     double lat,
     double lng,
-    String? name,
-  ) {
+    String? name, {
+    double? startLat,
+    double? startLng,
+  }) {
     final encodedName = name != null ? Uri.encodeComponent(name) : '';
+    final hasStart = startLat != null && startLng != null;
     switch (app) {
       case NavigationApp.tmap:
         return [
@@ -61,9 +73,16 @@ class NavigationService {
           'https://map.naver.com/v5/directions/-/-/$lat,$lng',
         ];
       case NavigationApp.kakao:
+        final kakaoRouteParams = StringBuffer();
+        if (hasStart) {
+          kakaoRouteParams.write('sp=$startLat,$startLng&');
+        }
+        kakaoRouteParams.write('ep=$lat,$lng&by=CAR');
+        if (encodedName.isNotEmpty) {
+          kakaoRouteParams.write('&name=$encodedName');
+        }
         return [
-          'kakaomap://route?ep=$lat,$lng&by=CAR&name=$encodedName',
-          'kakaonavi://navigate?name=$encodedName&x=$lng&y=$lat',
+          'kakaomap://route?${kakaoRouteParams.toString()}',
           'https://map.kakao.com/link/to/$encodedName,$lat,$lng',
         ];
       case NavigationApp.atlan:

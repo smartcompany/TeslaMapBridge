@@ -902,12 +902,28 @@ class _HomeScreenState extends State<HomeScreen> {
       _isLoading = true;
     });
 
+    double? startLat;
+    double? startLng;
+    if (_locationPermissionGranted) {
+      try {
+        final position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.medium,
+        );
+        startLat = position.latitude;
+        startLng = position.longitude;
+      } catch (error) {
+        debugPrint('[Navigation] Failed to fetch current location: $error');
+      }
+    }
+
     try {
       final navSuccess = await _navigationService.launchNavigation(
         _selectedApp,
         _selectedDestination!.latitude,
         _selectedDestination!.longitude,
         _selectedDestination!.name,
+        startLat: startLat,
+        startLng: startLng,
       );
 
       if (mounted) {
