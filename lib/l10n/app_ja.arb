@@ -86,8 +86,19 @@
       }
     }
   },
-  "subscriptionUpgradeButton": "プランをアップグレード",
-  "subscriptionComingSoon": "アプリ内サブスクリプションは近日提供予定です。利用可能になり次第お知らせします。",
+  "subscriptionUpgradeButton": "今すぐ購読する",
+  "subscriptionRestoreButton": "購入を復元",
+  "subscriptionProcessing": "購入を処理しています…",
+  "subscriptionActiveLabel": "サブスクリプションは有効です。",
+  "subscriptionErrorLabel": "購入に失敗しました: {message}",
+  "@subscriptionErrorLabel": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "subscriptionComingSoon": "",
   "subscriptionLoading": "プランを確認しています...",
   "debugAccessTokenTitle": "デバッグ: Tesla アクセストークン",
   "debugAccessTokenCopy": "トークンをコピー",

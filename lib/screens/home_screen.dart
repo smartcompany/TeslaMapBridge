@@ -1,17 +1,21 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:google_places_flutter/google_places_flutter.dart';
 import 'package:google_places_flutter/model/prediction.dart';
+import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../l10n/app_localizations.dart';
 import '../models/destination.dart';
 import '../models/tesla_navigation_mode.dart';
 import '../services/navigation_service.dart';
+import '../services/subscription_service.dart';
 import '../services/tesla_auth_service.dart';
 import '../services/usage_limit_service.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:geolocator/geolocator.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -262,6 +266,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<bool> _checkAndConsumeNavigationQuota() async {
+    final subscriptionService = context.read<SubscriptionService>();
+    if (subscriptionService.isSubscribed) {
+      return true;
+    }
+
     if (!_isQuotaLoaded) {
       await _loadUsageData();
     }
@@ -318,6 +327,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final loc = AppLocalizations.of(context)!;
     final parentContext = context;
+    final subscriptionService = context.read<SubscriptionService>();
+
+    if (subscriptionService.isAvailable &&
+        !subscriptionService.isLoading &&
+        subscriptionService.products.isEmpty) {
+      await subscriptionService.refreshProducts();
+    }
 
     await showModalBottomSheet<void>(
       context: parentContext,
@@ -326,64 +342,145 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (sheetContext) {
-        return Padding(
-          padding: EdgeInsets.fromLTRB(
-            24,
-            24,
-            24,
-            24 + MediaQuery.of(sheetContext).viewInsets.bottom,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                loc.subscriptionSectionTitle,
-                style: Theme.of(sheetContext).textTheme.titleLarge,
+        return Consumer<SubscriptionService>(
+          builder: (context, service, _) {
+            final product = service.products.isNotEmpty
+                ? service.products.first
+                : null;
+            final isProcessing =
+                service.purchaseState == SubscriptionPurchaseState.purchasing ||
+                service.purchaseState == SubscriptionPurchaseState.loading;
+            final canPurchase =
+                !service.isSubscribed && !isProcessing && product != null;
+
+            final buttonLabel = () {
+              if (service.isSubscribed) {
+                return loc.subscriptionActiveLabel;
+              }
+              if (isProcessing) {
+                return loc.subscriptionProcessing;
+              }
+              if (product != null) {
+                return '${loc.subscriptionUpgradeButton} (${product.price})';
+              }
+              return loc.subscriptionLoading;
+            }();
+
+            return Padding(
+              padding: EdgeInsets.fromLTRB(
+                24,
+                24,
+                24,
+                24 + MediaQuery.of(sheetContext).viewInsets.bottom,
               ),
-              const SizedBox(height: 12),
-              Text(loc.subscriptionRequiredMessage),
-              const SizedBox(height: 16),
-              Text(loc.subscriptionDescription),
-              if (_quota > 0) ...[
-                const SizedBox(height: 16),
-                Text(
-                  loc.subscriptionUsageStatus(_quota),
-                  style: Theme.of(
-                    sheetContext,
-                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 8),
-              ],
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(sheetContext).pop();
-                  if (mounted) {
-                    ScaffoldMessenger.of(parentContext).showSnackBar(
-                      SnackBar(content: Text(loc.subscriptionComingSoon)),
-                    );
-                  }
-                },
-                child: Text(loc.subscriptionUpgradeButton),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    loc.subscriptionSectionTitle,
+                    style: Theme.of(sheetContext).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(loc.subscriptionRequiredMessage),
+                  const SizedBox(height: 16),
+                  if (service.isSubscribed)
+                    Text(
+                      loc.subscriptionActiveLabel,
+                      style: Theme.of(sheetContext).textTheme.bodyMedium
+                          ?.copyWith(fontWeight: FontWeight.w600),
+                    )
+                  else if (product != null)
+                    Text(
+                      product.description,
+                      style: Theme.of(sheetContext).textTheme.bodyMedium,
+                    )
+                  else
+                    Text(loc.subscriptionLoading),
+                  if (_quota > 0) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      loc.subscriptionUsageStatus(_quota),
+                      style: Theme.of(sheetContext).textTheme.bodyMedium
+                          ?.copyWith(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: canPurchase
+                        ? () async {
+                            await service.buyMonthlyPremium();
+                          }
+                        : null,
+                    child: isProcessing
+                        ? Row(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Theme.of(
+                                    sheetContext,
+                                  ).colorScheme.onPrimary,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(loc.subscriptionProcessing),
+                            ],
+                          )
+                        : Text(buttonLabel),
+                  ),
+                  const SizedBox(height: 12),
+                  if (!service.isSubscribed)
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: service.restoreInProgress
+                            ? null
+                            : () async {
+                                await service.restorePurchases();
+                              },
+                        child: service.restoreInProgress
+                            ? SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Theme.of(
+                                    sheetContext,
+                                  ).colorScheme.primary,
+                                ),
+                              )
+                            : Text(loc.subscriptionRestoreButton),
+                      ),
+                    ),
+                  if (service.lastError != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        loc.subscriptionErrorLabel(service.lastError!),
+                        style: Theme.of(sheetContext).textTheme.bodySmall
+                            ?.copyWith(
+                              color: Theme.of(sheetContext).colorScheme.error,
+                            ),
+                      ),
+                    ),
+                  const SizedBox(height: 16),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () => Navigator.of(sheetContext).pop(),
+                      child: Text(loc.cancel),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              Text(
-                loc.subscriptionComingSoon,
-                style: Theme.of(sheetContext).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(sheetContext).hintColor,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () => Navigator.of(sheetContext).pop(),
-                  child: Text(loc.cancel),
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );

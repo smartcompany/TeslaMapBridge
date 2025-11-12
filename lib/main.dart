@@ -8,12 +8,14 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:provider/provider.dart';
 import 'l10n/app_localizations.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/settings_screen.dart';
 import 'services/push_notification_service.dart';
 import 'services/tesla_auth_service.dart';
+import 'services/subscription_service.dart';
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
@@ -38,8 +40,19 @@ Future<void> main() async {
       };
 
       await PushNotificationService.initialize();
+      final subscriptionService = SubscriptionService();
+      await subscriptionService.initialize();
 
-      runApp(const MyApp());
+      runApp(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<SubscriptionService>.value(
+              value: subscriptionService,
+            ),
+          ],
+          child: const MyApp(),
+        ),
+      );
     },
     (error, stack) =>
         FirebaseCrashlytics.instance.recordError(error, stack, fatal: true),

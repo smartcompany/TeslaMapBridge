@@ -185,11 +185,24 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get subscriptionUpgradeButton => 'プランをアップグレード';
+  String get subscriptionUpgradeButton => '今すぐ購読する';
 
   @override
-  String get subscriptionComingSoon =>
-      'アプリ内サブスクリプションは近日提供予定です。利用可能になり次第お知らせします。';
+  String get subscriptionRestoreButton => '購入を復元';
+
+  @override
+  String get subscriptionProcessing => '購入を処理しています…';
+
+  @override
+  String get subscriptionActiveLabel => 'サブスクリプションは有効です。';
+
+  @override
+  String subscriptionErrorLabel(String message) {
+    return '購入に失敗しました: $message';
+  }
+
+  @override
+  String get subscriptionComingSoon => '';
 
   @override
   String get subscriptionLoading => 'プランを確認しています...';

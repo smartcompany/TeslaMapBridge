@@ -184,10 +184,24 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get subscriptionUpgradeButton => '升级方案';
+  String get subscriptionUpgradeButton => '立即订阅';
 
   @override
-  String get subscriptionComingSoon => '应用内订阅即将上线，功能开放后我们会第一时间通知您。';
+  String get subscriptionRestoreButton => '恢复购买';
+
+  @override
+  String get subscriptionProcessing => '正在处理您的购买…';
+
+  @override
+  String get subscriptionActiveLabel => '您的订阅已激活。';
+
+  @override
+  String subscriptionErrorLabel(String message) {
+    return '购买失败：$message';
+  }
+
+  @override
+  String get subscriptionComingSoon => '';
 
   @override
   String get subscriptionLoading => '正在检查您的方案...';

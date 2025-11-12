@@ -86,8 +86,19 @@
       }
     }
   },
-  "subscriptionUpgradeButton": "Upgrade plan",
-  "subscriptionComingSoon": "In-app subscriptions are coming soon. We'll notify you when purchasing is available.",
+  "subscriptionUpgradeButton": "Subscribe now",
+  "subscriptionRestoreButton": "Restore purchases",
+  "subscriptionProcessing": "Processing your purchase…",
+  "subscriptionActiveLabel": "Your subscription is active.",
+  "subscriptionErrorLabel": "Purchase failed: {message}",
+  "@subscriptionErrorLabel": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "subscriptionComingSoon": "",
   "subscriptionLoading": "Checking your plan...",
   "debugAccessTokenTitle": "Debug: Tesla access token",
   "debugAccessTokenCopy": "Copy token",

@@ -86,8 +86,19 @@
       }
     }
   },
-  "subscriptionUpgradeButton": "요금제 업그레이드",
-  "subscriptionComingSoon": "인앱 구독은 곧 제공될 예정입니다. 사용 가능해지면 알려드릴게요.",
+  "subscriptionUpgradeButton": "지금 구독하기",
+  "subscriptionRestoreButton": "구매 항목 복원",
+  "subscriptionProcessing": "구매를 처리하는 중입니다…",
+  "subscriptionActiveLabel": "구독이 활성화되었습니다.",
+  "subscriptionErrorLabel": "구매에 실패했습니다: {message}",
+  "@subscriptionErrorLabel": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "subscriptionComingSoon": "",
   "subscriptionLoading": "플랜을 확인하는 중...",
   "debugAccessTokenTitle": "디버그: Tesla 액세스 토큰",
   "debugAccessTokenCopy": "토큰 복사",

@@ -187,11 +187,24 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get subscriptionUpgradeButton => 'Upgrade plan';
+  String get subscriptionUpgradeButton => 'Subscribe now';
 
   @override
-  String get subscriptionComingSoon =>
-      'In-app subscriptions are coming soon. We\'ll notify you when purchasing is available.';
+  String get subscriptionRestoreButton => 'Restore purchases';
+
+  @override
+  String get subscriptionProcessing => 'Processing your purchase…';
+
+  @override
+  String get subscriptionActiveLabel => 'Your subscription is active.';
+
+  @override
+  String subscriptionErrorLabel(String message) {
+    return 'Purchase failed: $message';
+  }
+
+  @override
+  String get subscriptionComingSoon => '';
 
   @override
   String get subscriptionLoading => 'Checking your plan...';

@@ -429,13 +429,37 @@ abstract class AppLocalizations {
   /// No description provided for @subscriptionUpgradeButton.
   ///
   /// In en, this message translates to:
-  /// **'Upgrade plan'**
+  /// **'Subscribe now'**
   String get subscriptionUpgradeButton;
+
+  /// No description provided for @subscriptionRestoreButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore purchases'**
+  String get subscriptionRestoreButton;
+
+  /// No description provided for @subscriptionProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing your purchase…'**
+  String get subscriptionProcessing;
+
+  /// No description provided for @subscriptionActiveLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Your subscription is active.'**
+  String get subscriptionActiveLabel;
+
+  /// No description provided for @subscriptionErrorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase failed: {message}'**
+  String subscriptionErrorLabel(String message);
 
   /// No description provided for @subscriptionComingSoon.
   ///
   /// In en, this message translates to:
-  /// **'In-app subscriptions are coming soon. We\'ll notify you when purchasing is available.'**
+  /// **''**
   String get subscriptionComingSoon;
 
   /// No description provided for @subscriptionLoading.

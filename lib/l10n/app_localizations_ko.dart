@@ -186,10 +186,24 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
-  String get subscriptionUpgradeButton => '요금제 업그레이드';
+  String get subscriptionUpgradeButton => '지금 구독하기';
 
   @override
-  String get subscriptionComingSoon => '인앱 구독은 곧 제공될 예정입니다. 사용 가능해지면 알려드릴게요.';
+  String get subscriptionRestoreButton => '구매 항목 복원';
+
+  @override
+  String get subscriptionProcessing => '구매를 처리하는 중입니다…';
+
+  @override
+  String get subscriptionActiveLabel => '구독이 활성화되었습니다.';
+
+  @override
+  String subscriptionErrorLabel(String message) {
+    return '구매에 실패했습니다: $message';
+  }
+
+  @override
+  String get subscriptionComingSoon => '';
 
   @override
   String get subscriptionLoading => '플랜을 확인하는 중...';
