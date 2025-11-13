@@ -16,6 +16,7 @@ import '../services/navigation_service.dart';
 import '../services/subscription_service.dart';
 import '../services/tesla_auth_service.dart';
 import '../services/usage_limit_service.dart';
+import '../widgets/subscription_sheet.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -127,7 +128,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _openSettings() async {
-    final result = await Navigator.of(context).pushNamed('/settings');
+    final result = await Navigator.of(
+      context,
+    ).pushNamed('/settings', arguments: _quota);
     if (result == true) {
       await _loadDefaultNavigationApp();
       await _loadNavigationMode();
@@ -286,28 +289,27 @@ class _HomeScreenState extends State<HomeScreen> {
         accessToken: accessToken,
       );
 
-      if (!result.success) {
-        if (mounted && result.errorMessage != null) {
+      if (false == result.success) {
+        if (result.errorMessage != null) {
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text(result.errorMessage!)));
         }
-        if (mounted) {
-          setState(() {
-            _isQuotaLoaded = true;
-          });
-        }
-        await _showSubscriptionDialog();
         return false;
       }
-
-      _quota = result.status.quota;
 
       if (mounted) {
         setState(() {
           _isQuotaLoaded = true;
+          _quota = result.status.quota;
         });
+
+        if (_quota <= 0) {
+          await _showSubscriptionDialog();
+          return false;
+        }
       }
+
       return true;
     } on UsageLimitException catch (error) {
       debugPrint('[Usage] consume failed: $error');
@@ -325,7 +327,6 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    final loc = AppLocalizations.of(context)!;
     final parentContext = context;
     final subscriptionService = context.read<SubscriptionService>();
 
@@ -341,149 +342,9 @@ class _HomeScreenState extends State<HomeScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (sheetContext) {
-        return Consumer<SubscriptionService>(
-          builder: (context, service, _) {
-            final product = service.products.isNotEmpty
-                ? service.products.first
-                : null;
-            final isProcessing =
-                service.purchaseState == SubscriptionPurchaseState.purchasing ||
-                service.purchaseState == SubscriptionPurchaseState.loading;
-            final canPurchase =
-                !service.isSubscribed && !isProcessing && product != null;
-
-            final buttonLabel = () {
-              if (service.isSubscribed) {
-                return loc.subscriptionActiveLabel;
-              }
-              if (isProcessing) {
-                return loc.subscriptionProcessing;
-              }
-              if (product != null) {
-                return '${loc.subscriptionUpgradeButton} (${product.price})';
-              }
-              return loc.subscriptionLoading;
-            }();
-
-            return Padding(
-              padding: EdgeInsets.fromLTRB(
-                24,
-                24,
-                24,
-                24 + MediaQuery.of(sheetContext).viewInsets.bottom,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    loc.subscriptionSectionTitle,
-                    style: Theme.of(sheetContext).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(loc.subscriptionRequiredMessage),
-                  const SizedBox(height: 16),
-                  if (service.isSubscribed)
-                    Text(
-                      loc.subscriptionActiveLabel,
-                      style: Theme.of(sheetContext).textTheme.bodyMedium
-                          ?.copyWith(fontWeight: FontWeight.w600),
-                    )
-                  else if (product != null)
-                    Text(
-                      product.description,
-                      style: Theme.of(sheetContext).textTheme.bodyMedium,
-                    )
-                  else
-                    Text(loc.subscriptionLoading),
-                  if (_quota > 0) ...[
-                    const SizedBox(height: 16),
-                    Text(
-                      loc.subscriptionUsageStatus(_quota),
-                      style: Theme.of(sheetContext).textTheme.bodyMedium
-                          ?.copyWith(fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 8),
-                  ],
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: canPurchase
-                        ? () async {
-                            await service.buyMonthlyPremium();
-                          }
-                        : null,
-                    child: isProcessing
-                        ? Row(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Theme.of(
-                                    sheetContext,
-                                  ).colorScheme.onPrimary,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(loc.subscriptionProcessing),
-                            ],
-                          )
-                        : Text(buttonLabel),
-                  ),
-                  const SizedBox(height: 12),
-                  if (!service.isSubscribed)
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: service.restoreInProgress
-                            ? null
-                            : () async {
-                                await service.restorePurchases();
-                              },
-                        child: service.restoreInProgress
-                            ? SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Theme.of(
-                                    sheetContext,
-                                  ).colorScheme.primary,
-                                ),
-                              )
-                            : Text(loc.subscriptionRestoreButton),
-                      ),
-                    ),
-                  if (service.lastError != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Text(
-                        loc.subscriptionErrorLabel(service.lastError!),
-                        style: Theme.of(sheetContext).textTheme.bodySmall
-                            ?.copyWith(
-                              color: Theme.of(sheetContext).colorScheme.error,
-                            ),
-                      ),
-                    ),
-                  const SizedBox(height: 16),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () => Navigator.of(sheetContext).pop(),
-                      child: Text(loc.cancel),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
+      builder: (sheetContext) => SubscriptionSheet(quota: _quota),
     );
+    subscriptionService.resetTransientState();
   }
 
   Future<void> _moveCameraToSelectedDestination() async {

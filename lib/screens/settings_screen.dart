@@ -10,9 +10,12 @@ import '../services/subscription_service.dart';
 import '../services/theme_service.dart';
 import '../services/navigation_service.dart';
 import '../services/tesla_auth_service.dart';
+import '../widgets/subscription_sheet.dart';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  const SettingsScreen({super.key, required this.initialQuota});
+
+  final int initialQuota;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -31,6 +34,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String? _selectedVehicleId;
   String? _debugAccessToken;
   late ThemePreset _themePreset;
+  late int _quota;
 
   @override
   void initState() {
@@ -41,6 +45,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
     _themeService = Provider.of<ThemeService>(context, listen: false);
     _themePreset = _themeService.preset;
+    _quota = widget.initialQuota;
     _loadPreferences();
     if (kDebugMode) {
       _loadDebugAccessToken();
@@ -227,6 +232,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Future<void> _showSubscriptionSheet() async {
+    if (!mounted) {
+      return;
+    }
+
+    if (_subscriptionService.isAvailable &&
+        !_subscriptionService.isLoading &&
+        _subscriptionService.products.isEmpty) {
+      await _subscriptionService.refreshProducts();
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    try {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        builder: (sheetContext) => SubscriptionSheet(quota: _quota),
+      );
+    } finally {
+      _subscriptionService.resetTransientState();
+    }
+  }
+
   Future<bool> _handleWillPop() async {
     Navigator.of(context).pop(_hasChanges);
     return false;
@@ -363,133 +397,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             : loc.subscriptionUpgradeButton,
                       ),
                       trailing: const Icon(Icons.chevron_right),
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        showModalBottomSheet<void>(
-                          context: context,
-                          isScrollControlled: true,
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.vertical(
-                              top: Radius.circular(24),
-                            ),
-                          ),
-                          builder: (sheetContext) {
-                            return Padding(
-                              padding: EdgeInsets.only(
-                                bottom: MediaQuery.of(
-                                  sheetContext,
-                                ).viewInsets.bottom,
-                              ),
-                              child: Consumer<SubscriptionService>(
-                                builder: (context, service, _) {
-                                  final product = service.products.isNotEmpty
-                                      ? service.products.first
-                                      : null;
-                                  final isProcessing =
-                                      service.purchaseState ==
-                                          SubscriptionPurchaseState.loading ||
-                                      service.purchaseState ==
-                                          SubscriptionPurchaseState.purchasing;
-                                  return SafeArea(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(24.0),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            loc.subscriptionSectionTitle,
-                                            style: Theme.of(
-                                              sheetContext,
-                                            ).textTheme.titleLarge,
-                                          ),
-                                          const SizedBox(height: 12),
-                                          Text(loc.subscriptionRequiredMessage),
-                                          const SizedBox(height: 16),
-                                          if (service.isSubscribed)
-                                            Text(
-                                              loc.subscriptionActiveLabel,
-                                              style: Theme.of(sheetContext)
-                                                  .textTheme
-                                                  .titleMedium
-                                                  ?.copyWith(
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                            )
-                                          else if (product != null)
-                                            Text(product.description)
-                                          else
-                                            Text(loc.subscriptionLoading),
-                                          const SizedBox(height: 20),
-                                          ElevatedButton(
-                                            onPressed:
-                                                service.isSubscribed ||
-                                                    product == null ||
-                                                    isProcessing
-                                                ? null
-                                                : () => service
-                                                      .buyMonthlyPremium(),
-                                            child: isProcessing
-                                                ? const SizedBox(
-                                                    height: 20,
-                                                    width: 20,
-                                                    child:
-                                                        CircularProgressIndicator(
-                                                          strokeWidth: 2,
-                                                        ),
-                                                  )
-                                                : Text(
-                                                    service.isSubscribed
-                                                        ? loc.subscriptionActiveLabel
-                                                        : loc.subscriptionUpgradeButton,
-                                                  ),
-                                          ),
-                                          const SizedBox(height: 12),
-                                          TextButton(
-                                            onPressed: service.restoreInProgress
-                                                ? null
-                                                : () => service
-                                                      .restorePurchases(),
-                                            child: service.restoreInProgress
-                                                ? const SizedBox(
-                                                    height: 16,
-                                                    width: 16,
-                                                    child:
-                                                        CircularProgressIndicator(
-                                                          strokeWidth: 2,
-                                                        ),
-                                                  )
-                                                : Text(
-                                                    loc.subscriptionRestoreButton,
-                                                  ),
-                                          ),
-                                          if (service.lastError != null)
-                                            Padding(
-                                              padding: const EdgeInsets.only(
-                                                top: 8,
-                                              ),
-                                              child: Text(
-                                                loc.subscriptionErrorLabel(
-                                                  service.lastError!,
-                                                ),
-                                                style: TextStyle(
-                                                  color: Theme.of(
-                                                    sheetContext,
-                                                  ).colorScheme.error,
-                                                ),
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            );
-                          },
-                        );
-                      },
+                      onTap: () => _showSubscriptionSheet(),
                     ),
                   ),
                   const SizedBox(height: 32),

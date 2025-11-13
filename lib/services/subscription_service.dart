@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:in_app_purchase_android/in_app_purchase_android.dart';
 
 enum SubscriptionPurchaseState {
   idle,
@@ -145,7 +147,27 @@ class SubscriptionService extends ChangeNotifier {
     _lastError = null;
     notifyListeners();
 
-    final param = PurchaseParam(productDetails: product);
+    PurchaseParam param;
+    if (Platform.isAndroid) {
+      if (product is! GooglePlayProductDetails) {
+        throw StateError(
+          'Expected GooglePlayProductDetails for $_premiumProductId on Android.',
+        );
+      }
+      final offerToken = product.offerToken;
+      if (offerToken == null || offerToken.isEmpty) {
+        throw StateError(
+          'No subscription offer token found for $_premiumProductId on Android.',
+        );
+      }
+      param = GooglePlayPurchaseParam(
+        productDetails: product,
+        offerToken: offerToken,
+      );
+    } else {
+      param = PurchaseParam(productDetails: product);
+    }
+
     await _iap.buyNonConsumable(purchaseParam: param);
   }
 
@@ -210,5 +232,24 @@ class SubscriptionService extends ChangeNotifier {
     _isSubscribed = false;
     await _storage.delete(key: _premiumStorageKey);
     notifyListeners();
+  }
+
+  void resetTransientState() {
+    var didChange = false;
+
+    if (_purchaseState == SubscriptionPurchaseState.loading ||
+        _purchaseState == SubscriptionPurchaseState.purchasing) {
+      _purchaseState = SubscriptionPurchaseState.idle;
+      didChange = true;
+    }
+
+    if (_restoreInProgress) {
+      _restoreInProgress = false;
+      didChange = true;
+    }
+
+    if (didChange) {
+      notifyListeners();
+    }
   }
 }

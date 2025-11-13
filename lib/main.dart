@@ -101,7 +101,11 @@ class MyApp extends StatelessWidget {
       routes: {
         '/home': (context) => const HomeScreen(),
         '/login': (context) => const LoginScreen(),
-        '/settings': (context) => const SettingsScreen(),
+        '/settings': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments;
+          final quota = args is int ? args : 0;
+          return SettingsScreen(initialQuota: quota);
+        },
       },
     );
   }
