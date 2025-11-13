@@ -227,4 +227,16 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get debugAccessTokenEmpty =>
       'Sign in with Tesla to view the access token.';
+
+  @override
+  String get themeSectionTitle => 'Appearance';
+
+  @override
+  String get themeDarkLabel => 'Dark mode';
+
+  @override
+  String get themeLightLabel => 'Light mode';
+
+  @override
+  String get themeChangedMessage => 'Theme updated.';
 }

@@ -225,4 +225,16 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get debugAccessTokenEmpty => '액세스 토큰을 보려면 Tesla 계정으로 로그인하세요.';
+
+  @override
+  String get themeSectionTitle => '화면 테마';
+
+  @override
+  String get themeDarkLabel => '다크 모드';
+
+  @override
+  String get themeLightLabel => '라이트 모드';
+
+  @override
+  String get themeChangedMessage => '테마가 변경되었습니다.';
 }

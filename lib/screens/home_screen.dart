@@ -614,12 +614,13 @@ class _HomeScreenState extends State<HomeScreen> {
         _isSendingToTesla = false;
       });
       final loc = AppLocalizations.of(context)!;
+      final colorScheme = Theme.of(context).colorScheme;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             success ? loc.sendToTeslaSuccess : loc.sendToTeslaFailure,
           ),
-          backgroundColor: success ? Colors.green : Colors.red,
+          backgroundColor: success ? colorScheme.primary : colorScheme.error,
         ),
       );
     }
@@ -928,18 +929,19 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (mounted) {
         final loc = AppLocalizations.of(context)!;
+        final colorScheme = Theme.of(context).colorScheme;
         if (navSuccess) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(loc.navigationStarted),
-              backgroundColor: Colors.green,
+              backgroundColor: colorScheme.primary,
             ),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(loc.navigationFailed),
-              backgroundColor: Colors.red,
+              backgroundColor: colorScheme.error,
             ),
           );
         }
@@ -961,6 +963,15 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildSearchField(AppLocalizations loc) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final borderColor = colorScheme.outline.withOpacity(0.35);
+    final fillColor =
+        theme.inputDecorationTheme.fillColor ??
+        (theme.brightness == Brightness.dark
+            ? const Color(0xFF1F252C)
+            : Colors.white);
+
     return GooglePlaceAutoCompleteTextField(
       textEditingController: _placesController,
       googleAPIKey: _googlePlacesApiKey,
@@ -989,18 +1000,18 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: BorderSide(color: borderColor),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: BorderSide(color: borderColor),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Theme.of(context).primaryColor),
+          borderSide: BorderSide(color: colorScheme.primary),
         ),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: fillColor,
         contentPadding: const EdgeInsets.symmetric(vertical: 0),
       ),
       debounceTime: 400,

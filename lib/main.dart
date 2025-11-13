@@ -16,6 +16,7 @@ import 'screens/settings_screen.dart';
 import 'services/push_notification_service.dart';
 import 'services/tesla_auth_service.dart';
 import 'services/subscription_service.dart';
+import 'services/theme_service.dart';
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
@@ -42,6 +43,8 @@ Future<void> main() async {
       await PushNotificationService.initialize();
       final subscriptionService = SubscriptionService();
       await subscriptionService.initialize();
+      final themeService = ThemeService();
+      await themeService.initialize();
 
       runApp(
         MultiProvider(
@@ -49,6 +52,7 @@ Future<void> main() async {
             ChangeNotifierProvider<SubscriptionService>.value(
               value: subscriptionService,
             ),
+            ChangeNotifierProvider<ThemeService>.value(value: themeService),
           ],
           child: const MyApp(),
         ),
@@ -65,16 +69,14 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     print('MyApp build');
+    final themeService = context.watch<ThemeService>();
     final analyticsObserver = FirebaseAnalyticsObserver(
       analytics: FirebaseAnalytics.instance,
     );
     return MaterialApp(
       onGenerateTitle: (context) => AppLocalizations.of(context)!.appTitle,
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-        useMaterial3: true,
-      ),
+      theme: themeService.themeData,
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,

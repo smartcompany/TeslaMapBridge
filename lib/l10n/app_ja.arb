@@ -105,6 +105,10 @@
   "debugAccessTokenCopied": "アクセストークンをクリップボードにコピーしました。",
   "debugAccessTokenRefresh": "更新",
   "debugAccessTokenRefreshed": "アクセストークンを更新しました。",
-  "debugAccessTokenEmpty": "アクセストークンを表示するには Tesla アカウントでログインしてください。"
+  "debugAccessTokenEmpty": "アクセストークンを表示するには Tesla アカウントでログインしてください。",
+  "themeSectionTitle": "表示テーマ",
+  "themeDarkLabel": "ダークモード",
+  "themeLightLabel": "ライトモード",
+  "themeChangedMessage": "テーマを更新しました。"
 }
 

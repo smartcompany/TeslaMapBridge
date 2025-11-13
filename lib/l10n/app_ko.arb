@@ -105,6 +105,10 @@
   "debugAccessTokenCopied": "액세스 토큰을 클립보드에 복사했어요.",
   "debugAccessTokenRefresh": "새로고침",
   "debugAccessTokenRefreshed": "액세스 토큰을 새로고침했습니다.",
-  "debugAccessTokenEmpty": "액세스 토큰을 보려면 Tesla 계정으로 로그인하세요."
+  "debugAccessTokenEmpty": "액세스 토큰을 보려면 Tesla 계정으로 로그인하세요.",
+  "themeSectionTitle": "화면 테마",
+  "themeDarkLabel": "다크 모드",
+  "themeLightLabel": "라이트 모드",
+  "themeChangedMessage": "테마가 변경되었습니다."
 }
 

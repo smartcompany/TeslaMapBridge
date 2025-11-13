@@ -223,4 +223,16 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get debugAccessTokenEmpty => '请使用 Tesla 帐号登录后查看访问令牌。';
+
+  @override
+  String get themeSectionTitle => '外观设置';
+
+  @override
+  String get themeDarkLabel => '深色模式';
+
+  @override
+  String get themeLightLabel => '浅色模式';
+
+  @override
+  String get themeChangedMessage => '主题已更新。';
 }

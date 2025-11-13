@@ -503,6 +503,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sign in with Tesla to view the access token.'**
   String get debugAccessTokenEmpty;
+
+  /// No description provided for @themeSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get themeSectionTitle;
+
+  /// No description provided for @themeDarkLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark mode'**
+  String get themeDarkLabel;
+
+  /// No description provided for @themeLightLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Light mode'**
+  String get themeLightLabel;
+
+  /// No description provided for @themeChangedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme updated.'**
+  String get themeChangedMessage;
 }
 
 class _AppLocalizationsDelegate

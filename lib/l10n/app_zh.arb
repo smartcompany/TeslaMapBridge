@@ -105,6 +105,10 @@
   "debugAccessTokenCopied": "访问令牌已复制到剪贴板。",
   "debugAccessTokenRefresh": "刷新",
   "debugAccessTokenRefreshed": "访问令牌已刷新。",
-  "debugAccessTokenEmpty": "请使用 Tesla 帐号登录后查看访问令牌。"
+  "debugAccessTokenEmpty": "请使用 Tesla 帐号登录后查看访问令牌。",
+  "themeSectionTitle": "外观设置",
+  "themeDarkLabel": "深色模式",
+  "themeLightLabel": "浅色模式",
+  "themeChangedMessage": "主题已更新。"
 }
 

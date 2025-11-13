@@ -224,4 +224,16 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get debugAccessTokenEmpty => 'アクセストークンを表示するには Tesla アカウントでログインしてください。';
+
+  @override
+  String get themeSectionTitle => '表示テーマ';
+
+  @override
+  String get themeDarkLabel => 'ダークモード';
+
+  @override
+  String get themeLightLabel => 'ライトモード';
+
+  @override
+  String get themeChangedMessage => 'テーマを更新しました。';
 }

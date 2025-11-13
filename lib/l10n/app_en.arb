@@ -105,6 +105,10 @@
   "debugAccessTokenCopied": "Access token copied to clipboard.",
   "debugAccessTokenRefresh": "Refresh",
   "debugAccessTokenRefreshed": "Access token refreshed.",
-  "debugAccessTokenEmpty": "Sign in with Tesla to view the access token."
+  "debugAccessTokenEmpty": "Sign in with Tesla to view the access token.",
+  "themeSectionTitle": "Appearance",
+  "themeDarkLabel": "Dark mode",
+  "themeLightLabel": "Light mode",
+  "themeChangedMessage": "Theme updated."
 }
 

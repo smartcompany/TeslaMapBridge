@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../l10n/app_localizations.dart';
 import '../models/tesla_navigation_mode.dart';
 import '../services/subscription_service.dart';
+import '../services/theme_service.dart';
 import '../services/navigation_service.dart';
 import '../services/tesla_auth_service.dart';
 
@@ -20,6 +21,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final TeslaAuthService _teslaAuthService = TeslaAuthService();
   late final SubscriptionService _subscriptionService;
+  late final ThemeService _themeService;
   NavigationApp _selectedApp = NavigationApp.tmap;
   TeslaNavigationMode _navigationMode = TeslaNavigationMode.destination;
   bool _isLoading = true;
@@ -28,6 +30,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   List<Map<String, dynamic>> _vehicles = [];
   String? _selectedVehicleId;
   String? _debugAccessToken;
+  late ThemePreset _themePreset;
 
   @override
   void initState() {
@@ -36,6 +39,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context,
       listen: false,
     );
+    _themeService = Provider.of<ThemeService>(context, listen: false);
+    _themePreset = _themeService.preset;
     _loadPreferences();
     if (kDebugMode) {
       _loadDebugAccessToken();
@@ -81,6 +86,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _navigationMode = modeMatch;
       _vehicles = vehicles;
       _selectedVehicleId = resolvedVehicleId;
+      _themePreset = _themeService.preset;
       if (resolvedVehicleId != storedVehicleId) {
         _hasChanges = true;
       }
@@ -202,6 +208,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
         : loc.teslaNavigationModeGps;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
+    );
+  }
+
+  Future<void> _setThemePreset(ThemePreset preset) async {
+    if (_themePreset == preset) return;
+    setState(() {
+      _themePreset = preset;
+    });
+    await _themeService.setPreset(preset);
+    if (!mounted) return;
+    final loc = AppLocalizations.of(context)!;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(loc.themeChangedMessage),
+        duration: const Duration(seconds: 2),
+      ),
     );
   }
 
@@ -517,6 +539,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     onChanged: (value) {
                       if (value != null) {
                         _setNavigationMode(value);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 32),
+                  Text(
+                    loc.themeSectionTitle,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  RadioListTile<ThemePreset>(
+                    title: Text(loc.themeDarkLabel),
+                    value: ThemePreset.dark,
+                    groupValue: _themePreset,
+                    onChanged: (value) {
+                      if (value != null) {
+                        _setThemePreset(value);
+                      }
+                    },
+                  ),
+                  RadioListTile<ThemePreset>(
+                    title: Text(loc.themeLightLabel),
+                    value: ThemePreset.light,
+                    groupValue: _themePreset,
+                    onChanged: (value) {
+                      if (value != null) {
+                        _setThemePreset(value);
                       }
                     },
                   ),
