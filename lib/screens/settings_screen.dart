@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/app_localizations.dart';
 import '../models/tesla_navigation_mode.dart';
+import '../services/subscription_service.dart';
 import '../services/navigation_service.dart';
 import '../services/tesla_auth_service.dart';
 
@@ -17,6 +19,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   final TeslaAuthService _teslaAuthService = TeslaAuthService();
+  late final SubscriptionService _subscriptionService;
   NavigationApp _selectedApp = NavigationApp.tmap;
   TeslaNavigationMode _navigationMode = TeslaNavigationMode.destination;
   bool _isLoading = true;
@@ -29,6 +32,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
+    _subscriptionService = Provider.of<SubscriptionService>(
+      context,
+      listen: false,
+    );
     _loadPreferences();
     if (kDebugMode) {
       _loadDebugAccessToken();
@@ -323,6 +330,146 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         }
                       },
                     ),
+                  const SizedBox(height: 32),
+                  Card(
+                    child: ListTile(
+                      leading: const Icon(Icons.star),
+                      title: Text(loc.subscriptionSectionTitle),
+                      subtitle: Text(
+                        _subscriptionService.isSubscribed
+                            ? loc.subscriptionActiveLabel
+                            : loc.subscriptionUpgradeButton,
+                      ),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        showModalBottomSheet<void>(
+                          context: context,
+                          isScrollControlled: true,
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.vertical(
+                              top: Radius.circular(24),
+                            ),
+                          ),
+                          builder: (sheetContext) {
+                            return Padding(
+                              padding: EdgeInsets.only(
+                                bottom: MediaQuery.of(
+                                  sheetContext,
+                                ).viewInsets.bottom,
+                              ),
+                              child: Consumer<SubscriptionService>(
+                                builder: (context, service, _) {
+                                  final product = service.products.isNotEmpty
+                                      ? service.products.first
+                                      : null;
+                                  final isProcessing =
+                                      service.purchaseState ==
+                                          SubscriptionPurchaseState.loading ||
+                                      service.purchaseState ==
+                                          SubscriptionPurchaseState.purchasing;
+                                  return SafeArea(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(24.0),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            loc.subscriptionSectionTitle,
+                                            style: Theme.of(
+                                              sheetContext,
+                                            ).textTheme.titleLarge,
+                                          ),
+                                          const SizedBox(height: 12),
+                                          Text(loc.subscriptionRequiredMessage),
+                                          const SizedBox(height: 16),
+                                          if (service.isSubscribed)
+                                            Text(
+                                              loc.subscriptionActiveLabel,
+                                              style: Theme.of(sheetContext)
+                                                  .textTheme
+                                                  .titleMedium
+                                                  ?.copyWith(
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                            )
+                                          else if (product != null)
+                                            Text(product.description)
+                                          else
+                                            Text(loc.subscriptionLoading),
+                                          const SizedBox(height: 20),
+                                          ElevatedButton(
+                                            onPressed:
+                                                service.isSubscribed ||
+                                                    product == null ||
+                                                    isProcessing
+                                                ? null
+                                                : () => service
+                                                      .buyMonthlyPremium(),
+                                            child: isProcessing
+                                                ? const SizedBox(
+                                                    height: 20,
+                                                    width: 20,
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                          strokeWidth: 2,
+                                                        ),
+                                                  )
+                                                : Text(
+                                                    service.isSubscribed
+                                                        ? loc.subscriptionActiveLabel
+                                                        : loc.subscriptionUpgradeButton,
+                                                  ),
+                                          ),
+                                          const SizedBox(height: 12),
+                                          TextButton(
+                                            onPressed: service.restoreInProgress
+                                                ? null
+                                                : () => service
+                                                      .restorePurchases(),
+                                            child: service.restoreInProgress
+                                                ? const SizedBox(
+                                                    height: 16,
+                                                    width: 16,
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                          strokeWidth: 2,
+                                                        ),
+                                                  )
+                                                : Text(
+                                                    loc.subscriptionRestoreButton,
+                                                  ),
+                                          ),
+                                          if (service.lastError != null)
+                                            Padding(
+                                              padding: const EdgeInsets.only(
+                                                top: 8,
+                                              ),
+                                              child: Text(
+                                                loc.subscriptionErrorLabel(
+                                                  service.lastError!,
+                                                ),
+                                                style: TextStyle(
+                                                  color: Theme.of(
+                                                    sheetContext,
+                                                  ).colorScheme.error,
+                                                ),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
                   const SizedBox(height: 32),
                   Text(
                     loc.defaultNavigationApp,
