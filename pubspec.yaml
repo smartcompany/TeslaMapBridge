@@ -49,7 +49,7 @@ dependencies:
   # Storage for auto login
   shared_preferences: ^2.2.2
   flutter_secure_storage: ^9.0.0
-  
+  flutter_native_splash: ^2.4.7
   # HTTP client for Tesla API
   http: ^1.1.0
   
@@ -99,6 +99,13 @@ flutter_launcher_icons:
   ios: true
   remove_alpha_ios: true
   image_path: assets/app_icon.png
+
+flutter_native_splash:
+  android: true
+  ios: false
+  image: assets/image_splash.png
+  color: "#000000"
+  android_gravity: center
 
   # To add assets to your application, add an assets section, like this:
   # assets:
