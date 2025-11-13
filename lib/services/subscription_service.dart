@@ -21,7 +21,6 @@ class SubscriptionService extends ChangeNotifier {
       _storage = const FlutterSecureStorage();
 
   static const _premiumProductId = 'com.teslamap.monthly';
-  static const _premiumStorageKey = 'subscription_com_teslamap_monthly_active';
 
   final InAppPurchase _iap;
   final FlutterSecureStorage _storage;
@@ -29,7 +28,6 @@ class SubscriptionService extends ChangeNotifier {
   StreamSubscription<List<PurchaseDetails>>? _purchaseSub;
 
   bool _isAvailable = false;
-  bool _isSubscribed = false;
   bool _isLoading = false;
   bool _restoreInProgress = false;
   List<ProductDetails> _products = const [];
@@ -38,7 +36,15 @@ class SubscriptionService extends ChangeNotifier {
   String? _lastError;
 
   bool get isAvailable => _isAvailable;
-  bool get isSubscribed => _isSubscribed;
+  bool get isSubscribed => () {
+    switch (_purchaseState) {
+      case SubscriptionPurchaseState.purchased:
+      case SubscriptionPurchaseState.restored:
+        return true;
+      default:
+        return false;
+    }
+  }();
   bool get isLoading => _isLoading;
   bool get restoreInProgress => _restoreInProgress;
   List<ProductDetails> get products => _products;
@@ -54,10 +60,6 @@ class SubscriptionService extends ChangeNotifier {
     try {
       debugPrint('[Subscription] Initializing');
 
-      final storedFlag = await _storage.read(key: _premiumStorageKey);
-      _isSubscribed = storedFlag == 'true';
-      debugPrint('[Subscription] Stored subscription flag = $_isSubscribed');
-
       _isAvailable = await _iap.isAvailable();
       debugPrint('[Subscription] Store available = $_isAvailable');
 
@@ -72,6 +74,8 @@ class SubscriptionService extends ChangeNotifier {
             notifyListeners();
           },
         );
+
+        await _iap.restorePurchases();
       } else {
         _lastError = 'Store not available on this device';
         debugPrint('[Subscription] $_lastError');
@@ -191,8 +195,12 @@ class SubscriptionService extends ChangeNotifier {
           _purchaseState = SubscriptionPurchaseState.loading;
           break;
         case PurchaseStatus.purchased:
+          _purchaseState = SubscriptionPurchaseState.purchased;
+          _lastError = null;
+          break;
         case PurchaseStatus.restored:
-          await _handleSuccessfulPurchase(purchase);
+          _purchaseState = SubscriptionPurchaseState.restored;
+          _lastError = null;
           break;
         case PurchaseStatus.error:
           _lastError = purchase.error?.message ?? 'Purchase failed';
@@ -212,25 +220,7 @@ class SubscriptionService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _handleSuccessfulPurchase(PurchaseDetails purchase) async {
-    _isSubscribed = true;
-    await _storage.write(key: _premiumStorageKey, value: 'true');
-    _purchaseState = purchase.status == PurchaseStatus.restored
-        ? SubscriptionPurchaseState.restored
-        : SubscriptionPurchaseState.purchased;
-    _lastError = null;
-
-    // In production you should verify receipts server-side.
-    if (kDebugMode) {
-      debugPrint(
-        '[Subscription] Purchase confirmed for product ${purchase.productID}',
-      );
-    }
-  }
-
   Future<void> clearLocalSubscriptionFlag() async {
-    _isSubscribed = false;
-    await _storage.delete(key: _premiumStorageKey);
     notifyListeners();
   }
 

@@ -71,53 +71,88 @@ class SubscriptionSheet extends StatelessWidget {
                 else
                   Text(loc.subscriptionLoading),
                 const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: canPurchase
-                      ? () async {
-                          await service.buyMonthlyPremium();
-                        }
-                      : null,
-                  child: isProcessing
-                      ? Row(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Theme.of(context).colorScheme.onPrimary,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(loc.subscriptionProcessing),
-                          ],
-                        )
-                      : Text(buttonLabel),
-                ),
-                const SizedBox(height: 12),
-                if (!service.isSubscribed)
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: service.restoreInProgress
-                          ? null
-                          : () async {
-                              await service.restorePurchases();
-                            },
-                      child: service.restoreInProgress
-                          ? SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                            )
-                          : Text(loc.subscriptionRestoreButton),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.primaryContainer,
+                      foregroundColor: Theme.of(
+                        context,
+                      ).colorScheme.onPrimaryContainer,
                     ),
+                    onPressed: canPurchase
+                        ? () async {
+                            await service.buyMonthlyPremium();
+                          }
+                        : null,
+                    child: isProcessing
+                        ? Row(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onPrimaryContainer,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(loc.subscriptionProcessing),
+                            ],
+                          )
+                        : Text(
+                            buttonLabel,
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w600),
+                          ),
                   ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    if (!service.isSubscribed)
+                      TextButton(
+                        style: TextButton.styleFrom(
+                          foregroundColor: Theme.of(
+                            context,
+                          ).colorScheme.secondary,
+                        ),
+                        onPressed: service.restoreInProgress
+                            ? null
+                            : () async {
+                                await service.restorePurchases();
+                              },
+                        child: service.restoreInProgress
+                            ? SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.secondary,
+                                ),
+                              )
+                            : Text(loc.subscriptionRestoreButton),
+                      ),
+                    const Spacer(),
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        foregroundColor: Theme.of(
+                          context,
+                        ).colorScheme.onSurfaceVariant,
+                      ),
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text(loc.cancel),
+                    ),
+                  ],
+                ),
                 if (service.lastError != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
@@ -128,14 +163,6 @@ class SubscriptionSheet extends StatelessWidget {
                       ),
                     ),
                   ),
-                const SizedBox(height: 16),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: Text(loc.cancel),
-                  ),
-                ),
               ],
             );
           },
