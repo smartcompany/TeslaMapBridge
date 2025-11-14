@@ -7,6 +7,7 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'l10n/app_localizations.dart';
 import 'screens/home_screen.dart';
@@ -38,6 +39,10 @@ Future<void> main() async {
         FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
         return true;
       };
+
+      await SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+      ]);
 
       await PushNotificationService.initialize();
       final subscriptionService = SubscriptionService();
