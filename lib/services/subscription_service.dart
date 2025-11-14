@@ -75,7 +75,9 @@ class SubscriptionService extends ChangeNotifier {
           },
         );
 
+        debugPrint('[Subscription] Restoring purchases');
         await _iap.restorePurchases();
+        debugPrint('[Subscription] end Restored purchases');
       } else {
         _lastError = 'Store not available on this device';
         debugPrint('[Subscription] $_lastError');

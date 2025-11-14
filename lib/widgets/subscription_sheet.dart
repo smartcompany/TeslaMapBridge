@@ -28,9 +28,29 @@ class SubscriptionSheet extends StatelessWidget {
             final canPurchase =
                 !service.isSubscribed && !isProcessing && product != null;
 
-            final usageMessage = quota > 0 && !service.isSubscribed
-                ? loc.subscriptionUsageStatus(quota)
-                : loc.subscriptionRequiredMessage;
+            final usageMessage = () {
+              if (service.isSubscribed) {
+                return loc.subscriptionActiveLabel;
+              }
+
+              if (quota > 0) {
+                return loc.subscriptionUsageStatus(quota);
+              }
+
+              return loc.subscriptionRequiredMessage;
+            }();
+
+            final productDescription = () {
+              if (service.isSubscribed) {
+                return '${product?.description} (${product?.price})';
+              }
+
+              if (product != null) {
+                return product.description;
+              }
+
+              return loc.subscriptionLoading;
+            }();
 
             final buttonLabel = () {
               if (service.isSubscribed) {
@@ -56,20 +76,12 @@ class SubscriptionSheet extends StatelessWidget {
                 const SizedBox(height: 12),
                 Text(usageMessage),
                 const SizedBox(height: 16),
-                if (service.isSubscribed)
-                  Text(
-                    loc.subscriptionActiveLabel,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  )
-                else if (product != null)
-                  Text(
-                    product.description,
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  )
-                else
-                  Text(loc.subscriptionLoading),
+                Text(
+                  productDescription,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                ),
                 const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
