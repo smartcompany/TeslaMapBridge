@@ -1,6 +1,6 @@
 {
   "@@locale": "en",
-  "appTitle": "Tesla Map Bridge",
+  "appTitle": "CarMap Link",
   "settingsTitle": "Settings",
   "defaultNavigationApp": "Default navigation app",
   "teslaNavigationModeTitle": "Tesla navigation preference",
@@ -109,6 +109,10 @@
   "themeSectionTitle": "Appearance",
   "themeDarkLabel": "Dark mode",
   "themeLightLabel": "Light mode",
-  "themeChangedMessage": "Theme updated."
+  "themeChangedMessage": "Theme updated.",
+  "networkErrorTitle": "Network Connection Error",
+  "networkErrorMessage": "Please check your internet connection and try again.",
+  "retry": "Retry",
+  "close": "Close"
 }
 

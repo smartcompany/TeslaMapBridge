@@ -237,4 +237,16 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get themeChangedMessage => '테마가 변경되었습니다.';
+
+  @override
+  String get networkErrorTitle => '네트워크 연결 오류';
+
+  @override
+  String get networkErrorMessage => '인터넷에 연결되어 있는지 확인하고 다시 시도해주세요.';
+
+  @override
+  String get retry => '다시 시도';
+
+  @override
+  String get close => '닫기';
 }

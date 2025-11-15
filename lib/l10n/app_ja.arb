@@ -1,6 +1,6 @@
 {
   "@@locale": "ja",
-  "appTitle": "テスラマップブリッジ",
+  "appTitle": "CarMap Link",
   "settingsTitle": "設定",
   "defaultNavigationApp": "デフォルトのナビアプリ",
   "teslaNavigationModeTitle": "テスラナビゲーション方式",
@@ -109,6 +109,10 @@
   "themeSectionTitle": "表示テーマ",
   "themeDarkLabel": "ダークモード",
   "themeLightLabel": "ライトモード",
-  "themeChangedMessage": "テーマを更新しました。"
+  "themeChangedMessage": "テーマを更新しました。",
+  "networkErrorTitle": "ネットワーク接続エラー",
+  "networkErrorMessage": "インターネット接続を確認して、もう一度お試しください。",
+  "retry": "再試行",
+  "close": "閉じる"
 }
 

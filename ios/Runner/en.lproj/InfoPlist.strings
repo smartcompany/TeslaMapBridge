@@ -1,4 +1,4 @@
-"CFBundleDisplayName" = "AI Car Map Bridge";
-"NSLocationWhenInUseUsageDescription" = "Allow Tesla Map Bridge to access your location so it can plan routes from your current position.";
-"NSLocationAlwaysAndWhenInUseUsageDescription" = "Allow Tesla Map Bridge to access your location even in the background to maintain accurate navigation.";
+"CFBundleDisplayName" = "CarMap Link";
+"NSLocationWhenInUseUsageDescription" = "Allow CarMap Link to access your location so it can plan routes from your current position.";
+"NSLocationAlwaysAndWhenInUseUsageDescription" = "Allow CarMap Link to access your location even in the background to maintain accurate navigation.";
 "ITSAppUsesNonExemptEncryption" = "false";

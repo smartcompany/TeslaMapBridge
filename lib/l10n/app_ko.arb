@@ -1,6 +1,6 @@
 {
   "@@locale": "ko",
-  "appTitle": "테슬라 맵 브리지",
+  "appTitle": "CarMap Link",
   "settingsTitle": "설정",
   "defaultNavigationApp": "기본 네비게이션 앱",
   "teslaNavigationModeTitle": "테슬라 내비게이션 방식",
@@ -109,6 +109,10 @@
   "themeSectionTitle": "화면 테마",
   "themeDarkLabel": "다크 모드",
   "themeLightLabel": "라이트 모드",
-  "themeChangedMessage": "테마가 변경되었습니다."
+  "themeChangedMessage": "테마가 변경되었습니다.",
+  "networkErrorTitle": "네트워크 연결 오류",
+  "networkErrorMessage": "인터넷에 연결되어 있는지 확인하고 다시 시도해주세요.",
+  "retry": "다시 시도",
+  "close": "닫기"
 }
 

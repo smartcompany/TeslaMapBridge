@@ -1,4 +1,4 @@
-"CFBundleDisplayName" = "テスラマップブリッジ";
-"NSLocationWhenInUseUsageDescription" = "現在地からルート案内を行うために Tesla Map Bridge が位置情報を利用します。";
-"NSLocationAlwaysAndWhenInUseUsageDescription" = "バックグラウンド実行中も正確なナビゲーションを維持するために Tesla Map Bridge が位置情報へアクセスする必要があります。";
+"CFBundleDisplayName" = "CarMap Link";
+"NSLocationWhenInUseUsageDescription" = "現在地からルート案内を行うために CarMap Link が位置情報を利用します。";
+"NSLocationAlwaysAndWhenInUseUsageDescription" = "バックグラウンド実行中も正確なナビゲーションを維持するために CarMap Link が位置情報へアクセスする必要があります。";
 "ITSAppUsesNonExemptEncryption" = "false";

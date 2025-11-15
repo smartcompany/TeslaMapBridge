@@ -235,4 +235,16 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get themeChangedMessage => '主题已更新。';
+
+  @override
+  String get networkErrorTitle => '网络连接错误';
+
+  @override
+  String get networkErrorMessage => '请检查您的互联网连接并重试。';
+
+  @override
+  String get retry => '重试';
+
+  @override
+  String get close => '关闭';
 }

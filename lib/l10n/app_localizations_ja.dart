@@ -236,4 +236,16 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get themeChangedMessage => 'テーマを更新しました。';
+
+  @override
+  String get networkErrorTitle => 'ネットワーク接続エラー';
+
+  @override
+  String get networkErrorMessage => 'インターネット接続を確認して、もう一度お試しください。';
+
+  @override
+  String get retry => '再試行';
+
+  @override
+  String get close => '閉じる';
 }

@@ -9,61 +9,82 @@ class PushNotificationService {
   static final FirebaseMessaging _messaging = FirebaseMessaging.instance;
 
   static Future<void> initialize() async {
-    final NotificationSettings settings = await _requestPermission();
+    try {
+      final NotificationSettings settings = await _requestPermission();
 
-    if (settings.authorizationStatus == AuthorizationStatus.authorized ||
-        settings.authorizationStatus == AuthorizationStatus.provisional) {
-      await _messaging.setForegroundNotificationPresentationOptions(
-        alert: true,
-        badge: true,
-        sound: true,
-      );
-    }
-
-    FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
-    FirebaseMessaging.onMessageOpenedApp.listen(_handleOpenedAppMessage);
-
-    // Capture background delivery when app is launched from terminated state.
-    final initialMessage = await _messaging.getInitialMessage();
-    if (initialMessage != null) {
-      _handleOpenedAppMessage(initialMessage);
-    }
-
-    _messaging.onTokenRefresh.listen((token) {
-      if (token.isNotEmpty) {
-        print('FCM token (refresh): $token');
-      }
-    });
-
-    if (Platform.isIOS) {
-      final apnsToken = await _messaging.getAPNSToken();
-      if (apnsToken == null) {
-        print(
-          'APNS token is not available yet. Waiting for APNS registration callback before requesting FCM token.',
+      if (settings.authorizationStatus == AuthorizationStatus.authorized ||
+          settings.authorizationStatus == AuthorizationStatus.provisional) {
+        await _messaging.setForegroundNotificationPresentationOptions(
+          alert: true,
+          badge: true,
+          sound: true,
         );
-        return;
       }
 
-      print('APNS token: $apnsToken');
+      FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
+      FirebaseMessaging.onMessageOpenedApp.listen(_handleOpenedAppMessage);
 
+      // Capture background delivery when app is launched from terminated state.
       try {
-        final token = await _messaging.getToken();
-        print('FCM token: $token');
-      } on FirebaseException catch (e) {
-        if (e.plugin == 'firebase_messaging' &&
-            e.code == 'apns-token-not-set') {
-          print(
-            'FCM token unavailable: APNS token not set yet (possible notification registration issue).',
-          );
-        } else {
-          rethrow;
+        final initialMessage = await _messaging.getInitialMessage();
+        if (initialMessage != null) {
+          _handleOpenedAppMessage(initialMessage);
         }
+      } catch (e) {
+        print('[PushNotification] Failed to get initial message: $e');
       }
-    } else if (Platform.isAndroid) {
-      final token = await _messaging.getToken();
-      print('FCM token: $token');
-    } else {
-      print('Push notifications are not configured for this platform.');
+
+      _messaging.onTokenRefresh.listen((token) {
+        if (token.isNotEmpty) {
+          print('FCM token (refresh): $token');
+        }
+      });
+
+      if (Platform.isIOS) {
+        try {
+          final apnsToken = await _messaging.getAPNSToken();
+          if (apnsToken == null) {
+            print(
+              'APNS token is not available yet. Waiting for APNS registration callback before requesting FCM token.',
+            );
+            return;
+          }
+
+          print('APNS token: $apnsToken');
+
+          try {
+            final token = await _messaging.getToken();
+            print('FCM token: $token');
+          } on FirebaseException catch (e) {
+            if (e.plugin == 'firebase_messaging' &&
+                e.code == 'apns-token-not-set') {
+              print(
+                'FCM token unavailable: APNS token not set yet (possible notification registration issue).',
+              );
+            } else {
+              print('[PushNotification] FCM token error: $e');
+            }
+          }
+        } catch (e) {
+          print(
+            '[PushNotification] Failed to initialize iOS push notifications: $e',
+          );
+        }
+      } else if (Platform.isAndroid) {
+        try {
+          final token = await _messaging.getToken();
+          print('FCM token: $token');
+        } catch (e) {
+          print('[PushNotification] Failed to get FCM token (Android): $e');
+          // Don't rethrow - allow app to continue without push notifications
+        }
+      } else {
+        print('Push notifications are not configured for this platform.');
+      }
+    } catch (e) {
+      // Catch any initialization errors (including network issues)
+      print('[PushNotification] Initialization failed: $e');
+      // Don't rethrow - allow app to continue without push notifications
     }
   }
 

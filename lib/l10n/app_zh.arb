@@ -1,6 +1,6 @@
 {
   "@@locale": "zh",
-  "appTitle": "特斯拉地图桥",
+  "appTitle": "CarMap Link",
   "settingsTitle": "设置",
   "defaultNavigationApp": "默认导航应用",
   "teslaNavigationModeTitle": "特斯拉导航方式",
@@ -109,6 +109,10 @@
   "themeSectionTitle": "外观设置",
   "themeDarkLabel": "深色模式",
   "themeLightLabel": "浅色模式",
-  "themeChangedMessage": "主题已更新。"
+  "themeChangedMessage": "主题已更新。",
+  "networkErrorTitle": "网络连接错误",
+  "networkErrorMessage": "请检查您的互联网连接并重试。",
+  "retry": "重试",
+  "close": "关闭"
 }
 

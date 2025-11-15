@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../l10n/app_localizations.dart';
 import '../services/tesla_auth_service.dart';
+import '../widgets/network_error_dialog.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -24,7 +25,14 @@ class _LoginScreenState extends State<LoginScreen> {
     _initializeWebView();
   }
 
-  Future<void> _initializeWebView() async {
+  Future<void> _initializeWebView({bool isRetry = false}) async {
+    if (!isRetry) {
+      setState(() {
+        _isInitializing = true;
+        _errorMessage = null;
+      });
+    }
+
     try {
       final authUrl = await _teslaAuthService.getAuthorizationUrl();
 
@@ -90,14 +98,29 @@ class _LoginScreenState extends State<LoginScreen> {
           _isInitializing = false;
           _errorMessage = e.toString();
         });
-        final loc = AppLocalizations.of(context)!;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(loc.errorWithMessage('$e')),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 10),
-          ),
-        );
+
+        // Check if it's a network error
+        if (isNetworkError(e)) {
+          final shouldRetry = await showNetworkErrorDialog(
+            context,
+            onRetry: () => _initializeWebView(isRetry: true),
+          );
+
+          if (shouldRetry == true) {
+            // Retry will be handled by onRetry callback
+            return;
+          }
+        } else {
+          // For non-network errors, show snackbar
+          final loc = AppLocalizations.of(context)!;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(loc.errorWithMessage('$e')),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 10),
+            ),
+          );
+        }
       }
     }
   }
@@ -185,27 +208,44 @@ class _LoginScreenState extends State<LoginScreen> {
             )
           : _webViewController == null
           ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Text(
-                    loc.webViewInitializationFailed,
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  if (_errorMessage != null) ...[
-                    const SizedBox(height: 8),
-                    Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Text(
-                        _errorMessage!,
-                        style: const TextStyle(color: Colors.red),
-                        textAlign: TextAlign.center,
-                      ),
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      size: 64,
+                      color: Colors.red,
                     ),
+                    const SizedBox(height: 16),
+                    Text(
+                      loc.webViewInitializationFailed,
+                      style: Theme.of(context).textTheme.titleLarge,
+                      textAlign: TextAlign.center,
+                    ),
+                    if (_errorMessage != null) ...[
+                      const SizedBox(height: 16),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Text(
+                          _errorMessage!,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 24),
+                    if (isNetworkError(_errorMessage))
+                      ElevatedButton.icon(
+                        onPressed: () => _initializeWebView(isRetry: true),
+                        icon: const Icon(Icons.refresh),
+                        label: Text(loc.retry),
+                      ),
                   ],
-                ],
+                ),
               ),
             )
           : Stack(

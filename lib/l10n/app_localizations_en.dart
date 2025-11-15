@@ -239,4 +239,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get themeChangedMessage => 'Theme updated.';
+
+  @override
+  String get networkErrorTitle => 'Network Connection Error';
+
+  @override
+  String get networkErrorMessage =>
+      'Please check your internet connection and try again.';
+
+  @override
+  String get retry => 'Retry';
+
+  @override
+  String get close => 'Close';
 }
