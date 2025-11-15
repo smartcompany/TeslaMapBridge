@@ -105,7 +105,7 @@ abstract class AppLocalizations {
   /// No description provided for @appTitle.
   ///
   /// In en, this message translates to:
-  /// **'Tesla Map Bridge'**
+  /// **'CarMap Link'**
   String get appTitle;
 
   /// No description provided for @settingsTitle.
@@ -551,6 +551,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Close'**
   String get close;
+
+  /// No description provided for @termsOfUse.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms of Use'**
+  String get termsOfUse;
+
+  /// No description provided for @privacyPolicy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy Policy'**
+  String get privacyPolicy;
+
+  /// No description provided for @termsAndPrivacy.
+  ///
+  /// In en, this message translates to:
+  /// **'Terms / Privacy'**
+  String get termsAndPrivacy;
+
+  /// No description provided for @legalSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Legal'**
+  String get legalSectionTitle;
 }
 
 class _AppLocalizationsDelegate

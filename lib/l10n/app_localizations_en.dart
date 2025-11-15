@@ -9,7 +9,7 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'Tesla Map Bridge';
+  String get appTitle => 'CarMap Link';
 
   @override
   String get settingsTitle => 'Settings';
@@ -252,4 +252,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get close => 'Close';
+
+  @override
+  String get termsOfUse => 'Terms of Use';
+
+  @override
+  String get privacyPolicy => 'Privacy Policy';
+
+  @override
+  String get termsAndPrivacy => 'Terms / Privacy';
+
+  @override
+  String get legalSectionTitle => 'Legal';
 }

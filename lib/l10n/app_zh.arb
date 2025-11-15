@@ -113,6 +113,10 @@
   "networkErrorTitle": "网络连接错误",
   "networkErrorMessage": "请检查您的互联网连接并重试。",
   "retry": "重试",
-  "close": "关闭"
+  "close": "关闭",
+  "termsOfUse": "使用条款",
+  "privacyPolicy": "隐私政策",
+  "termsAndPrivacy": "条款 / 隐私",
+  "legalSectionTitle": "法律声明"
 }
 

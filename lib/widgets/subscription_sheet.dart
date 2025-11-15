@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/app_localizations.dart';
 import '../services/subscription_service.dart';
@@ -175,6 +176,58 @@ class SubscriptionSheet extends StatelessWidget {
                       ),
                     ),
                   ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    TextButton(
+                      onPressed: () async {
+                        final locale = Localizations.localeOf(context);
+                        final baseUrl =
+                            'https://smartcompany.github.io/TeslaMapBridge/tnc.html';
+                        final url = Uri.parse(
+                          locale.languageCode == 'ko' ? '$baseUrl#ko' : baseUrl,
+                        );
+                        if (await canLaunchUrl(url)) {
+                          await launchUrl(
+                            url,
+                            mode: LaunchMode.externalApplication,
+                          );
+                        }
+                      },
+                      child: Text(
+                        loc.termsOfUse,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                    Text(
+                      ' • ',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        final locale = Localizations.localeOf(context);
+                        final baseUrl =
+                            'https://smartcompany.github.io/TeslaMapBridge/privacy.html';
+                        final url = Uri.parse(
+                          locale.languageCode == 'ko' ? '$baseUrl#ko' : baseUrl,
+                        );
+                        if (await canLaunchUrl(url)) {
+                          await launchUrl(
+                            url,
+                            mode: LaunchMode.externalApplication,
+                          );
+                        }
+                      },
+                      child: Text(
+                        loc.privacyPolicy,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                  ],
+                ),
               ],
             );
           },

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/app_localizations.dart';
 import '../models/tesla_navigation_mode.dart';
@@ -493,6 +494,57 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       subtitle: Text(loc.logoutDescription),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: _isLoggingOut ? null : _handleLogout,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  Text(
+                    loc.legalSectionTitle,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Card(
+                    child: ListTile(
+                      leading: const Icon(Icons.description),
+                      title: Text(loc.termsOfUse),
+                      trailing: const Icon(Icons.open_in_new),
+                      onTap: () async {
+                        final locale = Localizations.localeOf(context);
+                        final baseUrl =
+                            'https://smartcompany.github.io/TeslaMapBridge/tnc.html';
+                        final url = Uri.parse(
+                          locale.languageCode == 'ko' ? '$baseUrl#ko' : baseUrl,
+                        );
+                        if (await canLaunchUrl(url)) {
+                          await launchUrl(
+                            url,
+                            mode: LaunchMode.externalApplication,
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                  Card(
+                    child: ListTile(
+                      leading: const Icon(Icons.privacy_tip),
+                      title: Text(loc.privacyPolicy),
+                      trailing: const Icon(Icons.open_in_new),
+                      onTap: () async {
+                        final locale = Localizations.localeOf(context);
+                        final baseUrl =
+                            'https://smartcompany.github.io/TeslaMapBridge/privacy.html';
+                        final url = Uri.parse(
+                          locale.languageCode == 'ko' ? '$baseUrl#ko' : baseUrl,
+                        );
+                        if (await canLaunchUrl(url)) {
+                          await launchUrl(
+                            url,
+                            mode: LaunchMode.externalApplication,
+                          );
+                        }
+                      },
                     ),
                   ),
                   const SizedBox(height: 32),

@@ -113,6 +113,10 @@
   "networkErrorTitle": "Network Connection Error",
   "networkErrorMessage": "Please check your internet connection and try again.",
   "retry": "Retry",
-  "close": "Close"
+  "close": "Close",
+  "termsOfUse": "Terms of Use",
+  "privacyPolicy": "Privacy Policy",
+  "termsAndPrivacy": "Terms / Privacy",
+  "legalSectionTitle": "Legal"
 }
 

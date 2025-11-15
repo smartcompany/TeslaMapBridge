@@ -9,7 +9,7 @@ class AppLocalizationsJa extends AppLocalizations {
   AppLocalizationsJa([String locale = 'ja']) : super(locale);
 
   @override
-  String get appTitle => 'テスラマップブリッジ';
+  String get appTitle => 'CarMap Link';
 
   @override
   String get settingsTitle => '設定';
@@ -248,4 +248,16 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get close => '閉じる';
+
+  @override
+  String get termsOfUse => '利用規約';
+
+  @override
+  String get privacyPolicy => 'プライバシーポリシー';
+
+  @override
+  String get termsAndPrivacy => '規約 / プライバシー';
+
+  @override
+  String get legalSectionTitle => '法的通知';
 }

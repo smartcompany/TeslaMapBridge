@@ -9,7 +9,7 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
-  String get appTitle => '特斯拉地图桥';
+  String get appTitle => 'CarMap Link';
 
   @override
   String get settingsTitle => '设置';
@@ -247,4 +247,16 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get close => '关闭';
+
+  @override
+  String get termsOfUse => '使用条款';
+
+  @override
+  String get privacyPolicy => '隐私政策';
+
+  @override
+  String get termsAndPrivacy => '条款 / 隐私';
+
+  @override
+  String get legalSectionTitle => '法律声明';
 }

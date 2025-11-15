@@ -113,6 +113,10 @@
   "networkErrorTitle": "ネットワーク接続エラー",
   "networkErrorMessage": "インターネット接続を確認して、もう一度お試しください。",
   "retry": "再試行",
-  "close": "閉じる"
+  "close": "閉じる",
+  "termsOfUse": "利用規約",
+  "privacyPolicy": "プライバシーポリシー",
+  "termsAndPrivacy": "規約 / プライバシー",
+  "legalSectionTitle": "法的通知"
 }
 

@@ -9,7 +9,7 @@ class AppLocalizationsKo extends AppLocalizations {
   AppLocalizationsKo([String locale = 'ko']) : super(locale);
 
   @override
-  String get appTitle => '테슬라 맵 브리지';
+  String get appTitle => 'CarMap Link';
 
   @override
   String get settingsTitle => '설정';
@@ -249,4 +249,16 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get close => '닫기';
+
+  @override
+  String get termsOfUse => '이용약관';
+
+  @override
+  String get privacyPolicy => '개인정보처리방침';
+
+  @override
+  String get termsAndPrivacy => '약관 / 개인정보';
+
+  @override
+  String get legalSectionTitle => '법적 고지';
 }

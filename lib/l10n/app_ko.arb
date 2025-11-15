@@ -113,6 +113,10 @@
   "networkErrorTitle": "네트워크 연결 오류",
   "networkErrorMessage": "인터넷에 연결되어 있는지 확인하고 다시 시도해주세요.",
   "retry": "다시 시도",
-  "close": "닫기"
+  "close": "닫기",
+  "termsOfUse": "이용약관",
+  "privacyPolicy": "개인정보처리방침",
+  "termsAndPrivacy": "약관 / 개인정보",
+  "legalSectionTitle": "법적 고지"
 }
 
