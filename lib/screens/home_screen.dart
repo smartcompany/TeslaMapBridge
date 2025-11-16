@@ -851,10 +851,12 @@ class _HomeScreenState extends State<HomeScreen> {
         (theme.brightness == Brightness.dark
             ? const Color(0xFF1F252C)
             : Colors.white);
+    final language = _currentLanguageParam();
 
     return GooglePlaceAutoCompleteTextField(
       textEditingController: _placesController,
       googleAPIKey: _googlePlacesApiKey,
+      language: language,
       focusNode: _searchFocusNode,
       textInputAction: TextInputAction.done,
       formSubmitCallback: () {
