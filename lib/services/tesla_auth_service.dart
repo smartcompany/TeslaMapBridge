@@ -5,7 +5,9 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../models/credit_pack_meta.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import '../models/purchase_mode.dart';
 
 import '../models/tesla_navigation_mode.dart';
 
@@ -30,11 +32,12 @@ class TeslaAuthService {
   static const String _apiBaseUrlKey = 'tesla_api_base_url';
   static const String apiBaseHost = 'https://tesla-map-bridge.vercel.app';
 
-  static const String _credentialsEndpoint =
-      "$apiBaseHost/api/tesla/credentials";
+  static const String _settingsEndpoint = "$apiBaseHost/api/settings";
 
   String? _clientId;
   String? _clientSecret;
+  Map<String, CreditPackMeta> _creditPackProductIdToCredits = const {};
+  PurchaseMode? currentPurchaseMode;
 
   /// Check if user is logged in
   Future<bool> isLoggedIn() async {
@@ -162,16 +165,20 @@ class TeslaAuthService {
     }
 
     try {
-      final response = await http.get(Uri.parse(_credentialsEndpoint));
+      final uri = Uri.parse(_settingsEndpoint);
+      final response = await http.get(uri);
       if (response.statusCode != 200) {
         throw Exception(
-          'Failed to load Tesla credentials: ${response.statusCode} ${response.body}',
+          'Failed to load settings: ${response.statusCode} ${response.body}',
         );
       }
 
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       final clientId = data['clientId'] as String?;
       final clientSecret = data['clientSecret'] as String?;
+      final purchaseModeStr = data['purchaseMode'] as String?;
+
+      currentPurchaseMode = PurchaseModeExtension.fromString(purchaseModeStr);
 
       if (clientId == null ||
           clientId.isEmpty ||
@@ -184,6 +191,62 @@ class TeslaAuthService {
       _clientSecret = clientSecret;
     } catch (e) {
       throw Exception('Unable to fetch Tesla credentials: $e');
+    }
+  }
+
+  /// Force-refresh settings and return parsed purchase mode (if any)
+  Future<void> loadSettings() async {
+    try {
+      final uri = Uri.parse(_settingsEndpoint);
+      final response = await http.get(uri);
+      if (response.statusCode != 200) {
+        return;
+      }
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      currentPurchaseMode = PurchaseModeExtension.fromString(
+        data['purchaseMode'] as String?,
+      );
+
+      final packs = data['creditPacks'];
+      if (packs is List) {
+        final map = <String, CreditPackMeta>{};
+        for (final item in packs.whereType<Map<String, dynamic>>()) {
+          final id = item['productId'] as String?;
+          final credits = (item['credits'] as num?)?.toInt();
+          if (id != null && id.isNotEmpty && credits != null && credits > 0) {
+            map[id] = CreditPackMeta(credits: credits);
+          }
+        }
+        _creditPackProductIdToCredits = map;
+      }
+    } catch (_) {
+      return;
+    }
+  }
+
+  Future<Map<String, CreditPackMeta>> loadAndGetCreditPackProductMap() async {
+    try {
+      final response = await http.get(Uri.parse(_settingsEndpoint));
+      if (response.statusCode != 200) {
+        return _creditPackProductIdToCredits;
+      }
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final packs = data['creditPacks'];
+      if (packs is List) {
+        final map = <String, CreditPackMeta>{};
+        for (final item in packs.whereType<Map<String, dynamic>>()) {
+          final id = item['productId'] as String?;
+          final credits = (item['credits'] as num?)?.toInt();
+          if (id != null && id.isNotEmpty && credits != null && credits > 0) {
+            map[id] = CreditPackMeta(credits: credits);
+          }
+        }
+        _creditPackProductIdToCredits = map;
+      }
+      return _creditPackProductIdToCredits;
+    } catch (_) {
+      return _creditPackProductIdToCredits;
     }
   }
 

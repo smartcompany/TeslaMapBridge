@@ -2,9 +2,11 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:in_app_purchase_android/in_app_purchase_android.dart';
+import '../models/credit_pack_meta.dart';
+
+import '../models/purchase_mode.dart';
 
 enum SubscriptionPurchaseState {
   idle,
@@ -16,14 +18,16 @@ enum SubscriptionPurchaseState {
 }
 
 class SubscriptionService extends ChangeNotifier {
-  SubscriptionService()
-    : _iap = InAppPurchase.instance,
-      _storage = const FlutterSecureStorage();
+  SubscriptionService() : _iap = InAppPurchase.instance;
 
-  static const _premiumProductId = 'com.teslamap.monthly';
+  // Product IDs
+  static const String _subscriptionProductId = 'com.teslamap.monthly';
+  static const String _oneTimeProductId = 'com.teslamap.onetime';
+  // Credit pack product IDs - provided dynamically from server settings
+  Set<String> _creditPackIds = {};
+  Map<String, CreditPackMeta> _creditPacks = {};
 
   final InAppPurchase _iap;
-  final FlutterSecureStorage _storage;
 
   StreamSubscription<List<PurchaseDetails>>? _purchaseSub;
 
@@ -51,6 +55,58 @@ class SubscriptionService extends ChangeNotifier {
   PurchaseDetails? get lastPurchase => _lastPurchase;
   SubscriptionPurchaseState get purchaseState => _purchaseState;
   String? get lastError => _lastError;
+  PurchaseMode? _purchaseMode;
+  PurchaseMode? get purchaseMode => _purchaseMode;
+  bool get purchasingAvailable => _purchaseMode != null;
+
+  /// Update purchase mode from server settings
+  void updatePurchaseMode(PurchaseMode? mode) {
+    if (_purchaseMode != mode) {
+      _purchaseMode = mode;
+      notifyListeners();
+    }
+  }
+
+  /// Get product details for non-credit modes.
+  /// - subscription -> returns subscription product
+  /// - oneTime -> returns one-time product
+  /// - creditPack -> not applicable (returns null; use creditPackProducts)
+  ProductDetails? get currentNonCreditProduct {
+    final mode = _purchaseMode;
+    if (mode == null) return null;
+
+    String? targetId;
+    switch (mode) {
+      case PurchaseMode.subscription:
+        targetId = _subscriptionProductId;
+        break;
+      case PurchaseMode.oneTime:
+        targetId = _oneTimeProductId;
+        break;
+      case PurchaseMode.creditPack:
+        return null;
+    }
+    try {
+      return _products.firstWhere((product) => product.id == targetId);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Get available credit pack product details
+  List<ProductDetails> get creditPackProducts {
+    if (_products.isEmpty) return const [];
+    return _products
+        .where((p) => _creditPackIds.contains(p.id))
+        // sort by credits ascending using mapping
+        .toList()
+      ..sort((a, b) => _creditsForProduct(a).compareTo(_creditsForProduct(b)));
+  }
+
+  int _creditsForProduct(ProductDetails product) {
+    final meta = _creditPacks[product.id];
+    return meta?.credits ?? 0;
+  }
 
   Future<void> initialize() async {
     if (_isLoading) return;
@@ -64,6 +120,13 @@ class SubscriptionService extends ChangeNotifier {
       debugPrint('[Subscription] Store available = $_isAvailable');
 
       if (_isAvailable) {
+        debugPrint(
+          '[Subscription] Platform: ${Platform.isIOS
+              ? 'iOS'
+              : Platform.isAndroid
+              ? 'Android'
+              : 'Other'}',
+        );
         await _queryProducts();
         _purchaseSub ??= _iap.purchaseStream.listen(
           _onPurchaseUpdated,
@@ -98,10 +161,15 @@ class SubscriptionService extends ChangeNotifier {
   }
 
   Future<void> _queryProducts() async {
-    debugPrint('[Subscription] Querying product $_premiumProductId');
-    final response = await _iap.queryProductDetails(
-      {_premiumProductId}.toSet(),
-    );
+    // Query subscription, one-time, and credit pack (consumable) products
+    final productIds = {
+      _subscriptionProductId,
+      _oneTimeProductId,
+      ..._creditPackIds,
+    };
+    debugPrint('[Subscription] Querying products: $productIds');
+
+    final response = await _iap.queryProductDetails(productIds);
 
     debugPrint(
       '[Subscription] Query result: '
@@ -118,14 +186,30 @@ class SubscriptionService extends ChangeNotifier {
     } else {
       _products = response.productDetails;
       if (_products.isEmpty) {
-        _lastError =
-            'Product $_premiumProductId not found in App Store configuration.';
+        _lastError = 'No products found in App Store configuration.';
         debugPrint('[Subscription] $_lastError');
       } else {
         debugPrint(
           '[Subscription] Loaded products: '
           '${_products.map((p) => '${p.id}:${p.price}').join(', ')}',
         );
+        // Update stored credit pack prices from IAP results
+        for (final p in _products) {
+          final meta = _creditPacks[p.id];
+          if (meta != null) {
+            meta.rawPrice = (p.rawPrice as num?)?.toDouble();
+            meta.displayPrice = p.price;
+          }
+        }
+        for (final p in _products) {
+          debugPrint(
+            '[Subscription] Product detail\n'
+            '  id=${p.id}\n'
+            '  title=${p.title}\n'
+            '  description=${p.description}\n'
+            '  price=${p.price} raw=${p.rawPrice}\n',
+          );
+        }
       }
     }
     notifyListeners();
@@ -135,18 +219,108 @@ class SubscriptionService extends ChangeNotifier {
     await _queryProducts();
   }
 
-  Future<void> buyMonthlyPremium() async {
+  /// Update credit pack product IDs (from server settings)
+  void setCreditPackProductIds(Iterable<String> ids) {
+    final newSet = ids.toSet();
+    // avoid overlap with non-credit products
+    newSet.remove(_subscriptionProductId);
+    newSet.remove(_oneTimeProductId);
+    final changed =
+        !(newSet.length == _creditPackIds.length &&
+            newSet.every(_creditPackIds.contains));
+    if (changed) {
+      _creditPackIds = newSet;
+      debugPrint('[Subscription] Credit pack IDs updated: $_creditPackIds');
+    }
+  }
+
+  /// Update credit pack products with meta (credits + price)
+  void setCreditPackProducts(Map<String, CreditPackMeta> idToMeta) {
+    setCreditPackProductIds(idToMeta.keys);
+    _creditPacks = Map<String, CreditPackMeta>.from(idToMeta);
+    debugPrint('[Subscription] Credit packs map updated: $_creditPacks');
+  }
+
+  /// Purchase premium based on current purchase mode
+  Future<void> buyPremium() async {
     if (!_isAvailable) {
       _lastError = 'App Store unavailable';
       notifyListeners();
       return;
     }
 
+    final productId = _subscriptionProductId;
+    final product = currentNonCreditProduct;
+
+    if (product == null) {
+      throw StateError(
+        'Product $_subscriptionProductId not loaded. Ensure App Store product is configured.',
+      );
+    }
+
+    _purchaseState = SubscriptionPurchaseState.purchasing;
+    _lastError = null;
+    notifyListeners();
+
+    PurchaseParam param;
+    if (Platform.isAndroid) {
+      if (product is! GooglePlayProductDetails) {
+        throw StateError(
+          'Expected GooglePlayProductDetails for $_subscriptionProductId on Android.',
+        );
+      }
+
+      // For subscriptions, we need offerToken
+      // For one-time purchases, we can use applicationUsername
+      final offerToken = product.offerToken;
+
+      if (_purchaseMode == PurchaseMode.subscription) {
+        if (offerToken == null || offerToken.isEmpty) {
+          throw StateError(
+            'No subscription offer token found for $productId on Android.',
+          );
+        }
+        param = GooglePlayPurchaseParam(
+          productDetails: product,
+          offerToken: offerToken,
+        );
+      } else {
+        // One-time purchase on Android - no offerToken needed
+        param = GooglePlayPurchaseParam(productDetails: product);
+      }
+    } else {
+      // iOS - both subscription and one-time use PurchaseParam
+      param = PurchaseParam(productDetails: product);
+    }
+
+    // Route to correct purchase API
+    switch (_purchaseMode ?? PurchaseMode.oneTime) {
+      case PurchaseMode.oneTime:
+      case PurchaseMode.subscription:
+        // Both are non-consumables from client perspective (subscription is managed by store)
+        await _iap.buyNonConsumable(purchaseParam: param);
+        break;
+      case PurchaseMode.creditPack:
+        // Consumable credits; let store consume automatically
+        await _iap.buyConsumable(purchaseParam: param, autoConsume: true);
+        break;
+    }
+  }
+
+  /// Purchase a specific credit pack by productId
+  Future<void> buyCredits(String productId) async {
+    if (!_isAvailable) {
+      _lastError = 'App Store unavailable';
+      notifyListeners();
+      return;
+    }
+    if (!_creditPackIds.contains(productId)) {
+      throw StateError('Unknown credit pack: $productId');
+    }
+
     final product = _products.firstWhere(
-      (item) => item.id == _premiumProductId,
-      orElse: () => throw StateError(
-        'Product $_premiumProductId not loaded. Ensure App Store product is configured.',
-      ),
+      (p) => p.id == productId,
+      orElse: () => throw StateError('Credit pack $productId not loaded'),
     );
 
     _purchaseState = SubscriptionPurchaseState.purchasing;
@@ -157,24 +331,21 @@ class SubscriptionService extends ChangeNotifier {
     if (Platform.isAndroid) {
       if (product is! GooglePlayProductDetails) {
         throw StateError(
-          'Expected GooglePlayProductDetails for $_premiumProductId on Android.',
+          'Expected GooglePlayProductDetails for $productId on Android.',
         );
       }
-      final offerToken = product.offerToken;
-      if (offerToken == null || offerToken.isEmpty) {
-        throw StateError(
-          'No subscription offer token found for $_premiumProductId on Android.',
-        );
-      }
-      param = GooglePlayPurchaseParam(
-        productDetails: product,
-        offerToken: offerToken,
-      );
+      param = GooglePlayPurchaseParam(productDetails: product);
     } else {
       param = PurchaseParam(productDetails: product);
     }
 
-    await _iap.buyNonConsumable(purchaseParam: param);
+    await _iap.buyConsumable(purchaseParam: param, autoConsume: true);
+  }
+
+  /// Legacy method - kept for backward compatibility
+  @Deprecated('Use buyPremium() instead')
+  Future<void> buyMonthlyPremium() async {
+    await buyPremium();
   }
 
   Future<void> restorePurchases() async {

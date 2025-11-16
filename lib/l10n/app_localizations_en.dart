@@ -210,6 +210,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get subscriptionLoading => 'Checking your plan...';
 
   @override
+  String get oneTimePurchaseButton => 'Purchase';
+
+  @override
+  String get creditsSectionTitle => 'Credits';
+
+  @override
+  String creditsOwnedLabel(Object count) {
+    return 'Credits: $count';
+  }
+
+  @override
+  String creditsBenefitLabel(Object percent) {
+    return '+$percent% benefit';
+  }
+
+  @override
+  String get oneTimePurchaseRequiredMessage =>
+      'You have used all free trips. Purchase to continue using navigation.';
+
+  @override
+  String get oneTimePurchaseActiveLabel => 'Your purchase is active.';
+
+  @override
   String get debugAccessTokenTitle => 'Debug: Tesla access token';
 
   @override

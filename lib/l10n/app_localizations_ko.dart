@@ -209,6 +209,29 @@ class AppLocalizationsKo extends AppLocalizations {
   String get subscriptionLoading => '플랜을 확인하는 중...';
 
   @override
+  String get oneTimePurchaseButton => '구매하기';
+
+  @override
+  String get creditsSectionTitle => '크레딧';
+
+  @override
+  String creditsOwnedLabel(Object count) {
+    return '보유 크레딧 $count';
+  }
+
+  @override
+  String creditsBenefitLabel(Object percent) {
+    return '+$percent% 혜택';
+  }
+
+  @override
+  String get oneTimePurchaseRequiredMessage =>
+      '무료 사용 횟수를 모두 사용했습니다. 계속 이용하려면 구매하세요.';
+
+  @override
+  String get oneTimePurchaseActiveLabel => '구매가 활성화되었습니다.';
+
+  @override
   String get debugAccessTokenTitle => '디버그: Tesla 액세스 토큰';
 
   @override

@@ -3,12 +3,48 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/app_localizations.dart';
+import '../models/purchase_mode.dart';
 import '../services/subscription_service.dart';
+import 'standard_purchase_section.dart';
 
 class SubscriptionSheet extends StatelessWidget {
   const SubscriptionSheet({super.key, required this.quota});
 
   final int quota;
+
+  Widget _buildRestoreButton(
+    BuildContext context,
+    SubscriptionService service,
+  ) {
+    if (service.purchaseMode != PurchaseMode.subscription) {
+      return const SizedBox.shrink();
+    }
+
+    if (service.isSubscribed) {
+      return const SizedBox.shrink();
+    }
+
+    return TextButton(
+      style: TextButton.styleFrom(
+        foregroundColor: Theme.of(context).colorScheme.secondary,
+      ),
+      onPressed: service.restoreInProgress
+          ? null
+          : () async {
+              await service.restorePurchases();
+            },
+      child: service.restoreInProgress
+          ? SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Theme.of(context).colorScheme.secondary,
+              ),
+            )
+          : Text(AppLocalizations.of(context)!.subscriptionRestoreButton),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,9 +56,8 @@ class SubscriptionSheet extends StatelessWidget {
         padding: EdgeInsets.fromLTRB(24, 24, 24, 24 + bottomInset),
         child: Consumer<SubscriptionService>(
           builder: (context, service, _) {
-            final product = service.products.isNotEmpty
-                ? service.products.first
-                : null;
+            // Get product for subscription/one-time modes
+            final product = service.currentNonCreditProduct;
             final isProcessing =
                 service.purchaseState == SubscriptionPurchaseState.purchasing ||
                 service.purchaseState == SubscriptionPurchaseState.loading;
@@ -31,19 +66,23 @@ class SubscriptionSheet extends StatelessWidget {
 
             final usageMessage = () {
               if (service.isSubscribed) {
-                return loc.subscriptionActiveLabel;
+                return service.purchaseMode == PurchaseMode.subscription
+                    ? loc.subscriptionActiveLabel
+                    : loc.oneTimePurchaseActiveLabel;
               }
 
               if (quota > 0) {
                 return loc.subscriptionUsageStatus(quota);
               }
 
-              return loc.subscriptionRequiredMessage;
+              return service.purchaseMode == PurchaseMode.subscription
+                  ? loc.subscriptionRequiredMessage
+                  : loc.oneTimePurchaseRequiredMessage;
             }();
 
             final productDescription = () {
               if (service.isSubscribed) {
-                return '${product?.description} (${product?.price})';
+                return '${product?.description ?? ''} (${product?.price ?? ''})';
               }
 
               if (product != null) {
@@ -55,13 +94,19 @@ class SubscriptionSheet extends StatelessWidget {
 
             final buttonLabel = () {
               if (service.isSubscribed) {
-                return loc.subscriptionActiveLabel;
+                return service.purchaseMode == PurchaseMode.subscription
+                    ? loc.subscriptionActiveLabel
+                    : loc.oneTimePurchaseActiveLabel;
               }
               if (isProcessing) {
                 return loc.subscriptionProcessing;
               }
               if (product != null) {
-                return '${loc.subscriptionUpgradeButton} (${product.price})';
+                final baseLabel =
+                    service.purchaseMode == PurchaseMode.subscription
+                    ? loc.subscriptionUpgradeButton
+                    : loc.oneTimePurchaseButton;
+                return '$baseLabel (${product.price})';
               }
               return loc.subscriptionLoading;
             }();
@@ -71,89 +116,25 @@ class SubscriptionSheet extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  loc.subscriptionSectionTitle,
+                  service.purchaseMode == PurchaseMode.creditPack
+                      ? AppLocalizations.of(context)!.creditsSectionTitle
+                      : AppLocalizations.of(context)!.subscriptionSectionTitle,
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 12),
                 Text(usageMessage),
                 const SizedBox(height: 16),
-                Text(
-                  productDescription,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Theme.of(
-                        context,
-                      ).colorScheme.primaryContainer,
-                      foregroundColor: Theme.of(
-                        context,
-                      ).colorScheme.onPrimaryContainer,
-                    ),
-                    onPressed: canPurchase
-                        ? () async {
-                            await service.buyMonthlyPremium();
-                          }
-                        : null,
-                    child: isProcessing
-                        ? Row(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onPrimaryContainer,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Text(loc.subscriptionProcessing),
-                            ],
-                          )
-                        : Text(
-                            buttonLabel,
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(fontWeight: FontWeight.w600),
-                          ),
-                  ),
+                StandardPurchaseSection(
+                  productDescription: productDescription,
+                  buttonLabel: buttonLabel,
+                  canPurchase: canPurchase,
+                  isProcessing: isProcessing,
+                  onPressed: () => service.buyPremium(),
                 ),
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    if (!service.isSubscribed)
-                      TextButton(
-                        style: TextButton.styleFrom(
-                          foregroundColor: Theme.of(
-                            context,
-                          ).colorScheme.secondary,
-                        ),
-                        onPressed: service.restoreInProgress
-                            ? null
-                            : () async {
-                                await service.restorePurchases();
-                              },
-                        child: service.restoreInProgress
-                            ? SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.secondary,
-                                ),
-                              )
-                            : Text(loc.subscriptionRestoreButton),
-                      ),
+                    _buildRestoreButton(context, service),
                     const Spacer(),
                     TextButton(
                       style: TextButton.styleFrom(
@@ -182,11 +163,8 @@ class SubscriptionSheet extends StatelessWidget {
                   children: [
                     TextButton(
                       onPressed: () async {
-                        final locale = Localizations.localeOf(context);
-                        final baseUrl =
-                            'https://smartcompany.github.io/TeslaMapBridge/tnc.html';
                         final url = Uri.parse(
-                          locale.languageCode == 'ko' ? '$baseUrl#ko' : baseUrl,
+                          'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/',
                         );
                         if (await canLaunchUrl(url)) {
                           await launchUrl(

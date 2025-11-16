@@ -207,6 +207,28 @@ class AppLocalizationsZh extends AppLocalizations {
   String get subscriptionLoading => '正在检查您的方案...';
 
   @override
+  String get oneTimePurchaseButton => '购买';
+
+  @override
+  String get creditsSectionTitle => 'Credits';
+
+  @override
+  String creditsOwnedLabel(Object count) {
+    return 'Credits: $count';
+  }
+
+  @override
+  String creditsBenefitLabel(Object percent) {
+    return '+$percent% benefit';
+  }
+
+  @override
+  String get oneTimePurchaseRequiredMessage => '您已用完所有免费次数。购买后即可继续使用导航。';
+
+  @override
+  String get oneTimePurchaseActiveLabel => '您的购买已激活。';
+
+  @override
   String get debugAccessTokenTitle => '调试：Tesla 访问令牌';
 
   @override

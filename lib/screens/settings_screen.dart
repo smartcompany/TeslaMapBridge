@@ -12,6 +12,8 @@ import '../services/theme_service.dart';
 import '../services/navigation_service.dart';
 import '../services/tesla_auth_service.dart';
 import '../widgets/subscription_sheet.dart';
+import '../widgets/credit_purchase_sheet.dart';
+import '../models/purchase_mode.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key, required this.initialQuota});
@@ -238,9 +240,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return;
     }
 
-    if (_subscriptionService.isAvailable &&
-        !_subscriptionService.isLoading &&
-        _subscriptionService.products.isEmpty) {
+    if (_subscriptionService.isAvailable && !_subscriptionService.isLoading) {
+      debugPrint(
+        '[Settings] Refreshing products... mode=${_subscriptionService.purchaseMode}',
+      );
+      // Fetch dynamic credit pack IDs from server before querying store
+      try {
+        final map = await _teslaAuthService.loadAndGetCreditPackProductMap();
+        if (map.isNotEmpty) {
+          _subscriptionService.setCreditPackProducts(map);
+        }
+      } catch (e) {
+        debugPrint('[Settings] Failed to load credit packs: $e');
+      }
       await _subscriptionService.refreshProducts();
     }
 
@@ -249,17 +261,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
 
     try {
+      debugPrint(
+        '[Settings] Opening purchase sheet '
+        'mode=${_subscriptionService.purchaseMode} '
+        'available=${_subscriptionService.isAvailable} '
+        'count=${_subscriptionService.products.length} '
+        'ids=${_subscriptionService.products.map((p) => p.id).join(', ')}',
+      );
       await showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
-        builder: (sheetContext) => SubscriptionSheet(quota: _quota),
+        builder: (sheetContext) =>
+            _subscriptionService.purchaseMode == PurchaseMode.creditPack
+            ? CreditPurchaseSheet(quota: _quota)
+            : SubscriptionSheet(quota: _quota),
       );
     } finally {
       _subscriptionService.resetTransientState();
     }
+  }
+
+  (String title, String subtitle) _purchaseCardTexts(AppLocalizations loc) {
+    final isCredit =
+        _subscriptionService.purchaseMode == PurchaseMode.creditPack;
+    final titleText = isCredit
+        ? loc.creditsSectionTitle
+        : loc.subscriptionSectionTitle;
+    final subtitleText = _subscriptionService.isSubscribed
+        ? loc.subscriptionActiveLabel
+        : (isCredit
+              ? loc.oneTimePurchaseButton
+              : loc.subscriptionUpgradeButton);
+    return (titleText, subtitleText);
   }
 
   Future<bool> _handleWillPop() async {
@@ -389,16 +425,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   const SizedBox(height: 32),
                   Card(
-                    child: ListTile(
-                      leading: const Icon(Icons.star),
-                      title: Text(loc.subscriptionSectionTitle),
-                      subtitle: Text(
-                        _subscriptionService.isSubscribed
-                            ? loc.subscriptionActiveLabel
-                            : loc.subscriptionUpgradeButton,
-                      ),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () => _showSubscriptionSheet(),
+                    child: Builder(
+                      builder: (context) {
+                        if (!_subscriptionService.purchasingAvailable) {
+                          return const SizedBox.shrink();
+                        }
+                        final texts = _purchaseCardTexts(loc);
+                        final isCredit =
+                            _subscriptionService.purchaseMode ==
+                            PurchaseMode.creditPack;
+                        final currentCredits = _quota * 2; // 2 credits per use
+                        return ListTile(
+                          leading: const Icon(Icons.star),
+                          title: Text(texts.$1),
+                          subtitle: Text(texts.$2),
+                          trailing: isCredit
+                              ? Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      AppLocalizations.of(
+                                        context,
+                                      )!.creditsOwnedLabel(currentCredits),
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Icon(Icons.chevron_right),
+                                  ],
+                                )
+                              : const Icon(Icons.chevron_right),
+                          onTap: () => _showSubscriptionSheet(),
+                        );
+                      },
                     ),
                   ),
                   const SizedBox(height: 32),
@@ -511,11 +571,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       title: Text(loc.termsOfUse),
                       trailing: const Icon(Icons.open_in_new),
                       onTap: () async {
-                        final locale = Localizations.localeOf(context);
-                        final baseUrl =
-                            'https://smartcompany.github.io/TeslaMapBridge/tnc.html';
                         final url = Uri.parse(
-                          locale.languageCode == 'ko' ? '$baseUrl#ko' : baseUrl,
+                          'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/',
                         );
                         if (await canLaunchUrl(url)) {
                           await launchUrl(

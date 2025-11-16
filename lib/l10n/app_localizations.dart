@@ -468,6 +468,42 @@ abstract class AppLocalizations {
   /// **'Checking your plan...'**
   String get subscriptionLoading;
 
+  /// No description provided for @oneTimePurchaseButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase'**
+  String get oneTimePurchaseButton;
+
+  /// No description provided for @creditsSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Credits'**
+  String get creditsSectionTitle;
+
+  /// No description provided for @creditsOwnedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Credits: {count}'**
+  String creditsOwnedLabel(Object count);
+
+  /// No description provided for @creditsBenefitLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'+{percent}% benefit'**
+  String creditsBenefitLabel(Object percent);
+
+  /// No description provided for @oneTimePurchaseRequiredMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You have used all free trips. Purchase to continue using navigation.'**
+  String get oneTimePurchaseRequiredMessage;
+
+  /// No description provided for @oneTimePurchaseActiveLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Your purchase is active.'**
+  String get oneTimePurchaseActiveLabel;
+
   /// No description provided for @debugAccessTokenTitle.
   ///
   /// In en, this message translates to:

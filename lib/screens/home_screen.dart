@@ -12,11 +12,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../l10n/app_localizations.dart';
 import '../models/destination.dart';
 import '../models/tesla_navigation_mode.dart';
+import '../models/purchase_mode.dart';
 import '../services/navigation_service.dart';
 import '../services/subscription_service.dart';
 import '../services/tesla_auth_service.dart';
 import '../services/usage_limit_service.dart';
 import '../widgets/subscription_sheet.dart';
+import '../widgets/credit_purchase_sheet.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -330,6 +332,20 @@ class _HomeScreenState extends State<HomeScreen> {
     final parentContext = context;
     final subscriptionService = context.read<SubscriptionService>();
 
+    // If purchasing is disabled by server settings, do not show UI
+    if (!subscriptionService.purchasingAvailable) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(
+              context,
+            )!.errorWithMessage('Purchases are not available.'),
+          ),
+        ),
+      );
+      return;
+    }
+
     if (subscriptionService.isAvailable &&
         !subscriptionService.isLoading &&
         subscriptionService.products.isEmpty) {
@@ -342,7 +358,10 @@ class _HomeScreenState extends State<HomeScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (sheetContext) => SubscriptionSheet(quota: _quota),
+      builder: (sheetContext) =>
+          subscriptionService.purchaseMode == PurchaseMode.creditPack
+          ? const CreditPurchaseSheet(quota: 0)
+          : SubscriptionSheet(quota: _quota),
     );
     subscriptionService.resetTransientState();
   }

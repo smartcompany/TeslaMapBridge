@@ -45,7 +45,18 @@ Future<void> main() async {
       ]);
 
       await PushNotificationService.initialize();
+      // Load server-driven settings (purchase mode, credit pack IDs) first
+      final teslaAuthService = TeslaAuthService();
+      await teslaAuthService.loadSettings();
       final subscriptionService = SubscriptionService();
+      // Apply settings to subscription service before initialization
+      subscriptionService.updatePurchaseMode(
+        teslaAuthService.currentPurchaseMode,
+      );
+      final creditMap = await teslaAuthService.loadAndGetCreditPackProductMap();
+      if (creditMap.isNotEmpty) {
+        subscriptionService.setCreditPackProducts(creditMap);
+      }
       await subscriptionService.initialize();
       final themeService = ThemeService();
       await themeService.initialize();
