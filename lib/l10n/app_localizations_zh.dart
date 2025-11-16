@@ -311,4 +311,8 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get legalSectionTitle => '法律声明';
+
+  @override
+  String get rewardAdMustFinish =>
+      'You must watch the ad to the end to receive credits.';
 }

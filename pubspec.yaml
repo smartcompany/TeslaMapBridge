@@ -69,6 +69,7 @@ dependencies:
   firebase_messaging: ^15.1.6
   geolocator: ^9.0.2
   in_app_purchase: ^3.2.3
+  google_mobile_ads: ^5.1.0
 
 dev_dependencies:
   flutter_test:

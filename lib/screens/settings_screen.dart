@@ -12,6 +12,7 @@ import '../services/theme_service.dart';
 import '../services/navigation_service.dart';
 import '../services/tesla_auth_service.dart';
 import '../services/usage_limit_service.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../widgets/subscription_sheet.dart';
 import '../widgets/rewarded_ad_sheet.dart';
 import '../widgets/credit_purchase_sheet.dart';
@@ -291,7 +292,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (!mounted) return;
     final loc = AppLocalizations.of(context)!;
     try {
-      // TODO: integrate google_mobile_ads; for now, simulate load/show gate
       final adUnitId = TeslaAuthService().getRewardedAdUnitId(
         preferTestIfMissing: true,
       );
@@ -301,27 +301,74 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ).showSnackBar(SnackBar(content: Text(loc.rewardAdLoadFailed)));
         return;
       }
-      // Simulate ad show and reward callback. Replace with real RewardedAd show.
-      // On reward:
-      final userId = await _teslaAuthService.getEmail();
-      final token = await _teslaAuthService.getAccessToken();
-      if (userId == null || token == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(loc.errorWithMessage('Not signed in'))),
-        );
-        return;
-      }
-      final usage = await _usageLimitService.addCredits(
-        userId: userId,
-        accessToken: token,
-        credits: 2, // reward = 2 credits
-      );
-      if (!mounted) return;
-      setState(() {
-        _quota = usage.quota;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${loc.rewardEarned} ${loc.creditsUpdated}')),
+
+      bool rewardedGiven = false;
+      await RewardedAd.load(
+        adUnitId: adUnitId,
+        request: const AdRequest(),
+        rewardedAdLoadCallback: RewardedAdLoadCallback(
+          onAdLoaded: (ad) {
+            ad.fullScreenContentCallback = FullScreenContentCallback(
+              onAdFailedToShowFullScreenContent: (ad, error) {
+                ad.dispose();
+              },
+              onAdDismissedFullScreenContent: (ad) {
+                ad.dispose();
+                if (!rewardedGiven && mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(loc.rewardAdMustFinish)),
+                  );
+                }
+              },
+            );
+            ad.show(
+              onUserEarnedReward: (ad, reward) async {
+                if (rewardedGiven) return;
+                rewardedGiven = true;
+                final userId = await _teslaAuthService.getEmail();
+                final token = await _teslaAuthService.getAccessToken();
+                if (userId == null || token == null) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(loc.errorWithMessage('Not signed in')),
+                    ),
+                  );
+                  return;
+                }
+                try {
+                  final usage = await _usageLimitService.addCredits(
+                    userId: userId,
+                    accessToken: token,
+                    credits: 2, // reward = 2 credits
+                  );
+                  if (!mounted) return;
+                  setState(() {
+                    _quota = usage.quota;
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        '${loc.rewardEarned} ${loc.creditsUpdated}',
+                      ),
+                    ),
+                  );
+                } catch (_) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(loc.rewardAdLoadFailed)),
+                  );
+                }
+              },
+            );
+          },
+          onAdFailedToLoad: (error) {
+            if (!mounted) return;
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(loc.rewardAdLoadFailed)));
+          },
+        ),
       );
     } catch (e) {
       if (!mounted) return;

@@ -8,6 +8,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/services.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
 import 'l10n/app_localizations.dart';
 import 'screens/home_screen.dart';
@@ -43,6 +44,9 @@ Future<void> main() async {
       await SystemChrome.setPreferredOrientations([
         DeviceOrientation.portraitUp,
       ]);
+
+      // Initialize Google Mobile Ads SDK
+      await MobileAds.instance.initialize();
 
       await PushNotificationService.initialize();
       // Load server-driven settings (purchase mode, credit pack IDs) first

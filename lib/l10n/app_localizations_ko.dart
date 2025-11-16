@@ -312,4 +312,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get legalSectionTitle => '법적 고지';
+
+  @override
+  String get rewardAdMustFinish => '광고를 끝까지 시청해야 크레딧을 받을 수 있습니다.';
 }

@@ -317,4 +317,8 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get legalSectionTitle => 'Legal';
+
+  @override
+  String get rewardAdMustFinish =>
+      'You must watch the ad to the end to receive credits.';
 }

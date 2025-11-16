@@ -665,6 +665,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Legal'**
   String get legalSectionTitle;
+
+  /// No description provided for @rewardAdMustFinish.
+  ///
+  /// In en, this message translates to:
+  /// **'You must watch the ad to the end to receive credits.'**
+  String get rewardAdMustFinish;
 }
 
 class _AppLocalizationsDelegate

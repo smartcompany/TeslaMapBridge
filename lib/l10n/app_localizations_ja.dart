@@ -313,4 +313,8 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get legalSectionTitle => '法的通知';
+
+  @override
+  String get rewardAdMustFinish =>
+      'You must watch the ad to the end to receive credits.';
 }
