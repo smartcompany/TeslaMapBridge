@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:math';
+import 'dart:io' as io;
 import 'dart:ui' as ui;
 import 'package:crypto/crypto.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -37,6 +38,10 @@ class TeslaAuthService {
   String? _clientId;
   String? _clientSecret;
   Map<String, CreditPackMeta> _creditPackProductIdToCredits = const {};
+  String? _adRewardedKeyIOS;
+  String? _adRewardedKeyAndroid;
+  Map<String, String> _adRefIOS = const {};
+  Map<String, String> _adRefAndroid = const {};
   PurchaseMode? currentPurchaseMode;
 
   /// Check if user is logged in
@@ -220,6 +225,25 @@ class TeslaAuthService {
         }
         _creditPackProductIdToCredits = map;
       }
+
+      // Ad config (rewarded)
+      final iosAd = data['ios_ad'];
+      final androidAd = data['android_ad'];
+      final ref = data['ref'];
+      if (iosAd is String) _adRewardedKeyIOS = iosAd;
+      if (androidAd is String) _adRewardedKeyAndroid = androidAd;
+      if (ref is Map<String, dynamic>) {
+        final ios = ref['ios'];
+        final android = ref['android'];
+        if (ios is Map<String, dynamic>) {
+          _adRefIOS = ios.map((k, v) => MapEntry(k, (v ?? '').toString()));
+        }
+        if (android is Map<String, dynamic>) {
+          _adRefAndroid = android.map(
+            (k, v) => MapEntry(k, (v ?? '').toString()),
+          );
+        }
+      }
     } catch (_) {
       return;
     }
@@ -244,10 +268,43 @@ class TeslaAuthService {
         }
         _creditPackProductIdToCredits = map;
       }
+
+      // refresh ad config as well
+      final iosAd = data['ios_ad'];
+      final androidAd = data['android_ad'];
+      final ref = data['ref'];
+      if (iosAd is String) _adRewardedKeyIOS = iosAd;
+      if (androidAd is String) _adRewardedKeyAndroid = androidAd;
+      if (ref is Map<String, dynamic>) {
+        final ios = ref['ios'];
+        final android = ref['android'];
+        if (ios is Map<String, dynamic>) {
+          _adRefIOS = ios.map((k, v) => MapEntry(k, (v ?? '').toString()));
+        }
+        if (android is Map<String, dynamic>) {
+          _adRefAndroid = android.map(
+            (k, v) => MapEntry(k, (v ?? '').toString()),
+          );
+        }
+      }
       return _creditPackProductIdToCredits;
     } catch (_) {
       return _creditPackProductIdToCredits;
     }
+  }
+
+  String getRewardedAdUnitId({bool preferTestIfMissing = true}) {
+    final isIOS = io.Platform.isIOS;
+    final key =
+        (isIOS ? _adRewardedKeyIOS : _adRewardedKeyAndroid) ?? 'rewarded_ad';
+    final ref = isIOS ? _adRefIOS : _adRefAndroid;
+    final id = ref[key];
+    if (id != null && id.isNotEmpty) return id;
+    if (preferTestIfMissing) {
+      final test = ref['rewarded_test'];
+      if (test != null && test.isNotEmpty) return test;
+    }
+    return '';
   }
 
   Future<TeslaNavigationMode> getNavigationModePreference() async {

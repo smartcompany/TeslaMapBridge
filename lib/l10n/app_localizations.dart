@@ -492,6 +492,60 @@ abstract class AppLocalizations {
   /// **'+{percent}% benefit'**
   String creditsBenefitLabel(Object percent);
 
+  /// No description provided for @buyCredits.
+  ///
+  /// In en, this message translates to:
+  /// **'Buy credits'**
+  String get buyCredits;
+
+  /// No description provided for @earnFreeCredits.
+  ///
+  /// In en, this message translates to:
+  /// **'Earn free credits (Watch ad)'**
+  String get earnFreeCredits;
+
+  /// No description provided for @rewardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Get free credits'**
+  String get rewardTitle;
+
+  /// No description provided for @rewardDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Watch a short ad to earn 2 credits. Credits are used when sending routes to your vehicle.'**
+  String get rewardDescription;
+
+  /// No description provided for @watchAd.
+  ///
+  /// In en, this message translates to:
+  /// **'Watch ad'**
+  String get watchAd;
+
+  /// No description provided for @rewardEarned.
+  ///
+  /// In en, this message translates to:
+  /// **'2 credits have been added!'**
+  String get rewardEarned;
+
+  /// No description provided for @creditsUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Credits updated.'**
+  String get creditsUpdated;
+
+  /// No description provided for @rewardNotCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'You need to watch the full ad to earn credits.'**
+  String get rewardNotCompleted;
+
+  /// No description provided for @rewardAdLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load ad right now. Please try again later.'**
+  String get rewardAdLoadFailed;
+
   /// No description provided for @oneTimePurchaseRequiredMessage.
   ///
   /// In en, this message translates to:

@@ -11,7 +11,9 @@ import '../services/subscription_service.dart';
 import '../services/theme_service.dart';
 import '../services/navigation_service.dart';
 import '../services/tesla_auth_service.dart';
+import '../services/usage_limit_service.dart';
 import '../widgets/subscription_sheet.dart';
+import '../widgets/rewarded_ad_sheet.dart';
 import '../widgets/credit_purchase_sheet.dart';
 import '../models/purchase_mode.dart';
 
@@ -26,6 +28,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   final TeslaAuthService _teslaAuthService = TeslaAuthService();
+  final UsageLimitService _usageLimitService = UsageLimitService();
   late final SubscriptionService _subscriptionService;
   late final ThemeService _themeService;
   NavigationApp _selectedApp = NavigationApp.tmap;
@@ -284,6 +287,50 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Future<void> _startRewardedFlow() async {
+    if (!mounted) return;
+    final loc = AppLocalizations.of(context)!;
+    try {
+      // TODO: integrate google_mobile_ads; for now, simulate load/show gate
+      final adUnitId = TeslaAuthService().getRewardedAdUnitId(
+        preferTestIfMissing: true,
+      );
+      if (adUnitId.isEmpty) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(loc.rewardAdLoadFailed)));
+        return;
+      }
+      // Simulate ad show and reward callback. Replace with real RewardedAd show.
+      // On reward:
+      final userId = await _teslaAuthService.getEmail();
+      final token = await _teslaAuthService.getAccessToken();
+      if (userId == null || token == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(loc.errorWithMessage('Not signed in'))),
+        );
+        return;
+      }
+      final usage = await _usageLimitService.addCredits(
+        userId: userId,
+        accessToken: token,
+        credits: 2, // reward = 2 credits
+      );
+      if (!mounted) return;
+      setState(() {
+        _quota = usage.quota;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${loc.rewardEarned} ${loc.creditsUpdated}')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(loc.rewardAdLoadFailed)));
+    }
+  }
+
   (String title, String subtitle) _purchaseCardTexts(AppLocalizations loc) {
     final isCredit =
         _subscriptionService.purchaseMode == PurchaseMode.creditPack;
@@ -430,33 +477,87 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         if (!_subscriptionService.purchasingAvailable) {
                           return const SizedBox.shrink();
                         }
-                        final texts = _purchaseCardTexts(loc);
                         final isCredit =
                             _subscriptionService.purchaseMode ==
                             PurchaseMode.creditPack;
                         final currentCredits = _quota * 2; // 2 credits per use
-                        return ListTile(
-                          leading: const Icon(Icons.star),
-                          title: Text(texts.$1),
-                          subtitle: Text(texts.$2),
-                          trailing: isCredit
-                              ? Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      AppLocalizations.of(
-                                        context,
-                                      )!.creditsOwnedLabel(currentCredits),
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.bodySmall,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    const Icon(Icons.chevron_right),
-                                  ],
-                                )
-                              : const Icon(Icons.chevron_right),
-                          onTap: () => _showSubscriptionSheet(),
+                        if (!isCredit) {
+                          final texts = _purchaseCardTexts(loc);
+                          return ListTile(
+                            leading: const Icon(Icons.star),
+                            title: Text(texts.$1),
+                            subtitle: Text(texts.$2),
+                            trailing: const Icon(Icons.chevron_right),
+                            onTap: () => _showSubscriptionSheet(),
+                          );
+                        }
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 8,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.star),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        loc.creditsSectionTitle,
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  Text(
+                                    AppLocalizations.of(
+                                      context,
+                                    )!.creditsOwnedLabel(currentCredits),
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodySmall,
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Card(
+                                child: ListTile(
+                                  leading: const Icon(Icons.shopping_cart),
+                                  title: Text(loc.buyCredits),
+                                  trailing: const Icon(Icons.chevron_right),
+                                  onTap: _showSubscriptionSheet,
+                                ),
+                              ),
+                              Card(
+                                child: ListTile(
+                                  leading: const Icon(Icons.ondemand_video),
+                                  title: Text(loc.earnFreeCredits),
+                                  trailing: const Icon(Icons.chevron_right),
+                                  onTap: () {
+                                    showModalBottomSheet<void>(
+                                      context: context,
+                                      isScrollControlled: true,
+                                      shape: const RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.vertical(
+                                          top: Radius.circular(24),
+                                        ),
+                                      ),
+                                      builder: (c) => RewardedAdSheet(
+                                        onWatchPressed: _startRewardedFlow,
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
                         );
                       },
                     ),

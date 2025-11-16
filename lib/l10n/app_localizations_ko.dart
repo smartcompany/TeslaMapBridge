@@ -225,6 +225,34 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get buyCredits => '크레딧 구매';
+
+  @override
+  String get earnFreeCredits => '광고 시청으로 크레딧 받기';
+
+  @override
+  String get rewardTitle => '무료 크레딧 받기';
+
+  @override
+  String get rewardDescription =>
+      '짧은 광고를 시청하면 2 크레딧이 적립됩니다. 크레딧은 차량으로 경로를 전송할 때 사용됩니다.';
+
+  @override
+  String get watchAd => '광고 보기';
+
+  @override
+  String get rewardEarned => '2 크레딧이 적립되었습니다!';
+
+  @override
+  String get creditsUpdated => '크레딧이 업데이트되었습니다.';
+
+  @override
+  String get rewardNotCompleted => '광고를 끝까지 시청해야 크레딧을 받을 수 있습니다.';
+
+  @override
+  String get rewardAdLoadFailed => '현재 광고를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.';
+
+  @override
   String get oneTimePurchaseRequiredMessage =>
       '무료 사용 횟수를 모두 사용했습니다. 계속 이용하려면 구매하세요.';
 

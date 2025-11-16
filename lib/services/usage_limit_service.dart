@@ -89,12 +89,12 @@ class UsageLimitService {
 
     try {
       final response = await _client.post(
-        _quotaUri,
+        Uri.parse('${_quotaUri.toString()}/use'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $accessToken',
         },
-        body: jsonEncode({'userId': userId, 'useQuota': true}),
+        body: jsonEncode({'userId': userId}),
       );
 
       if (response.statusCode != 200) {
@@ -117,6 +117,39 @@ class UsageLimitService {
         errorMessage: error.message,
       );
     }
+  }
+
+  Future<UsageStatus> addCredits({
+    required String userId,
+    required String accessToken,
+    required int credits,
+  }) async {
+    if (userId.isEmpty) {
+      throw ArgumentError('userId cannot be empty');
+    }
+    if (accessToken.isEmpty) {
+      throw ArgumentError('accessToken cannot be empty');
+    }
+    if (credits <= 0) {
+      throw ArgumentError('credits must be > 0');
+    }
+    final uri = Uri.parse('${_quotaUri.toString()}/add');
+    final res = await _client.post(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $accessToken',
+      },
+      body: jsonEncode({'userId': userId, 'credits': credits}),
+    );
+    if (res.statusCode != 200) {
+      final body = jsonDecode(res.body) as Map<String, dynamic>?;
+      throw UsageLimitException(
+        message: body?['error'] as String? ?? 'Failed to add credits',
+      );
+    }
+    final body = jsonDecode(res.body) as Map<String, dynamic>;
+    return _parseStatus(body);
   }
 }
 

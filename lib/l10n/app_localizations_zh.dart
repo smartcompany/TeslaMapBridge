@@ -223,6 +223,36 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get buyCredits => 'Buy credits';
+
+  @override
+  String get earnFreeCredits => 'Earn free credits (Watch ad)';
+
+  @override
+  String get rewardTitle => 'Get free credits';
+
+  @override
+  String get rewardDescription =>
+      'Watch a short ad to earn 2 credits. Credits are used when sending routes to your vehicle.';
+
+  @override
+  String get watchAd => 'Watch ad';
+
+  @override
+  String get rewardEarned => '2 credits have been added!';
+
+  @override
+  String get creditsUpdated => 'Credits updated.';
+
+  @override
+  String get rewardNotCompleted =>
+      'You need to watch the full ad to earn credits.';
+
+  @override
+  String get rewardAdLoadFailed =>
+      'Unable to load ad right now. Please try again later.';
+
+  @override
   String get oneTimePurchaseRequiredMessage => '您已用完所有免费次数。购买后即可继续使用导航。';
 
   @override

@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:in_app_purchase_android/in_app_purchase_android.dart';
 import '../models/credit_pack_meta.dart';
+import 'tesla_auth_service.dart';
+import 'usage_limit_service.dart';
 
 import '../models/purchase_mode.dart';
 
@@ -368,6 +370,37 @@ class SubscriptionService extends ChangeNotifier {
           _purchaseState = SubscriptionPurchaseState.loading;
           break;
         case PurchaseStatus.purchased:
+          // If this was a credit pack, top-up quota before completing purchase
+          if (_purchaseMode == PurchaseMode.creditPack) {
+            try {
+              final userId = await TeslaAuthService().getEmail();
+              final token = await TeslaAuthService().getAccessToken();
+              final meta = _creditPacks[purchase.productID];
+              if (userId != null &&
+                  token != null &&
+                  meta != null &&
+                  meta.credits > 0) {
+                // Business rule: 2 credits per 1 quota unit
+                final increment = (meta.credits ~/ 2);
+                final usage = await UsageLimitService().addCredits(
+                  userId: userId,
+                  accessToken: token,
+                  credits: increment,
+                );
+                debugPrint(
+                  '[Subscription] Top-up success: +$increment → quota=${usage.quota}',
+                );
+              } else {
+                debugPrint('[Subscription] Skipped top-up (missing user/meta)');
+              }
+            } catch (e) {
+              _lastError = 'Top-up failed: $e';
+              _purchaseState = SubscriptionPurchaseState.error;
+              notifyListeners();
+              // do not complete purchase on failure to top-up
+              continue;
+            }
+          }
           _purchaseState = SubscriptionPurchaseState.purchased;
           _lastError = null;
           break;
