@@ -7,6 +7,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/credit_pack_meta.dart';
+import 'package:flutter/foundation.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../models/purchase_mode.dart';
 
@@ -38,11 +39,13 @@ class TeslaAuthService {
   String? _clientId;
   String? _clientSecret;
   Map<String, CreditPackMeta> _creditPackProductIdToCredits = const {};
-  String? _adRewardedKeyIOS;
-  String? _adRewardedKeyAndroid;
-  Map<String, String> _adRefIOS = const {};
-  Map<String, String> _adRefAndroid = const {};
-  PurchaseMode? currentPurchaseMode;
+
+  // Ad / purchase settings should be shared across all instances.
+  static String? _adRewardedKeyIOS;
+  static String? _adRewardedKeyAndroid;
+  static Map<String, String> _adRefIOS = const {};
+  static Map<String, String> _adRefAndroid = const {};
+  static PurchaseMode? currentPurchaseMode;
 
   /// Check if user is logged in
   Future<bool> isLoggedIn() async {
@@ -295,14 +298,26 @@ class TeslaAuthService {
 
   String getRewardedAdUnitId({bool preferTestIfMissing = true}) {
     final isIOS = io.Platform.isIOS;
+    final ref = isIOS ? _adRefIOS : _adRefAndroid;
+
+    // In debug builds (e.g. simulator), prefer the official AdMob test unit.
+    if (kDebugMode) {
+      final testId = ref['rewarded_test'];
+      if (testId != null && testId.isNotEmpty) {
+        return testId;
+      }
+    }
+
     final key =
         (isIOS ? _adRewardedKeyIOS : _adRewardedKeyAndroid) ?? 'rewarded_ad';
-    final ref = isIOS ? _adRefIOS : _adRefAndroid;
     final id = ref[key];
     if (id != null && id.isNotEmpty) return id;
+
     if (preferTestIfMissing) {
-      final test = ref['rewarded_test'];
-      if (test != null && test.isNotEmpty) return test;
+      final fallbackTest = ref['rewarded_test'];
+      if (fallbackTest != null && fallbackTest.isNotEmpty) {
+        return fallbackTest;
+      }
     }
     return '';
   }

@@ -527,7 +527,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         final isCredit =
                             _subscriptionService.purchaseMode ==
                             PurchaseMode.creditPack;
-                        final currentCredits = _quota * 2; // 2 credits per use
+                        // Server `/api/quota/add` already returns the total credits,
+                        // so use `_quota` directly without client-side math.
+                        final currentCredits = _quota;
                         if (!isCredit) {
                           final texts = _purchaseCardTexts(loc);
                           return ListTile(

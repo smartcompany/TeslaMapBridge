@@ -55,7 +55,7 @@ Future<void> main() async {
       final subscriptionService = SubscriptionService();
       // Apply settings to subscription service before initialization
       subscriptionService.updatePurchaseMode(
-        teslaAuthService.currentPurchaseMode,
+        TeslaAuthService.currentPurchaseMode,
       );
       final creditMap = await teslaAuthService.loadAndGetCreditPackProductMap();
       if (creditMap.isNotEmpty) {
