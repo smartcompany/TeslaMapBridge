@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
@@ -52,7 +53,6 @@ class SubscriptionService extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get restoreInProgress => _restoreInProgress;
   List<ProductDetails> get products => _products;
-  PurchaseDetails? get lastPurchase => _lastPurchase;
   SubscriptionPurchaseState get purchaseState => _purchaseState;
   String? get lastError => _lastError;
   PurchaseMode? _purchaseMode;
@@ -116,6 +116,15 @@ class SubscriptionService extends ChangeNotifier {
 
         switch (_purchaseMode) {
           case PurchaseMode.creditPack:
+            _purchaseSub ??= _iap.purchaseStream.listen(
+              _onConsumablePurchaseUpdated,
+              onError: (error) {
+                _lastError = error.toString();
+                _purchaseState = SubscriptionPurchaseState.error;
+                debugPrint('[Subscription] Purchase stream error: $_lastError');
+                notifyListeners();
+              },
+            );
             break;
           case PurchaseMode.subscription:
             _purchaseSub ??= _iap.purchaseStream.listen(
@@ -301,6 +310,10 @@ class SubscriptionService extends ChangeNotifier {
       await refreshProducts();
     }
 
+    // Wait a bit to ensure any pending purchases from restorePurchases() are processed first
+    // This prevents new purchases from being treated as restored
+    await Future.delayed(const Duration(milliseconds: 500));
+
     _purchaseState = SubscriptionPurchaseState.purchasing;
     _lastError = null;
     notifyListeners();
@@ -331,8 +344,11 @@ class SubscriptionService extends ChangeNotifier {
 
     debugPrint('[Subscription] Calling buyConsumable...');
     try {
-      await _iap.buyConsumable(purchaseParam: param, autoConsume: true);
-      debugPrint('[Subscription] buyConsumable completed');
+      final result = await _iap.buyConsumable(
+        purchaseParam: param,
+        autoConsume: true,
+      );
+      debugPrint('[Subscription] buyConsumable completed $result');
     } catch (e, stackTrace) {
       debugPrint('[Subscription] buyConsumable error: $e');
       debugPrint('[Subscription] Stack trace: $stackTrace');
@@ -369,43 +385,12 @@ class SubscriptionService extends ChangeNotifier {
       debugPrint(
         '[Subscription] Processing purchase: ${purchase.productID}, status: ${purchase.status}',
       );
-      _lastPurchase = purchase;
+
       switch (purchase.status) {
         case PurchaseStatus.pending:
           _purchaseState = SubscriptionPurchaseState.loading;
           break;
         case PurchaseStatus.purchased:
-          // If this was a credit pack, top-up quota before completing purchase
-          if (_purchaseMode == PurchaseMode.creditPack) {
-            try {
-              final userId = await TeslaAuthService.shared.getEmail();
-              final token = await TeslaAuthService.shared.getAccessToken();
-              final meta = creditPacks[purchase.productID];
-              if (userId != null &&
-                  token != null &&
-                  meta != null &&
-                  meta.credits > 0) {
-                // Business rule: 2 credits per 1 quota unit
-                final increment = (meta.credits ~/ 2);
-                final usage = await UsageLimitService().addCredits(
-                  userId: userId,
-                  accessToken: token,
-                  credits: increment,
-                );
-                debugPrint(
-                  '[Subscription] Top-up success: +$increment → quota=${usage.quota}',
-                );
-              } else {
-                debugPrint('[Subscription] Skipped top-up (missing user/meta)');
-              }
-            } catch (e) {
-              _lastError = 'Top-up failed: $e';
-              _purchaseState = SubscriptionPurchaseState.error;
-              notifyListeners();
-              // do not complete purchase on failure to top-up
-              continue;
-            }
-          }
           _purchaseState = SubscriptionPurchaseState.purchased;
           _lastError = null;
           break;
@@ -429,6 +414,79 @@ class SubscriptionService extends ChangeNotifier {
 
     _restoreInProgress = false;
     notifyListeners();
+  }
+
+  Future<bool> _topUpAndCompletePurchase({
+    required PurchaseDetails purchase,
+  }) async {
+    if (purchase.status != PurchaseStatus.pending &&
+        purchase.status != PurchaseStatus.restored) {
+      return false;
+    }
+
+    final userId = await TeslaAuthService.shared.getEmail();
+    final token = await TeslaAuthService.shared.getAccessToken();
+    final meta = creditPacks[purchase.productID];
+
+    if (userId == null || token == null || meta == null) {
+      debugPrint('[Subscription] Skipped top-up (missing user/token)');
+      _lastError = 'Not signed in';
+      _purchaseState = SubscriptionPurchaseState.error;
+      notifyListeners();
+      return false;
+    }
+
+    try {
+      final usage = await UsageLimitService().addCredits(
+        userId: userId,
+        accessToken: token,
+        credits: meta.credits,
+      );
+
+      await _iap.completePurchase(purchase);
+      notifyListeners();
+
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Handle consumable (credit pack) purchases
+  Future<void> _onConsumablePurchaseUpdated(
+    List<PurchaseDetails> purchases,
+  ) async {
+    debugPrint(
+      '[Subscription] _onConsumablePurchaseUpdated called with ${purchases.length} purchases',
+    );
+    for (final purchase in purchases) {
+      debugPrint(
+        '[Subscription] Processing consumable purchase: ${purchase.productID}, status: ${purchase.status}',
+      );
+
+      switch (purchase.status) {
+        case PurchaseStatus.pending:
+          _purchaseState = SubscriptionPurchaseState.loading;
+          notifyListeners();
+          break;
+
+        case PurchaseStatus.purchased:
+        case PurchaseStatus.restored:
+          await _topUpAndCompletePurchase(purchase: purchase);
+          break;
+
+        case PurchaseStatus.error:
+          _lastError = purchase.error?.message ?? 'Purchase failed';
+          _purchaseState = SubscriptionPurchaseState.error;
+          notifyListeners();
+          break;
+
+        case PurchaseStatus.canceled:
+          _purchaseState = SubscriptionPurchaseState.idle;
+          notifyListeners();
+          break;
+      }
+    }
   }
 
   Future<void> clearLocalSubscriptionFlag() async {
