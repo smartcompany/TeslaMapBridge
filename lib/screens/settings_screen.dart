@@ -42,6 +42,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String? _debugAccessToken;
   late ThemePreset _themePreset;
   late int _quota;
+  int _lastRewardCredits = 0;
+  bool _showRewardAnim = false;
 
   @override
   void initState() {
@@ -337,14 +339,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   return;
                 }
                 try {
+                  final rewardCredits = _teslaAuthService
+                      .getRewardCreditsPerAd();
+                  if (rewardCredits <= 0) {
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(loc.rewardAdLoadFailed)),
+                    );
+                    return;
+                  }
                   final usage = await _usageLimitService.addCredits(
                     userId: userId,
                     accessToken: token,
-                    credits: 2, // reward = 2 credits
+                    credits: rewardCredits,
                   );
                   if (!mounted) return;
                   setState(() {
                     _quota = usage.quota;
+                    _lastRewardCredits = rewardCredits;
+                    _showRewardAnim = true;
+                  });
+                  Future.delayed(const Duration(milliseconds: 900), () {
+                    if (!mounted) return;
+                    setState(() {
+                      _showRewardAnim = false;
+                    });
                   });
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(

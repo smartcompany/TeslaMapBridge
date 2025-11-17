@@ -45,6 +45,7 @@ class TeslaAuthService {
   static String? _adRewardedKeyAndroid;
   static Map<String, String> _adRefIOS = const {};
   static Map<String, String> _adRefAndroid = const {};
+  static Map<String, int> _adRewards = const {};
   static PurchaseMode? currentPurchaseMode;
 
   /// Check if user is logged in
@@ -167,54 +168,22 @@ class TeslaAuthService {
     return Uri.parse('$fleetAuthUrl$path');
   }
 
-  Future<void> _ensureCredentialsLoaded() async {
-    if (_clientId != null && _clientSecret != null) {
-      return;
-    }
-
-    try {
-      final uri = Uri.parse(_settingsEndpoint);
-      final response = await http.get(uri);
-      if (response.statusCode != 200) {
-        throw Exception(
-          'Failed to load settings: ${response.statusCode} ${response.body}',
-        );
-      }
-
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      final clientId = data['clientId'] as String?;
-      final clientSecret = data['clientSecret'] as String?;
-      final purchaseModeStr = data['purchaseMode'] as String?;
-
-      currentPurchaseMode = PurchaseModeExtension.fromString(purchaseModeStr);
-
-      if (clientId == null ||
-          clientId.isEmpty ||
-          clientSecret == null ||
-          clientSecret.isEmpty) {
-        throw Exception('Tesla credentials response is invalid.');
-      }
-
-      _clientId = clientId;
-      _clientSecret = clientSecret;
-    } catch (e) {
-      throw Exception('Unable to fetch Tesla credentials: $e');
-    }
-  }
-
   /// Force-refresh settings and return parsed purchase mode (if any)
-  Future<void> loadSettings() async {
+  Future<bool> loadSettings() async {
     try {
       final uri = Uri.parse(_settingsEndpoint);
       final response = await http.get(uri);
       if (response.statusCode != 200) {
-        return;
+        return false;
       }
 
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       currentPurchaseMode = PurchaseModeExtension.fromString(
         data['purchaseMode'] as String?,
       );
+
+      _clientId = data['clientId'] as String?;
+      _clientSecret = data['clientSecret'] as String?;
 
       final packs = data['creditPacks'];
       if (packs is List) {
@@ -233,6 +202,7 @@ class TeslaAuthService {
       final iosAd = data['ios_ad'];
       final androidAd = data['android_ad'];
       final ref = data['ref'];
+      final adRewards = data['adRewards'];
       if (iosAd is String) _adRewardedKeyIOS = iosAd;
       if (androidAd is String) _adRewardedKeyAndroid = androidAd;
       if (ref is Map<String, dynamic>) {
@@ -247,9 +217,15 @@ class TeslaAuthService {
           );
         }
       }
+      if (adRewards is Map<String, dynamic>) {
+        _adRewards = adRewards.map(
+          (k, v) => MapEntry(k, (v as num?)?.toInt() ?? 0),
+        );
+      }
     } catch (_) {
-      return;
+      return false;
     }
+    return true;
   }
 
   Future<Map<String, CreditPackMeta>> loadAndGetCreditPackProductMap() async {
@@ -276,6 +252,7 @@ class TeslaAuthService {
       final iosAd = data['ios_ad'];
       final androidAd = data['android_ad'];
       final ref = data['ref'];
+      final adRewards = data['adRewards'];
       if (iosAd is String) _adRewardedKeyIOS = iosAd;
       if (androidAd is String) _adRewardedKeyAndroid = androidAd;
       if (ref is Map<String, dynamic>) {
@@ -289,6 +266,11 @@ class TeslaAuthService {
             (k, v) => MapEntry(k, (v ?? '').toString()),
           );
         }
+      }
+      if (adRewards is Map<String, dynamic>) {
+        _adRewards = adRewards.map(
+          (k, v) => MapEntry(k, (v as num?)?.toInt() ?? 0),
+        );
       }
       return _creditPackProductIdToCredits;
     } catch (_) {
@@ -320,6 +302,24 @@ class TeslaAuthService {
       }
     }
     return '';
+  }
+
+  /// Returns how many credits should be awarded for the current rewarded ad key.
+  /// Falls back to 0 if no configuration is available.
+  int getRewardCreditsPerAd() {
+    final isIOS = io.Platform.isIOS;
+    final key =
+        (isIOS ? _adRewardedKeyIOS : _adRewardedKeyAndroid) ?? 'rewarded_ad';
+    final configured = _adRewards[key];
+    if (configured != null && configured > 0) {
+      return configured;
+    }
+    // If there is a specific reward configured for the test key, use that.
+    final testConfigured = _adRewards['rewarded_test'];
+    if (testConfigured != null && testConfigured > 0) {
+      return testConfigured;
+    }
+    return 0;
   }
 
   Future<TeslaNavigationMode> getNavigationModePreference() async {
@@ -373,7 +373,6 @@ class TeslaAuthService {
 
   Future<String?> _requestPartnerAccessToken() async {
     try {
-      await _ensureCredentialsLoaded();
       final fleetAuthUrl = await getFleetAuthUrl();
       if (fleetAuthUrl == null || fleetAuthUrl.isEmpty) {
         print('[TeslaAuth] Fleet auth url not found');
@@ -457,8 +456,6 @@ class TeslaAuthService {
 
   /// Generate OAuth authorization URL with PKCE
   Future<String> getAuthorizationUrl() async {
-    await _ensureCredentialsLoaded();
-
     final pkce = _generatePKCE();
     final codeVerifier = pkce['code_verifier']!;
     final codeChallenge = pkce['code_challenge']!;
@@ -502,8 +499,6 @@ class TeslaAuthService {
   /// Exchange authorization code for access token with PKCE
   Future<bool> exchangeCodeForToken(String authorizationCode) async {
     try {
-      await _ensureCredentialsLoaded();
-
       // Get stored code verifier
       final prefs = await SharedPreferences.getInstance();
       final codeVerifier = prefs.getString(_codeVerifierKey);
@@ -599,8 +594,6 @@ class TeslaAuthService {
   /// Refresh access token using refresh token
   Future<bool> refreshToken() async {
     try {
-      await _ensureCredentialsLoaded();
-
       print('refreshToken = ${await _storage.read(key: _refreshTokenKey)}');
       print('accessToken = ${await _storage.read(key: _accessTokenKey)}');
 

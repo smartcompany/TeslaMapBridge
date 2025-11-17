@@ -235,14 +235,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get rewardTitle => 'Get free credits';
 
   @override
-  String get rewardDescription =>
-      'Watch a short ad to earn 2 credits. Credits are used when sending routes to your vehicle.';
+  String rewardDescription(Object count) {
+    return 'Watch a short ad to earn $count credits. Credits are used when sending routes to your vehicle.';
+  }
 
   @override
   String get watchAd => 'Watch ad';
 
   @override
-  String get rewardEarned => '2 credits have been added!';
+  String rewardEarned(Object count) {
+    return '$count credits have been added!';
+  }
 
   @override
   String get creditsUpdated => 'Credits updated.';

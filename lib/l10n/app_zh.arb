@@ -120,6 +120,19 @@
   "termsOfUse": "使用条款",
   "privacyPolicy": "隐私政策",
   "termsAndPrivacy": "条款 / 隐私",
-  "legalSectionTitle": "法律声明"
+  "legalSectionTitle": "法律声明",
+  "creditsSectionTitle": "积分",
+  "creditsOwnedLabel": "当前积分 {count}",
+  "creditsBenefitLabel": "+{percent}% 优惠",
+  "buyCredits": "购买积分",
+  "earnFreeCredits": "看广告赚取免费积分",
+  "rewardTitle": "获取免费积分",
+  "rewardDescription": "观看短广告即可获得 {count} 积分。积分将在将路线发送到车辆时使用。",
+  "watchAd": "观看广告",
+  "rewardEarned": "{count} 积分已到账！",
+  "creditsUpdated": "积分已更新。",
+  "rewardNotCompleted": "需要完整观看广告才能获得积分。",
+  "rewardAdLoadFailed": "当前无法加载广告，请稍后重试。",
+  "rewardAdMustFinish": "要获得积分，必须将广告观看至结束。"
 }
 

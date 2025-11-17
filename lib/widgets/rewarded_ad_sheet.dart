@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
+import '../services/tesla_auth_service.dart';
 
 class RewardedAdSheet extends StatelessWidget {
-  const RewardedAdSheet({
-    super.key,
-    required this.onWatchPressed,
-  });
+  const RewardedAdSheet({super.key, required this.onWatchPressed});
 
   final VoidCallback onWatchPressed;
 
@@ -14,6 +12,9 @@ class RewardedAdSheet extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final teslaAuthService = TeslaAuthService();
+    final rewardCredits = teslaAuthService.getRewardCreditsPerAd();
+
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.fromLTRB(24, 24, 24, 24 + bottomInset),
@@ -21,13 +22,10 @@ class RewardedAdSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              loc.rewardTitle,
-              style: theme.textTheme.titleLarge,
-            ),
+            Text(loc.rewardTitle, style: theme.textTheme.titleLarge),
             const SizedBox(height: 12),
             Text(
-              loc.rewardDescription,
+              loc.rewardDescription(rewardCredits),
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 20),
@@ -55,5 +53,3 @@ class RewardedAdSheet extends StatelessWidget {
     );
   }
 }
-
-

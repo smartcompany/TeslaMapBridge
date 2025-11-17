@@ -120,6 +120,19 @@
   "termsOfUse": "利用規約",
   "privacyPolicy": "プライバシーポリシー",
   "termsAndPrivacy": "規約 / プライバシー",
-  "legalSectionTitle": "法的通知"
+  "legalSectionTitle": "法的通知",
+  "creditsSectionTitle": "クレジット",
+  "creditsOwnedLabel": "保有クレジット {count}",
+  "creditsBenefitLabel": "+{percent}% の特典",
+  "buyCredits": "クレジットを購入",
+  "earnFreeCredits": "広告視聴でクレジットを獲得",
+  "rewardTitle": "無料クレジットを獲得",
+  "rewardDescription": "短い広告を見ると {count} クレジットが付与されます。クレジットは経路を車両に送信する際に使用されます。",
+  "watchAd": "広告を見る",
+  "rewardEarned": "{count} クレジットが付与されました！",
+  "creditsUpdated": "クレジットが更新されました。",
+  "rewardNotCompleted": "最後まで視聴しないとクレジットを受け取れません。",
+  "rewardAdLoadFailed": "現在広告を読み込めません。しばらくしてからもう一度お試しください。",
+  "rewardAdMustFinish": "クレジットを受け取るには広告を最後まで視聴する必要があります。"
 }
 

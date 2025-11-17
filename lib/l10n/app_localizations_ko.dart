@@ -234,14 +234,17 @@ class AppLocalizationsKo extends AppLocalizations {
   String get rewardTitle => '무료 크레딧 받기';
 
   @override
-  String get rewardDescription =>
-      '짧은 광고를 시청하면 2 크레딧이 적립됩니다. 크레딧은 차량으로 경로를 전송할 때 사용됩니다.';
+  String rewardDescription(Object count) {
+    return '짧은 광고를 시청하면 $count 크레딧이 적립됩니다. 크레딧은 차량으로 경로를 전송할 때 사용됩니다.';
+  }
 
   @override
   String get watchAd => '광고 보기';
 
   @override
-  String get rewardEarned => '2 크레딧이 적립되었습니다!';
+  String rewardEarned(Object count) {
+    return '$count 크레딧이 적립되었습니다!';
+  }
 
   @override
   String get creditsUpdated => '크레딧이 업데이트되었습니다.';

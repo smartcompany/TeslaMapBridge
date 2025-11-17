@@ -211,47 +211,48 @@ class AppLocalizationsJa extends AppLocalizations {
   String get oneTimePurchaseButton => '購入する';
 
   @override
-  String get creditsSectionTitle => 'Credits';
+  String get creditsSectionTitle => 'クレジット';
 
   @override
   String creditsOwnedLabel(Object count) {
-    return 'Credits: $count';
+    return '保有クレジット $count';
   }
 
   @override
   String creditsBenefitLabel(Object percent) {
-    return '+$percent% benefit';
+    return '+$percent% の特典';
   }
 
   @override
-  String get buyCredits => 'Buy credits';
+  String get buyCredits => 'クレジットを購入';
 
   @override
-  String get earnFreeCredits => 'Earn free credits (Watch ad)';
+  String get earnFreeCredits => '広告視聴でクレジットを獲得';
 
   @override
-  String get rewardTitle => 'Get free credits';
+  String get rewardTitle => '無料クレジットを獲得';
 
   @override
-  String get rewardDescription =>
-      'Watch a short ad to earn 2 credits. Credits are used when sending routes to your vehicle.';
+  String rewardDescription(Object count) {
+    return '短い広告を見ると $count クレジットが付与されます。クレジットは経路を車両に送信する際に使用されます。';
+  }
 
   @override
-  String get watchAd => 'Watch ad';
+  String get watchAd => '広告を見る';
 
   @override
-  String get rewardEarned => '2 credits have been added!';
+  String rewardEarned(Object count) {
+    return '$count クレジットが付与されました！';
+  }
 
   @override
-  String get creditsUpdated => 'Credits updated.';
+  String get creditsUpdated => 'クレジットが更新されました。';
 
   @override
-  String get rewardNotCompleted =>
-      'You need to watch the full ad to earn credits.';
+  String get rewardNotCompleted => '最後まで視聴しないとクレジットを受け取れません。';
 
   @override
-  String get rewardAdLoadFailed =>
-      'Unable to load ad right now. Please try again later.';
+  String get rewardAdLoadFailed => '現在広告を読み込めません。しばらくしてからもう一度お試しください。';
 
   @override
   String get oneTimePurchaseRequiredMessage =>
@@ -315,6 +316,5 @@ class AppLocalizationsJa extends AppLocalizations {
   String get legalSectionTitle => '法的通知';
 
   @override
-  String get rewardAdMustFinish =>
-      'You must watch the ad to the end to receive credits.';
+  String get rewardAdMustFinish => 'クレジットを受け取るには広告を最後まで視聴する必要があります。';
 }

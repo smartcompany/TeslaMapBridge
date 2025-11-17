@@ -52,6 +52,7 @@ Future<void> main() async {
       // Load server-driven settings (purchase mode, credit pack IDs) first
       final teslaAuthService = TeslaAuthService();
       await teslaAuthService.loadSettings();
+
       final subscriptionService = SubscriptionService();
       // Apply settings to subscription service before initialization
       subscriptionService.updatePurchaseMode(

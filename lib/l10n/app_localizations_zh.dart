@@ -210,47 +210,48 @@ class AppLocalizationsZh extends AppLocalizations {
   String get oneTimePurchaseButton => '购买';
 
   @override
-  String get creditsSectionTitle => 'Credits';
+  String get creditsSectionTitle => '积分';
 
   @override
   String creditsOwnedLabel(Object count) {
-    return 'Credits: $count';
+    return '当前积分 $count';
   }
 
   @override
   String creditsBenefitLabel(Object percent) {
-    return '+$percent% benefit';
+    return '+$percent% 优惠';
   }
 
   @override
-  String get buyCredits => 'Buy credits';
+  String get buyCredits => '购买积分';
 
   @override
-  String get earnFreeCredits => 'Earn free credits (Watch ad)';
+  String get earnFreeCredits => '看广告赚取免费积分';
 
   @override
-  String get rewardTitle => 'Get free credits';
+  String get rewardTitle => '获取免费积分';
 
   @override
-  String get rewardDescription =>
-      'Watch a short ad to earn 2 credits. Credits are used when sending routes to your vehicle.';
+  String rewardDescription(Object count) {
+    return '观看短广告即可获得 $count 积分。积分将在将路线发送到车辆时使用。';
+  }
 
   @override
-  String get watchAd => 'Watch ad';
+  String get watchAd => '观看广告';
 
   @override
-  String get rewardEarned => '2 credits have been added!';
+  String rewardEarned(Object count) {
+    return '$count 积分已到账！';
+  }
 
   @override
-  String get creditsUpdated => 'Credits updated.';
+  String get creditsUpdated => '积分已更新。';
 
   @override
-  String get rewardNotCompleted =>
-      'You need to watch the full ad to earn credits.';
+  String get rewardNotCompleted => '需要完整观看广告才能获得积分。';
 
   @override
-  String get rewardAdLoadFailed =>
-      'Unable to load ad right now. Please try again later.';
+  String get rewardAdLoadFailed => '当前无法加载广告，请稍后重试。';
 
   @override
   String get oneTimePurchaseRequiredMessage => '您已用完所有免费次数。购买后即可继续使用导航。';
@@ -313,6 +314,5 @@ class AppLocalizationsZh extends AppLocalizations {
   String get legalSectionTitle => '法律声明';
 
   @override
-  String get rewardAdMustFinish =>
-      'You must watch the ad to the end to receive credits.';
+  String get rewardAdMustFinish => '要获得积分，必须将广告观看至结束。';
 }

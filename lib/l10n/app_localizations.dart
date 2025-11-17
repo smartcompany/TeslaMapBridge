@@ -513,8 +513,8 @@ abstract class AppLocalizations {
   /// No description provided for @rewardDescription.
   ///
   /// In en, this message translates to:
-  /// **'Watch a short ad to earn 2 credits. Credits are used when sending routes to your vehicle.'**
-  String get rewardDescription;
+  /// **'Watch a short ad to earn {count} credits. Credits are used when sending routes to your vehicle.'**
+  String rewardDescription(Object count);
 
   /// No description provided for @watchAd.
   ///
@@ -525,8 +525,8 @@ abstract class AppLocalizations {
   /// No description provided for @rewardEarned.
   ///
   /// In en, this message translates to:
-  /// **'2 credits have been added!'**
-  String get rewardEarned;
+  /// **'{count} credits have been added!'**
+  String rewardEarned(Object count);
 
   /// No description provided for @creditsUpdated.
   ///
