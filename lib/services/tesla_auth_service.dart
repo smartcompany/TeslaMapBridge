@@ -373,6 +373,11 @@ class TeslaAuthService {
 
   Future<String?> _requestPartnerAccessToken() async {
     try {
+      if (_clientId == null || _clientSecret == null) {
+        print('[TeslaAuth] Client credentials not loaded');
+        return null;
+      }
+
       final fleetAuthUrl = await getFleetAuthUrl();
       if (fleetAuthUrl == null || fleetAuthUrl.isEmpty) {
         print('[TeslaAuth] Fleet auth url not found');
@@ -456,6 +461,10 @@ class TeslaAuthService {
 
   /// Generate OAuth authorization URL with PKCE
   Future<String> getAuthorizationUrl() async {
+    if (_clientId == null) {
+      throw Exception('Client ID not loaded. Call loadSettings() first.');
+    }
+
     final pkce = _generatePKCE();
     final codeVerifier = pkce['code_verifier']!;
     final codeChallenge = pkce['code_challenge']!;
@@ -499,6 +508,11 @@ class TeslaAuthService {
   /// Exchange authorization code for access token with PKCE
   Future<bool> exchangeCodeForToken(String authorizationCode) async {
     try {
+      if (_clientId == null || _clientSecret == null) {
+        print('[TeslaAuth] Client credentials not loaded');
+        return false;
+      }
+
       // Get stored code verifier
       final prefs = await SharedPreferences.getInstance();
       final codeVerifier = prefs.getString(_codeVerifierKey);
@@ -594,6 +608,11 @@ class TeslaAuthService {
   /// Refresh access token using refresh token
   Future<bool> refreshToken() async {
     try {
+      if (_clientId == null || _clientSecret == null) {
+        print('[TeslaAuth] Client credentials not loaded');
+        return false;
+      }
+
       print('refreshToken = ${await _storage.read(key: _refreshTokenKey)}');
       print('accessToken = ${await _storage.read(key: _accessTokenKey)}');
 
