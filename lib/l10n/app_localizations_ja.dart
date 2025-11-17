@@ -163,7 +163,8 @@ class AppLocalizationsJa extends AppLocalizations {
   String get subscriptionRequiredTitle => 'サブスクリプションが必要です';
 
   @override
-  String get subscriptionRequiredMessage => '無料利用回数を使い切りました。ナビを続けるには購読してください。';
+  String get subscriptionRequiredMessage =>
+      '利用可能なクレジットがありません。続けるにはクレジットを購入してください。';
 
   @override
   String get subscriptionRequiredButton => 'プランを見る';
@@ -181,7 +182,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String subscriptionUsageStatus(int total) {
-    return '無料利用残り $total 回';
+    return 'クレジット残り $total 回';
   }
 
   @override
@@ -256,7 +257,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get oneTimePurchaseRequiredMessage =>
-      '無料利用回数を使い切りました。ナビを続けるには購入してください。';
+      '利用可能なクレジットがありません。続けるにはクレジットを購入してください。';
 
   @override
   String get oneTimePurchaseActiveLabel => '購入は有効です。';

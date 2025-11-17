@@ -68,7 +68,7 @@
   "navAppYahooCarNavi": "Yahoo! Car Navi",
   "navAppNavitime": "NAVITIME",
   "subscriptionRequiredTitle": "Subscription required",
-  "subscriptionRequiredMessage": "You have used all free trips. Subscribe to continue using navigation.",
+  "subscriptionRequiredMessage": "No credits remain. Purchase credits to continue.",
   "subscriptionRequiredButton": "View plans",
   "remainingFreeDrives": "{count} free trips left",
   "@remainingFreeDrives": {
@@ -78,7 +78,7 @@
   },
   "subscriptionSectionTitle": "Subscription & plans",
   "subscriptionDescription": "",
-  "subscriptionUsageStatus": "{total} free trips remaining",
+  "subscriptionUsageStatus": "{total} credits remaining",
   "@subscriptionUsageStatus": {
     "placeholders": {
       "total": {
@@ -103,17 +103,37 @@
   "oneTimePurchaseButton": "Purchase",
   "creditsSectionTitle": "Credits",
   "creditsOwnedLabel": "Credits: {count}",
+  "@creditsOwnedLabel": {
+    "placeholders": {
+      "count": {}
+    }
+  },
   "creditsBenefitLabel": "+{percent}% benefit",
+  "@creditsBenefitLabel": {
+    "placeholders": {
+      "percent": {}
+    }
+  },
   "buyCredits": "Buy credits",
   "earnFreeCredits": "Earn free credits (Watch ad)",
   "rewardTitle": "Get free credits",
   "rewardDescription": "Watch a short ad to earn {count} credits. Credits are used when sending routes to your vehicle.",
+  "@rewardDescription": {
+    "placeholders": {
+      "count": {}
+    }
+  },
   "watchAd": "Watch ad",
   "rewardEarned": "{count} credits have been added!",
+  "@rewardEarned": {
+    "placeholders": {
+      "count": {}
+    }
+  },
   "creditsUpdated": "Credits updated.",
   "rewardNotCompleted": "You need to watch the full ad to earn credits.",
   "rewardAdLoadFailed": "Unable to load ad right now. Please try again later.",
-  "oneTimePurchaseRequiredMessage": "You have used all free trips. Purchase to continue using navigation.",
+  "oneTimePurchaseRequiredMessage": "No credits remain. Purchase credits to continue.",
   "oneTimePurchaseActiveLabel": "Your purchase is active.",
   "debugAccessTokenTitle": "Debug: Tesla access token",
   "debugAccessTokenCopy": "Copy token",

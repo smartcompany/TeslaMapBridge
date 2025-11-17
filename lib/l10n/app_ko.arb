@@ -68,7 +68,7 @@
   "navAppYahooCarNavi": "Yahoo! Car Navi",
   "navAppNavitime": "NAVITIME",
   "subscriptionRequiredTitle": "구독이 필요합니다",
-  "subscriptionRequiredMessage": "무료 사용 횟수를 모두 사용했습니다. 계속 이용하려면 구독하세요.",
+  "subscriptionRequiredMessage": "사용 가능한 크레딧이 없습니다. 계속 이용하려면 크레딧을 충전하세요.",
   "subscriptionRequiredButton": "구독 보기",
   "remainingFreeDrives": "무료 이용 {count}회 남았습니다",
   "@remainingFreeDrives": {
@@ -78,7 +78,7 @@
   },
   "subscriptionSectionTitle": "구독 및 요금제",
   "subscriptionDescription": "",
-  "subscriptionUsageStatus": "무료 이용 {total}회가 남았습니다",
+  "subscriptionUsageStatus": "크레딧 {total}회가 남았습니다",
   "@subscriptionUsageStatus": {
     "placeholders": {
       "total": {
@@ -103,17 +103,37 @@
   "oneTimePurchaseButton": "구매하기",
   "creditsSectionTitle": "크레딧",
   "creditsOwnedLabel": "보유 크레딧 {count}",
+  "@creditsOwnedLabel": {
+    "placeholders": {
+      "count": {}
+    }
+  },
   "creditsBenefitLabel": "+{percent}% 혜택",
+  "@creditsBenefitLabel": {
+    "placeholders": {
+      "percent": {}
+    }
+  },
   "buyCredits": "크레딧 구매",
   "earnFreeCredits": "광고 시청으로 크레딧 받기",
   "rewardTitle": "무료 크레딧 받기",
   "rewardDescription": "짧은 광고를 시청하면 {count} 크레딧이 적립됩니다. 크레딧은 차량으로 경로를 전송할 때 사용됩니다.",
+  "@rewardDescription": {
+    "placeholders": {
+      "count": {}
+    }
+  },
   "watchAd": "광고 보기",
   "rewardEarned": "{count} 크레딧이 적립되었습니다!",
+  "@rewardEarned": {
+    "placeholders": {
+      "count": {}
+    }
+  },
   "creditsUpdated": "크레딧이 업데이트되었습니다.",
   "rewardNotCompleted": "광고를 끝까지 시청해야 크레딧을 받을 수 있습니다.",
   "rewardAdLoadFailed": "현재 광고를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.",
-  "oneTimePurchaseRequiredMessage": "무료 사용 횟수를 모두 사용했습니다. 계속 이용하려면 구매하세요.",
+  "oneTimePurchaseRequiredMessage": "사용 가능한 크레딧이 없습니다. 계속 이용하려면 크레딧을 충전하세요.",
   "oneTimePurchaseActiveLabel": "구매가 활성화되었습니다.",
   "debugAccessTokenTitle": "디버그: Tesla 액세스 토큰",
   "debugAccessTokenCopy": "토큰 복사",

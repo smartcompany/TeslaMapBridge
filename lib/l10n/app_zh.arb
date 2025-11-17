@@ -68,7 +68,7 @@
   "navAppYahooCarNavi": "Yahoo! Car Navi",
   "navAppNavitime": "NAVITIME",
   "subscriptionRequiredTitle": "需要订阅",
-  "subscriptionRequiredMessage": "您已用完所有免费次数。订阅后即可继续使用导航。",
+  "subscriptionRequiredMessage": "可用积分已用完。请购买积分后继续使用。",
   "subscriptionRequiredButton": "查看方案",
   "remainingFreeDrives": "剩余 {count} 次免费导航",
   "@remainingFreeDrives": {
@@ -78,7 +78,7 @@
   },
   "subscriptionSectionTitle": "订阅与方案",
   "subscriptionDescription": "",
-  "subscriptionUsageStatus": "剩余 {total} 次免费导航",
+  "subscriptionUsageStatus": "剩余 {total} 次积分",
   "@subscriptionUsageStatus": {
     "placeholders": {
       "total": {
@@ -101,7 +101,7 @@
   "subscriptionComingSoon": "",
   "subscriptionLoading": "正在检查您的方案...",
   "oneTimePurchaseButton": "购买",
-  "oneTimePurchaseRequiredMessage": "您已用完所有免费次数。购买后即可继续使用导航。",
+  "oneTimePurchaseRequiredMessage": "可用积分已用完。请购买积分后继续使用。",
   "oneTimePurchaseActiveLabel": "您的购买已激活。",
   "debugAccessTokenTitle": "调试：Tesla 访问令牌",
   "debugAccessTokenCopy": "复制令牌",
@@ -123,13 +123,33 @@
   "legalSectionTitle": "法律声明",
   "creditsSectionTitle": "积分",
   "creditsOwnedLabel": "当前积分 {count}",
+  "@creditsOwnedLabel": {
+    "placeholders": {
+      "count": {}
+    }
+  },
   "creditsBenefitLabel": "+{percent}% 优惠",
+  "@creditsBenefitLabel": {
+    "placeholders": {
+      "percent": {}
+    }
+  },
   "buyCredits": "购买积分",
   "earnFreeCredits": "看广告赚取免费积分",
   "rewardTitle": "获取免费积分",
   "rewardDescription": "观看短广告即可获得 {count} 积分。积分将在将路线发送到车辆时使用。",
+  "@rewardDescription": {
+    "placeholders": {
+      "count": {}
+    }
+  },
   "watchAd": "观看广告",
   "rewardEarned": "{count} 积分已到账！",
+  "@rewardEarned": {
+    "placeholders": {
+      "count": {}
+    }
+  },
   "creditsUpdated": "积分已更新。",
   "rewardNotCompleted": "需要完整观看广告才能获得积分。",
   "rewardAdLoadFailed": "当前无法加载广告，请稍后重试。",

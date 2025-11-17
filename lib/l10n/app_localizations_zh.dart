@@ -162,7 +162,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get subscriptionRequiredTitle => '需要订阅';
 
   @override
-  String get subscriptionRequiredMessage => '您已用完所有免费次数。订阅后即可继续使用导航。';
+  String get subscriptionRequiredMessage => '可用积分已用完。请购买积分后继续使用。';
 
   @override
   String get subscriptionRequiredButton => '查看方案';
@@ -180,7 +180,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String subscriptionUsageStatus(int total) {
-    return '剩余 $total 次免费导航';
+    return '剩余 $total 次积分';
   }
 
   @override
@@ -254,7 +254,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get rewardAdLoadFailed => '当前无法加载广告，请稍后重试。';
 
   @override
-  String get oneTimePurchaseRequiredMessage => '您已用完所有免费次数。购买后即可继续使用导航。';
+  String get oneTimePurchaseRequiredMessage => '可用积分已用完。请购买积分后继续使用。';
 
   @override
   String get oneTimePurchaseActiveLabel => '您的购买已激活。';

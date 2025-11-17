@@ -1055,7 +1055,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Padding(
               padding: const EdgeInsets.only(top: 12),
               child: Text(
-                loc.remainingFreeDrives(_quota),
+                loc.subscriptionUsageStatus(_quota),
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodySmall,
               ),

@@ -165,7 +165,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get subscriptionRequiredMessage =>
-      'You have used all free trips. Subscribe to continue using navigation.';
+      'No credits remain. Purchase credits to continue.';
 
   @override
   String get subscriptionRequiredButton => 'View plans';
@@ -183,7 +183,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String subscriptionUsageStatus(int total) {
-    return '$total free trips remaining';
+    return '$total credits remaining';
   }
 
   @override
@@ -260,7 +260,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get oneTimePurchaseRequiredMessage =>
-      'You have used all free trips. Purchase to continue using navigation.';
+      'No credits remain. Purchase credits to continue.';
 
   @override
   String get oneTimePurchaseActiveLabel => 'Your purchase is active.';

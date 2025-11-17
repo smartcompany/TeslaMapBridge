@@ -68,7 +68,7 @@
   "navAppYahooCarNavi": "Yahoo!カーナビ",
   "navAppNavitime": "NAVITIME",
   "subscriptionRequiredTitle": "サブスクリプションが必要です",
-  "subscriptionRequiredMessage": "無料利用回数を使い切りました。ナビを続けるには購読してください。",
+  "subscriptionRequiredMessage": "利用可能なクレジットがありません。続けるにはクレジットを購入してください。",
   "subscriptionRequiredButton": "プランを見る",
   "remainingFreeDrives": "無料利用残り{count}回",
   "@remainingFreeDrives": {
@@ -78,7 +78,7 @@
   },
   "subscriptionSectionTitle": "サブスクリプションとプラン",
   "subscriptionDescription": "",
-  "subscriptionUsageStatus": "無料利用残り {total} 回",
+  "subscriptionUsageStatus": "クレジット残り {total} 回",
   "@subscriptionUsageStatus": {
     "placeholders": {
       "total": {
@@ -101,7 +101,7 @@
   "subscriptionComingSoon": "",
   "subscriptionLoading": "プランを確認しています...",
   "oneTimePurchaseButton": "購入する",
-  "oneTimePurchaseRequiredMessage": "無料利用回数を使い切りました。ナビを続けるには購入してください。",
+  "oneTimePurchaseRequiredMessage": "利用可能なクレジットがありません。続けるにはクレジットを購入してください。",
   "oneTimePurchaseActiveLabel": "購入は有効です。",
   "debugAccessTokenTitle": "デバッグ: Tesla アクセストークン",
   "debugAccessTokenCopy": "トークンをコピー",
@@ -123,13 +123,33 @@
   "legalSectionTitle": "法的通知",
   "creditsSectionTitle": "クレジット",
   "creditsOwnedLabel": "保有クレジット {count}",
+  "@creditsOwnedLabel": {
+    "placeholders": {
+      "count": {}
+    }
+  },
   "creditsBenefitLabel": "+{percent}% の特典",
+  "@creditsBenefitLabel": {
+    "placeholders": {
+      "percent": {}
+    }
+  },
   "buyCredits": "クレジットを購入",
   "earnFreeCredits": "広告視聴でクレジットを獲得",
   "rewardTitle": "無料クレジットを獲得",
   "rewardDescription": "短い広告を見ると {count} クレジットが付与されます。クレジットは経路を車両に送信する際に使用されます。",
+  "@rewardDescription": {
+    "placeholders": {
+      "count": {}
+    }
+  },
   "watchAd": "広告を見る",
   "rewardEarned": "{count} クレジットが付与されました！",
+  "@rewardEarned": {
+    "placeholders": {
+      "count": {}
+    }
+  },
   "creditsUpdated": "クレジットが更新されました。",
   "rewardNotCompleted": "最後まで視聴しないとクレジットを受け取れません。",
   "rewardAdLoadFailed": "現在広告を読み込めません。しばらくしてからもう一度お試しください。",

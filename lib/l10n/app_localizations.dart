@@ -393,7 +393,7 @@ abstract class AppLocalizations {
   /// No description provided for @subscriptionRequiredMessage.
   ///
   /// In en, this message translates to:
-  /// **'You have used all free trips. Subscribe to continue using navigation.'**
+  /// **'No credits remain. Purchase credits to continue.'**
   String get subscriptionRequiredMessage;
 
   /// No description provided for @subscriptionRequiredButton.
@@ -423,7 +423,7 @@ abstract class AppLocalizations {
   /// No description provided for @subscriptionUsageStatus.
   ///
   /// In en, this message translates to:
-  /// **'{total} free trips remaining'**
+  /// **'{total} credits remaining'**
   String subscriptionUsageStatus(int total);
 
   /// No description provided for @subscriptionUpgradeButton.
@@ -549,7 +549,7 @@ abstract class AppLocalizations {
   /// No description provided for @oneTimePurchaseRequiredMessage.
   ///
   /// In en, this message translates to:
-  /// **'You have used all free trips. Purchase to continue using navigation.'**
+  /// **'No credits remain. Purchase credits to continue.'**
   String get oneTimePurchaseRequiredMessage;
 
   /// No description provided for @oneTimePurchaseActiveLabel.

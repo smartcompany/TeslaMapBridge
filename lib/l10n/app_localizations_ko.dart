@@ -164,7 +164,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get subscriptionRequiredMessage =>
-      '무료 사용 횟수를 모두 사용했습니다. 계속 이용하려면 구독하세요.';
+      '사용 가능한 크레딧이 없습니다. 계속 이용하려면 크레딧을 충전하세요.';
 
   @override
   String get subscriptionRequiredButton => '구독 보기';
@@ -182,7 +182,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String subscriptionUsageStatus(int total) {
-    return '무료 이용 $total회가 남았습니다';
+    return '크레딧 $total회가 남았습니다';
   }
 
   @override
@@ -257,7 +257,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get oneTimePurchaseRequiredMessage =>
-      '무료 사용 횟수를 모두 사용했습니다. 계속 이용하려면 구매하세요.';
+      '사용 가능한 크레딧이 없습니다. 계속 이용하려면 크레딧을 충전하세요.';
 
   @override
   String get oneTimePurchaseActiveLabel => '구매가 활성화되었습니다.';
