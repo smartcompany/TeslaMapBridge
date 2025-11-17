@@ -12,7 +12,6 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _teslaAuthService = TeslaAuthService();
   WebViewController? _webViewController;
   bool _isLoading = true;
   bool _isProcessingAuth = false;
@@ -34,7 +33,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     try {
-      final authUrl = await _teslaAuthService.getAuthorizationUrl();
+      final authUrl = await TeslaAuthService.shared.getAuthorizationUrl();
 
       final webViewController = WebViewController()
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
@@ -128,7 +127,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _handleUrlChange(String url) async {
     // Check if this is the callback URL with authorization code
     if (url.contains('auth.tesla.com/void/callback') || url.contains('code=')) {
-      final authCode = _teslaAuthService.extractAuthorizationCode(url);
+      final authCode = TeslaAuthService.shared.extractAuthorizationCode(url);
 
       if (authCode != null && !_isProcessingAuth) {
         setState(() {
@@ -136,7 +135,7 @@ class _LoginScreenState extends State<LoginScreen> {
         });
 
         try {
-          final success = await _teslaAuthService.exchangeCodeForToken(
+          final success = await TeslaAuthService.shared.exchangeCodeForToken(
             authCode,
           );
 

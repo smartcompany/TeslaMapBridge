@@ -28,7 +28,6 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  final TeslaAuthService _teslaAuthService = TeslaAuthService();
   final UsageLimitService _usageLimitService = UsageLimitService();
   late final SubscriptionService _subscriptionService;
   late final ThemeService _themeService;
@@ -69,9 +68,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
     final prefs = await SharedPreferences.getInstance();
     final stored = prefs.getString(kDefaultNavigationAppKey);
-    final modeMatch = await _teslaAuthService.getNavigationModePreference();
-    final vehicles = await _teslaAuthService.getVehicles();
-    final storedVehicleId = await _teslaAuthService.getSelectedVehicleId();
+    final modeMatch = await TeslaAuthService.shared
+        .getNavigationModePreference();
+    final vehicles = await TeslaAuthService.shared.getVehicles();
+    final storedVehicleId = await TeslaAuthService.shared
+        .getSelectedVehicleId();
 
     final availableIds = <String>[];
     for (final vehicle in vehicles) {
@@ -108,7 +109,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
 
     if (resolvedVehicleId != storedVehicleId) {
-      await _teslaAuthService.setSelectedVehicleId(resolvedVehicleId);
+      await TeslaAuthService.shared.setSelectedVehicleId(resolvedVehicleId);
     }
     if (kDebugMode) {
       _loadDebugAccessToken();
@@ -116,7 +117,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _loadDebugAccessToken() async {
-    final token = await _teslaAuthService.getAccessToken();
+    final token = await TeslaAuthService.shared.getAccessToken();
     if (!mounted) return;
     setState(() {
       _debugAccessToken = token;
@@ -176,7 +177,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _hasChanges = true;
       _isLoading = true;
     });
-    await _teslaAuthService.setSelectedVehicleId(vehicleId);
+    await TeslaAuthService.shared.setSelectedVehicleId(vehicleId);
     await _loadPreferences();
   }
 
@@ -213,7 +214,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _hasChanges = true;
     });
 
-    await _teslaAuthService.setNavigationModePreference(mode);
+    await TeslaAuthService.shared.setNavigationModePreference(mode);
 
     if (!mounted) return;
     final loc = AppLocalizations.of(context)!;
@@ -252,7 +253,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       );
       // Fetch dynamic credit pack IDs from server before querying store
       try {
-        final map = _teslaAuthService.creditPackProductIdToCredits;
+        final map = TeslaAuthService.shared.creditPackProductIdToCredits;
         if (map.isNotEmpty) {
           _subscriptionService.setCreditPackProducts(map);
         }
@@ -294,7 +295,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (!mounted) return;
     final loc = AppLocalizations.of(context)!;
     try {
-      final adUnitId = TeslaAuthService().getRewardedAdUnitId(
+      final adUnitId = TeslaAuthService.shared.getRewardedAdUnitId(
         preferTestIfMissing: true,
       );
       if (adUnitId.isEmpty) {
@@ -327,8 +328,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onUserEarnedReward: (ad, reward) async {
                 if (rewardedGiven) return;
                 rewardedGiven = true;
-                final userId = await _teslaAuthService.getEmail();
-                final token = await _teslaAuthService.getAccessToken();
+                final userId = await TeslaAuthService.shared.getEmail();
+                final token = await TeslaAuthService.shared.getAccessToken();
                 if (userId == null || token == null) {
                   if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -339,7 +340,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   return;
                 }
                 try {
-                  final rewardCredits = _teslaAuthService
+                  final rewardCredits = TeslaAuthService.shared
                       .getRewardCreditsPerAd();
 
                   final usage = await _usageLimitService.addCredits(
@@ -432,7 +433,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       });
 
       try {
-        await _teslaAuthService.logout();
+        await TeslaAuthService.shared.logout();
         if (!mounted) return;
         if (kDebugMode) {
           setState(() {

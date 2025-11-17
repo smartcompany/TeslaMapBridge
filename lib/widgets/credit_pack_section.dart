@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../services/subscription_service.dart';
 import '../l10n/app_localizations.dart';
 
@@ -15,8 +16,6 @@ class CreditPackSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // Use products fetched from the store (already filtered/sorted in the service)
-    final products = service.creditPackProducts;
 
     Widget pill(String text, {bool primary = false}) {
       final bg = primary
@@ -40,27 +39,50 @@ class CreditPackSection extends StatelessWidget {
 
     // Baseline unit price (price per credit) from the smallest pack
     double? baselineUnitPrice() {
-      final base = service.products.where((p) => p.id.endsWith('100'));
-      if (base.isEmpty) return null;
-      final raw = base.first.rawPrice;
-      if (raw > 0) {
-        return (raw as num).toDouble() / 100.0;
+      // base 는 creditPack 에서 가장 낮은 가격의 크레딧 팩
+      final base = service.creditPacks.values.reduce((a, b) {
+        final aPrice = a.rawPrice ?? 0.0;
+        final bPrice = b.rawPrice ?? 0.0;
+        if (aPrice < bPrice) {
+          return a;
+        } else {
+          return b;
+        }
+      });
+
+      // 크레딧당 단가 계산 (전체 가격 / 크레딧 수)
+      if (base.rawPrice == null || base.rawPrice! <= 0 || base.credits <= 0) {
+        return null;
       }
-      return null;
+      return base.rawPrice! / base.credits;
     }
 
-    String? computedBenefitLabel({
+    int? computedBenefitLabel({
       required int credits,
       required double? unitPriceBaseline,
       required double? rawPrice,
     }) {
-      if (unitPriceBaseline == null || rawPrice == null) return null;
+      // 가격 정보가 없으면 혜택 계산 불가
+      if (unitPriceBaseline == null ||
+          unitPriceBaseline <= 0 ||
+          rawPrice == null ||
+          rawPrice <= 0) {
+        return null;
+      }
+
+      // 기준 단가로 계산한 예상 가격
       final expected = unitPriceBaseline * credits;
       if (expected <= 0) return null;
+
+      // 예상 가격보다 실제 가격이 더 비싸면 혜택 없음
+      if (rawPrice >= expected) return null;
+
+      // 혜택 퍼센트 계산: (예상가격 - 실제가격) / 예상가격 * 100
       final benefit = ((expected - rawPrice) / expected) * 100.0;
       final percent = benefit.floor();
       if (percent <= 0) return null;
-      return '+$percent% 혜택';
+
+      return percent;
     }
 
     final unitBaseline = baselineUnitPrice();
@@ -69,34 +91,35 @@ class CreditPackSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 8),
-        ...products.map((p) {
+        ...service.creditPacks.entries.map((entry) {
+          final productId = entry.key;
+          final p = entry.value;
           // Infer credits from product id suffix (100/400/800/1000)
           int credits = 0;
-          if (p.id.endsWith('1000'))
-            credits = 1000;
-          else if (p.id.endsWith('800'))
-            credits = 800;
-          else if (p.id.endsWith('400'))
-            credits = 400;
-          else if (p.id.endsWith('100'))
-            credits = 100;
-          final suffix = credits.toString();
-          final title = '$credits credits';
+          credits = p.credits;
+          final title = '${p.credits} credits';
 
-          // Match product by id suffix to be resilient to full bundle prefix
-          final matching = service.products.where(
-            (it) => it.id.endsWith(suffix),
-          );
-          final hasProduct = matching.isNotEmpty;
-          final priceText = hasProduct ? matching.first.price : '—';
-          final rawPrice = hasProduct
-              ? (matching.first.rawPrice as num?)?.toDouble()
-              : null;
+          final priceText = p.displayPrice ?? '—';
+          final rawPrice = p.rawPrice ?? 0.0;
           final benefit = computedBenefitLabel(
             credits: credits,
             unitPriceBaseline: unitBaseline,
             rawPrice: rawPrice,
           );
+
+          // Check if product exists in IAP products list
+          final hasProduct =
+              service.products.any((prod) => prod.id == productId) &&
+              priceText != '—';
+
+          if (kDebugMode && !hasProduct) {
+            debugPrint(
+              '[CreditPack] Product not available: $productId, priceText: $priceText',
+            );
+            debugPrint(
+              '[CreditPack] Available products: ${service.products.map((p) => p.id).join(", ")}',
+            );
+          }
 
           return Card(
             child: Padding(
@@ -123,15 +146,7 @@ class CreditPackSection extends StatelessWidget {
                                 // Localize benefit label
                                 AppLocalizations.of(
                                   context,
-                                )!.creditsBenefitLabel(
-                                  int.tryParse(
-                                        benefit.replaceAll(
-                                          RegExp(r'[^0-9]'),
-                                          '',
-                                        ),
-                                      ) ??
-                                      0,
-                                ),
+                                )!.creditsBenefitLabel(benefit),
                                 primary: true,
                               ),
                             ],
@@ -150,7 +165,7 @@ class CreditPackSection extends StatelessWidget {
                       onPressed: isProcessing || !hasProduct
                           ? null
                           : () async {
-                              await service.buyCredits(matching.first.id);
+                              await service.buyCredits(productId);
                             },
                       child: Text(
                         priceText,

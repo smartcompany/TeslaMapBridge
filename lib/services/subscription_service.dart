@@ -25,9 +25,7 @@ class SubscriptionService extends ChangeNotifier {
   // Product IDs
   static const String _subscriptionProductId = 'com.teslamap.monthly';
   static const String _oneTimeProductId = 'com.teslamap.onetime';
-  // Credit pack product IDs - provided dynamically from server settings
-  Set<String> _creditPackIds = {};
-  Map<String, CreditPackMeta> _creditPacks = {};
+  Map<String, CreditPackMeta> creditPacks = {};
 
   final InAppPurchase _iap;
 
@@ -95,21 +93,6 @@ class SubscriptionService extends ChangeNotifier {
     }
   }
 
-  /// Get available credit pack product details
-  List<ProductDetails> get creditPackProducts {
-    if (_products.isEmpty) return const [];
-    return _products
-        .where((p) => _creditPackIds.contains(p.id))
-        // sort by credits ascending using mapping
-        .toList()
-      ..sort((a, b) => _creditsForProduct(a).compareTo(_creditsForProduct(b)));
-  }
-
-  int _creditsForProduct(ProductDetails product) {
-    final meta = _creditPacks[product.id];
-    return meta?.credits ?? 0;
-  }
-
   Future<void> initialize() async {
     if (_isLoading) return;
     _isLoading = true;
@@ -130,19 +113,25 @@ class SubscriptionService extends ChangeNotifier {
               : 'Other'}',
         );
         await _queryProducts();
-        _purchaseSub ??= _iap.purchaseStream.listen(
-          _onPurchaseUpdated,
-          onError: (error) {
-            _lastError = error.toString();
-            _purchaseState = SubscriptionPurchaseState.error;
-            debugPrint('[Subscription] Purchase stream error: $_lastError');
-            notifyListeners();
-          },
-        );
 
-        debugPrint('[Subscription] Restoring purchases');
-        await _iap.restorePurchases();
-        debugPrint('[Subscription] end Restored purchases');
+        switch (_purchaseMode) {
+          case PurchaseMode.creditPack:
+            break;
+          case PurchaseMode.subscription:
+            _purchaseSub ??= _iap.purchaseStream.listen(
+              _onPurchaseUpdated,
+              onError: (error) {
+                _lastError = error.toString();
+                _purchaseState = SubscriptionPurchaseState.error;
+                debugPrint('[Subscription] Purchase stream error: $_lastError');
+                notifyListeners();
+              },
+            );
+            await _iap.restorePurchases();
+            break;
+          default:
+            break;
+        }
       } else {
         _lastError = 'Store not available on this device';
         debugPrint('[Subscription] $_lastError');
@@ -167,9 +156,8 @@ class SubscriptionService extends ChangeNotifier {
     final productIds = {
       _subscriptionProductId,
       _oneTimeProductId,
-      ..._creditPackIds,
+      ...creditPacks.keys,
     };
-    debugPrint('[Subscription] Querying products: $productIds');
 
     final response = await _iap.queryProductDetails(productIds);
 
@@ -195,23 +183,14 @@ class SubscriptionService extends ChangeNotifier {
           '[Subscription] Loaded products: '
           '${_products.map((p) => '${p.id}:${p.price}').join(', ')}',
         );
-        // Update stored credit pack prices from IAP results
-        for (final p in _products) {
-          final meta = _creditPacks[p.id];
-          if (meta != null) {
-            meta.rawPrice = (p.rawPrice as num?)?.toDouble();
-            meta.displayPrice = p.price;
-          }
-        }
-        for (final p in _products) {
-          debugPrint(
-            '[Subscription] Product detail\n'
-            '  id=${p.id}\n'
-            '  title=${p.title}\n'
-            '  description=${p.description}\n'
-            '  price=${p.price} raw=${p.rawPrice}\n',
-          );
-        }
+
+        // 여기서 _creditPacks 의 가격 정보를 업데이트 해야 함
+        creditPacks.forEach((id, meta) {
+          final product = _products.firstWhere((p) => p.id == id);
+          meta.rawPrice = (product.rawPrice as num?)?.toDouble();
+          meta.displayPrice = product.price;
+        });
+        debugPrint('[Subscription] Credit packs updated: $creditPacks');
       }
     }
     notifyListeners();
@@ -221,26 +200,10 @@ class SubscriptionService extends ChangeNotifier {
     await _queryProducts();
   }
 
-  /// Update credit pack product IDs (from server settings)
-  void setCreditPackProductIds(Iterable<String> ids) {
-    final newSet = ids.toSet();
-    // avoid overlap with non-credit products
-    newSet.remove(_subscriptionProductId);
-    newSet.remove(_oneTimeProductId);
-    final changed =
-        !(newSet.length == _creditPackIds.length &&
-            newSet.every(_creditPackIds.contains));
-    if (changed) {
-      _creditPackIds = newSet;
-      debugPrint('[Subscription] Credit pack IDs updated: $_creditPackIds');
-    }
-  }
-
   /// Update credit pack products with meta (credits + price)
   void setCreditPackProducts(Map<String, CreditPackMeta> idToMeta) {
-    setCreditPackProductIds(idToMeta.keys);
-    _creditPacks = Map<String, CreditPackMeta>.from(idToMeta);
-    debugPrint('[Subscription] Credit packs map updated: $_creditPacks');
+    creditPacks = Map<String, CreditPackMeta>.from(idToMeta);
+    debugPrint('[Subscription] Credit packs map updated: $creditPacks');
   }
 
   /// Purchase premium based on current purchase mode
@@ -311,23 +274,48 @@ class SubscriptionService extends ChangeNotifier {
 
   /// Purchase a specific credit pack by productId
   Future<void> buyCredits(String productId) async {
+    debugPrint('[Subscription] buyCredits called for: $productId');
     if (!_isAvailable) {
+      debugPrint('[Subscription] App Store unavailable');
       _lastError = 'App Store unavailable';
       notifyListeners();
       return;
     }
-    if (!_creditPackIds.contains(productId)) {
+
+    if (!creditPacks.keys.contains(productId)) {
+      debugPrint('[Subscription] Unknown credit pack: $productId');
       throw StateError('Unknown credit pack: $productId');
     }
 
-    final product = _products.firstWhere(
-      (p) => p.id == productId,
-      orElse: () => throw StateError('Credit pack $productId not loaded'),
+    final meta = creditPacks[productId];
+    if (meta == null) {
+      debugPrint('[Subscription] Credit pack meta not found: $productId');
+      throw StateError('Credit pack $productId not found');
+    }
+
+    debugPrint(
+      '[Subscription] Available products: ${products.map((p) => p.id).join(", ")}',
     );
+    if (products.isEmpty) {
+      debugPrint('[Subscription] No products available. Refreshing...');
+      await refreshProducts();
+    }
 
     _purchaseState = SubscriptionPurchaseState.purchasing;
     _lastError = null;
     notifyListeners();
+
+    final product = products.firstWhere(
+      (p) => p.id == productId,
+      orElse: () {
+        debugPrint('[Subscription] Product not found: $productId');
+        throw StateError('Product $productId not found');
+      },
+    );
+
+    debugPrint(
+      '[Subscription] Purchasing product: ${product.id}, price: ${product.price}',
+    );
 
     PurchaseParam param;
     if (Platform.isAndroid) {
@@ -341,7 +329,18 @@ class SubscriptionService extends ChangeNotifier {
       param = PurchaseParam(productDetails: product);
     }
 
-    await _iap.buyConsumable(purchaseParam: param, autoConsume: true);
+    debugPrint('[Subscription] Calling buyConsumable...');
+    try {
+      await _iap.buyConsumable(purchaseParam: param, autoConsume: true);
+      debugPrint('[Subscription] buyConsumable completed');
+    } catch (e, stackTrace) {
+      debugPrint('[Subscription] buyConsumable error: $e');
+      debugPrint('[Subscription] Stack trace: $stackTrace');
+      _lastError = 'Purchase failed: $e';
+      _purchaseState = SubscriptionPurchaseState.error;
+      notifyListeners();
+      rethrow;
+    }
   }
 
   /// Legacy method - kept for backward compatibility
@@ -363,7 +362,13 @@ class SubscriptionService extends ChangeNotifier {
   }
 
   Future<void> _onPurchaseUpdated(List<PurchaseDetails> purchases) async {
+    debugPrint(
+      '[Subscription] _onPurchaseUpdated called with ${purchases.length} purchases',
+    );
     for (final purchase in purchases) {
+      debugPrint(
+        '[Subscription] Processing purchase: ${purchase.productID}, status: ${purchase.status}',
+      );
       _lastPurchase = purchase;
       switch (purchase.status) {
         case PurchaseStatus.pending:
@@ -373,9 +378,9 @@ class SubscriptionService extends ChangeNotifier {
           // If this was a credit pack, top-up quota before completing purchase
           if (_purchaseMode == PurchaseMode.creditPack) {
             try {
-              final userId = await TeslaAuthService().getEmail();
-              final token = await TeslaAuthService().getAccessToken();
-              final meta = _creditPacks[purchase.productID];
+              final userId = await TeslaAuthService.shared.getEmail();
+              final token = await TeslaAuthService.shared.getAccessToken();
+              final meta = creditPacks[purchase.productID];
               if (userId != null &&
                   token != null &&
                   meta != null &&

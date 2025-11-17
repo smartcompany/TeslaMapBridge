@@ -50,16 +50,15 @@ Future<void> main() async {
 
       await PushNotificationService.initialize();
       // Load server-driven settings (purchase mode, credit pack IDs) first
-      final teslaAuthService = TeslaAuthService();
-      await teslaAuthService.loadSettings();
+      await TeslaAuthService.shared.loadSettings();
 
       final subscriptionService = SubscriptionService();
       // Apply settings to subscription service before initialization
       subscriptionService.updatePurchaseMode(
-        TeslaAuthService.currentPurchaseMode,
+        TeslaAuthService.shared.currentPurchaseMode,
       );
 
-      final creditMap = teslaAuthService.creditPackProductIdToCredits;
+      final creditMap = TeslaAuthService.shared.creditPackProductIdToCredits;
       if (creditMap.isNotEmpty) {
         subscriptionService.setCreditPackProducts(creditMap);
       }
@@ -141,7 +140,6 @@ class AuthWrapper extends StatefulWidget {
 }
 
 class _AuthWrapperState extends State<AuthWrapper> {
-  final _teslaAuthService = TeslaAuthService();
   bool _isChecking = true;
 
   @override
@@ -151,7 +149,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
   }
 
   Future<void> _checkAuthStatus() async {
-    final isLoggedIn = await _teslaAuthService.isLoggedIn();
+    final isLoggedIn = await TeslaAuthService.shared.isLoggedIn();
     if (mounted) {
       setState(() {
         _isChecking = false;

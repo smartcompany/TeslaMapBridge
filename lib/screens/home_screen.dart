@@ -31,7 +31,6 @@ class _HomeScreenState extends State<HomeScreen> {
   static const String _recentDestinationsKey = 'recent_destinations';
 
   final _navigationService = NavigationService();
-  final _teslaAuthService = TeslaAuthService();
   final _placesController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   late final VoidCallback _focusListener;
@@ -121,7 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadNavigationMode() async {
-    final mode = await _teslaAuthService.getNavigationModePreference();
+    final mode = await TeslaAuthService.shared.getNavigationModePreference();
     if (mounted) {
       setState(() {
         _navigationMode = mode;
@@ -182,7 +181,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadSelectedVehicleId() async {
-    final storedId = await _teslaAuthService.getSelectedVehicleId();
+    final storedId = await TeslaAuthService.shared.getSelectedVehicleId();
     if (!mounted) return;
     setState(() {
       _selectedVehicleId = storedId;
@@ -210,7 +209,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return _userId;
     }
 
-    final email = await _teslaAuthService.getEmail();
+    final email = await TeslaAuthService.shared.getEmail();
     if (email != null && email.isNotEmpty) {
       if (mounted) {
         setState(() {
@@ -235,7 +234,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    final accessToken = await _teslaAuthService.getAccessToken();
+    final accessToken = await TeslaAuthService.shared.getAccessToken();
     if (accessToken == null || accessToken.isEmpty) {
       debugPrint('[Usage] Missing access token when loading quota');
       if (mounted) {
@@ -280,7 +279,7 @@ class _HomeScreenState extends State<HomeScreen> {
       await _loadUsageData();
     }
 
-    final accessToken = await _teslaAuthService.getAccessToken();
+    final accessToken = await TeslaAuthService.shared.getAccessToken();
     if (accessToken == null || accessToken.isEmpty) {
       return false;
     }
@@ -476,7 +475,7 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     final vehicleId = _selectedVehicleId!;
-    final success = await _teslaAuthService.sendDestinationToVehicle(
+    final success = await TeslaAuthService.shared.sendDestinationToVehicle(
       vehicleId,
       destination.latitude,
       destination.longitude,

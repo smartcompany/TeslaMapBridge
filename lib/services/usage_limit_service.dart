@@ -27,7 +27,9 @@ class ConsumptionResult {
 class UsageLimitService {
   UsageLimitService({http.Client? client}) : _client = client ?? http.Client();
 
-  final _quotaUri = Uri.parse('${TeslaAuthService.apiBaseHost}/api/quota');
+  final _quotaUri = Uri.parse(
+    '${TeslaAuthService.shared.apiBaseHost}/api/quota',
+  );
   final http.Client _client;
 
   UsageStatus _parseStatus(Map<String, dynamic> body) {

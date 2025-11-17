@@ -14,6 +14,12 @@ import '../models/purchase_mode.dart';
 import '../models/tesla_navigation_mode.dart';
 
 class TeslaAuthService {
+  // Private constructor
+  TeslaAuthService._();
+
+  // Shared instance (Swift-style singleton)
+  static final TeslaAuthService shared = TeslaAuthService._();
+
   static const _storage = FlutterSecureStorage();
   static const _accessTokenKey = 'tesla_access_token';
   static const _refreshTokenKey = 'tesla_refresh_token';
@@ -32,9 +38,8 @@ class TeslaAuthService {
   // Tesla Fleet API Client Credentials
   // Tesla Developer Portal (https://developer.tesla.com/)에서 등록 후 발급받은 값으로 교체하세요
   static const String _apiBaseUrlKey = 'tesla_api_base_url';
-  static const String apiBaseHost = 'https://tesla-map-bridge.vercel.app';
-
-  static const String _settingsEndpoint = "$apiBaseHost/api/settings";
+  final String apiBaseHost = 'https://tesla-map-bridge.vercel.app';
+  String get _settingsEndpoint => '$apiBaseHost/api/settings';
 
   String? _clientId;
   String? _clientSecret;
@@ -46,7 +51,8 @@ class TeslaAuthService {
   static Map<String, String> _adRefIOS = const {};
   static Map<String, String> _adRefAndroid = const {};
   static Map<String, int> _adRewards = const {};
-  static PurchaseMode? currentPurchaseMode;
+
+  PurchaseMode? currentPurchaseMode;
 
   /// Check if user is logged in
   Future<bool> isLoggedIn() async {

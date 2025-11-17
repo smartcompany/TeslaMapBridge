@@ -29,8 +29,6 @@ class CreditPurchaseSheet extends StatelessWidget {
                 ? loc.subscriptionUsageStatus(quota)
                 : '';
 
-            final currentCredits = quota * 2; // 2 credits per use
-
             return Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -43,12 +41,11 @@ class CreditPurchaseSheet extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    if (usageMessage.isNotEmpty) Text(usageMessage),
                     Text(
-                      AppLocalizations.of(
-                        context,
-                      )!.creditsOwnedLabel(currentCredits),
-                      style: Theme.of(context).textTheme.bodyMedium,
+                      AppLocalizations.of(context)!.creditsOwnedLabel(quota),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        fontSize: 18, // 원하는 크기로 조절
+                      ),
                     ),
                   ],
                 ),

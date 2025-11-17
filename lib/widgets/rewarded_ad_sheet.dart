@@ -12,8 +12,7 @@ class RewardedAdSheet extends StatelessWidget {
     final loc = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    final teslaAuthService = TeslaAuthService();
-    final rewardCredits = teslaAuthService.getRewardCreditsPerAd();
+    final rewardCredits = TeslaAuthService.shared.getRewardCreditsPerAd();
 
     return SafeArea(
       child: Padding(
