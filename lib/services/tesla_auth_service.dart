@@ -38,7 +38,7 @@ class TeslaAuthService {
 
   String? _clientId;
   String? _clientSecret;
-  Map<String, CreditPackMeta> _creditPackProductIdToCredits = const {};
+  Map<String, CreditPackMeta> creditPackProductIdToCredits = const {};
 
   // Ad / purchase settings should be shared across all instances.
   static String? _adRewardedKeyIOS;
@@ -195,7 +195,7 @@ class TeslaAuthService {
             map[id] = CreditPackMeta(credits: credits);
           }
         }
-        _creditPackProductIdToCredits = map;
+        creditPackProductIdToCredits = map;
       }
 
       // Ad config (rewarded)
@@ -226,56 +226,6 @@ class TeslaAuthService {
       return false;
     }
     return true;
-  }
-
-  Future<Map<String, CreditPackMeta>> loadAndGetCreditPackProductMap() async {
-    try {
-      final response = await http.get(Uri.parse(_settingsEndpoint));
-      if (response.statusCode != 200) {
-        return _creditPackProductIdToCredits;
-      }
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      final packs = data['creditPacks'];
-      if (packs is List) {
-        final map = <String, CreditPackMeta>{};
-        for (final item in packs.whereType<Map<String, dynamic>>()) {
-          final id = item['productId'] as String?;
-          final credits = (item['credits'] as num?)?.toInt();
-          if (id != null && id.isNotEmpty && credits != null && credits > 0) {
-            map[id] = CreditPackMeta(credits: credits);
-          }
-        }
-        _creditPackProductIdToCredits = map;
-      }
-
-      // refresh ad config as well
-      final iosAd = data['ios_ad'];
-      final androidAd = data['android_ad'];
-      final ref = data['ref'];
-      final adRewards = data['adRewards'];
-      if (iosAd is String) _adRewardedKeyIOS = iosAd;
-      if (androidAd is String) _adRewardedKeyAndroid = androidAd;
-      if (ref is Map<String, dynamic>) {
-        final ios = ref['ios'];
-        final android = ref['android'];
-        if (ios is Map<String, dynamic>) {
-          _adRefIOS = ios.map((k, v) => MapEntry(k, (v ?? '').toString()));
-        }
-        if (android is Map<String, dynamic>) {
-          _adRefAndroid = android.map(
-            (k, v) => MapEntry(k, (v ?? '').toString()),
-          );
-        }
-      }
-      if (adRewards is Map<String, dynamic>) {
-        _adRewards = adRewards.map(
-          (k, v) => MapEntry(k, (v as num?)?.toInt() ?? 0),
-        );
-      }
-      return _creditPackProductIdToCredits;
-    } catch (_) {
-      return _creditPackProductIdToCredits;
-    }
   }
 
   String getRewardedAdUnitId({bool preferTestIfMissing = true}) {

@@ -252,7 +252,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       );
       // Fetch dynamic credit pack IDs from server before querying store
       try {
-        final map = await _teslaAuthService.loadAndGetCreditPackProductMap();
+        final map = _teslaAuthService.creditPackProductIdToCredits;
         if (map.isNotEmpty) {
           _subscriptionService.setCreditPackProducts(map);
         }
@@ -341,13 +341,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 try {
                   final rewardCredits = _teslaAuthService
                       .getRewardCreditsPerAd();
-                  if (rewardCredits <= 0) {
-                    if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(loc.rewardAdLoadFailed)),
-                    );
-                    return;
-                  }
+
                   final usage = await _usageLimitService.addCredits(
                     userId: userId,
                     accessToken: token,
@@ -366,11 +360,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     });
                   });
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        '${loc.rewardEarned} ${loc.creditsUpdated}',
-                      ),
-                    ),
+                    SnackBar(content: Text(loc.rewardEarned(rewardCredits))),
                   );
                 } catch (_) {
                   if (!mounted) return;

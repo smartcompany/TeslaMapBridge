@@ -59,10 +59,11 @@ Future<void> main() async {
         TeslaAuthService.currentPurchaseMode,
       );
 
-      final creditMap = await teslaAuthService.loadAndGetCreditPackProductMap();
+      final creditMap = teslaAuthService.creditPackProductIdToCredits;
       if (creditMap.isNotEmpty) {
         subscriptionService.setCreditPackProducts(creditMap);
       }
+
       await subscriptionService.initialize();
       final themeService = ThemeService();
       await themeService.initialize();
