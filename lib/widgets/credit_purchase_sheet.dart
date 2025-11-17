@@ -17,40 +17,67 @@ class CreditPurchaseSheet extends StatefulWidget {
 }
 
 class _CreditPurchaseSheetState extends State<CreditPurchaseSheet> {
-  late int _currentQuota;
-  late final VoidCallback _usageStatusListener;
+  SubscriptionService? _subscriptionService;
+  SubscriptionPurchaseState? _lastPurchaseState;
+  late int? _currentQuota;
 
   @override
   void initState() {
     super.initState();
-    _currentQuota = UsageLimitService.userStatus?.quota ?? widget.quota;
-    _usageStatusListener = _handleUsageStatusChanged;
-    UsageLimitService.userStatusNotifier.addListener(_usageStatusListener);
+    _currentQuota = UsageLimitService.shared.userStatus?.quota;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final newService = Provider.of<SubscriptionService>(context, listen: false);
+    if (_subscriptionService != newService) {
+      _subscriptionService?.removeListener(_handleServiceUpdate);
+      _subscriptionService = newService;
+      _subscriptionService?.addListener(_handleServiceUpdate);
+      _handleServiceUpdate();
+    }
   }
 
   @override
   void dispose() {
-    UsageLimitService.userStatusNotifier.removeListener(_usageStatusListener);
+    _subscriptionService?.removeListener(_handleServiceUpdate);
     super.dispose();
   }
 
-  void _handleUsageStatusChanged() {
-    final status = UsageLimitService.userStatus;
-    if (!mounted || status == null) return;
-    if (status.quota != _currentQuota) {
-      setState(() {
-        _currentQuota = status.quota;
-      });
+  void _handleServiceUpdate() {
+    final service = _subscriptionService;
+    if (service == null || !mounted) return;
+
+    final latestQuota = UsageLimitService.shared.userStatus?.quota;
+    final purchaseState = service.purchaseState;
+
+    final shouldUpdateQuota =
+        latestQuota != null && latestQuota != _currentQuota;
+    final shouldUpdateState = purchaseState != _lastPurchaseState;
+
+    if (!shouldUpdateQuota && !shouldUpdateState) {
+      return;
     }
+
+    setState(() {
+      if (latestQuota != null && latestQuota != _currentQuota) {
+        _currentQuota = latestQuota;
+      }
+      _lastPurchaseState = purchaseState;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context)!;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    final service = context.watch<SubscriptionService>();
+    final service = _subscriptionService;
+    if (service == null) {
+      return const SizedBox.shrink();
+    }
 
-    final purchaseState = service.purchaseState;
+    final purchaseState = _lastPurchaseState ?? service.purchaseState;
     final isProcessing =
         purchaseState == SubscriptionPurchaseState.purchasing ||
         purchaseState == SubscriptionPurchaseState.loading;
@@ -73,7 +100,7 @@ class _CreditPurchaseSheetState extends State<CreditPurchaseSheet> {
                 Text(
                   AppLocalizations.of(
                     context,
-                  )!.creditsOwnedLabel(_currentQuota),
+                  )!.creditsOwnedLabel(_currentQuota ?? 0),
                   style: Theme.of(
                     context,
                   ).textTheme.bodyMedium?.copyWith(fontSize: 18),

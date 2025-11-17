@@ -42,8 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
   GoogleMapController? _mapController;
   String? _selectedVehicleId;
   List<Destination> _recentDestinations = [];
-  final UsageLimitService _usageLimitService = UsageLimitService();
-  late final VoidCallback _usageStatusListener;
+  final UsageLimitService _usageLimitService = UsageLimitService.shared;
   String? _userId;
   bool _isQuotaLoaded = false;
   bool _locationPermissionGranted = false;
@@ -88,9 +87,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _quota = UsageLimitService.userStatus?.quota ?? _quota;
-    _usageStatusListener = _handleUsageStatusUpdate;
-    UsageLimitService.userStatusNotifier.addListener(_usageStatusListener);
+    _quota = UsageLimitService.shared.userStatus?.quota ?? _quota;
     _focusListener = () => setState(() {});
     _searchFocusNode.addListener(_focusListener);
     _placesController.addListener(() {
@@ -109,22 +106,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
-    UsageLimitService.userStatusNotifier.removeListener(_usageStatusListener);
     _searchFocusNode.removeListener(_focusListener);
     _placesController.dispose();
     _searchFocusNode.dispose();
     _mapController?.dispose();
     super.dispose();
-  }
-
-  void _handleUsageStatusUpdate() {
-    final status = UsageLimitService.userStatus;
-    if (!mounted || status == null) return;
-    if (status.quota != _quota) {
-      setState(() {
-        _quota = status.quota;
-      });
-    }
   }
 
   Future<void> _loadDefaultNavigationApp() async {
@@ -160,7 +146,12 @@ class _HomeScreenState extends State<HomeScreen> {
       await _loadDefaultNavigationApp();
       await _loadNavigationMode();
       await _loadSelectedVehicleId();
+      await _loadUsageData();
     }
+
+    setState(() {
+      _quota = UsageLimitService.shared.userStatus?.quota ?? 0;
+    });
   }
 
   Future<void> _loadRecentDestinations() async {
@@ -270,7 +261,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     try {
-      await _usageLimitService.fetchStatus(
+      final userStatus = await UsageLimitService.shared.fetchStatus(
         userId: userId,
         accessToken: accessToken,
       );
@@ -278,6 +269,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (!mounted) return;
       setState(() {
         _isQuotaLoaded = true;
+        _quota = userStatus.quota;
       });
     } on UsageLimitException catch (error) {
       debugPrint('[Usage] Failed to load quota: $error');
@@ -307,27 +299,18 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     try {
-      final result = await _usageLimitService.consume(
+      final userStatusResult = await UsageLimitService.shared.consume(
         userId: _userId!,
         accessToken: accessToken,
       );
 
-      if (false == result.success) {
-        if (result.errorMessage != null) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(result.errorMessage!)));
-        }
-        return false;
-      }
-
-      final updatedQuota = result.status.quota;
       if (mounted) {
         setState(() {
           _isQuotaLoaded = true;
+          _quota = userStatusResult.status.quota;
         });
 
-        if (updatedQuota <= 0) {
+        if (userStatusResult.status.quota <= 0) {
           await _showSubscriptionDialog();
           return false;
         }

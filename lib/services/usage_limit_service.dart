@@ -25,21 +25,17 @@ class ConsumptionResult {
 }
 
 class UsageLimitService {
-  UsageLimitService({http.Client? client}) : _client = client ?? http.Client();
+  UsageLimitService._({http.Client? client})
+    : _client = client ?? http.Client();
 
-  static UsageStatus? userStatus;
-  static final ValueNotifier<UsageStatus?> userStatusNotifier =
-      ValueNotifier<UsageStatus?>(null);
+  static final UsageLimitService shared = UsageLimitService._();
 
-  final _quotaUri = Uri.parse(
+  UsageStatus? userStatus;
+
+  final Uri _quotaUri = Uri.parse(
     '${TeslaAuthService.shared.apiBaseHost}/api/quota',
   );
   final http.Client _client;
-
-  static void _setUserStatus(UsageStatus status) {
-    userStatus = status;
-    userStatusNotifier.value = status;
-  }
 
   UsageStatus _parseStatus(Map<String, dynamic> body) {
     final userId = body['userId'] as String;
@@ -79,7 +75,7 @@ class UsageLimitService {
 
       final body = jsonDecode(response.body) as Map<String, dynamic>;
       final status = _parseStatus(body);
-      _setUserStatus(status);
+      userStatus = status;
       return status;
     } catch (error) {
       if (error is UsageLimitException) rethrow;
@@ -121,7 +117,7 @@ class UsageLimitService {
 
       final body = jsonDecode(response.body) as Map<String, dynamic>;
       final status = _parseStatus(body);
-      _setUserStatus(status);
+      userStatus = status;
       return ConsumptionResult(success: true, status: status);
     } on UsageLimitException catch (error) {
       debugPrint('[UsageLimit] consume failed: $error');
@@ -133,20 +129,22 @@ class UsageLimitService {
     }
   }
 
-  Future<UsageStatus> addCredits({
-    required String userId,
-    required String accessToken,
-    required int credits,
-  }) async {
-    if (userId.isEmpty) {
-      throw ArgumentError('userId cannot be empty');
+  Future<UsageStatus> addCredits(int credits) async {
+    final userId = await TeslaAuthService.shared.getEmail();
+    final accessToken = await TeslaAuthService.shared.getAccessToken();
+
+    if (userId == null || userId.isEmpty) {
+      throw UsageLimitException(message: 'Not signed in');
     }
-    if (accessToken.isEmpty) {
-      throw ArgumentError('accessToken cannot be empty');
+
+    if (accessToken == null || accessToken.isEmpty) {
+      throw UsageLimitException(message: 'Missing access token');
     }
+
     if (credits <= 0) {
-      throw ArgumentError('credits must be > 0');
+      throw UsageLimitException(message: 'credits must be > 0');
     }
+
     final uri = Uri.parse('${_quotaUri.toString()}/add');
     final res = await _client.post(
       uri,
@@ -156,6 +154,7 @@ class UsageLimitService {
       },
       body: jsonEncode({'userId': userId, 'credits': credits}),
     );
+
     if (res.statusCode != 200) {
       final body = jsonDecode(res.body) as Map<String, dynamic>?;
       throw UsageLimitException(
@@ -164,7 +163,7 @@ class UsageLimitService {
     }
     final body = jsonDecode(res.body) as Map<String, dynamic>;
     final status = _parseStatus(body);
-    _setUserStatus(status);
+    userStatus = status;
     return status;
   }
 }

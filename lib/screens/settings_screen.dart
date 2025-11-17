@@ -28,9 +28,7 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  final UsageLimitService _usageLimitService = UsageLimitService();
   late final SubscriptionService _subscriptionService;
-  late final VoidCallback _usageStatusListener;
   late final ThemeService _themeService;
   NavigationApp _selectedApp = NavigationApp.tmap;
   TeslaNavigationMode _navigationMode = TeslaNavigationMode.destination;
@@ -41,7 +39,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String? _selectedVehicleId;
   String? _debugAccessToken;
   late ThemePreset _themePreset;
-  late int _quota;
+  int _quota = UsageLimitService.shared.userStatus?.quota ?? 0;
 
   @override
   void initState() {
@@ -52,29 +50,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
     _themeService = Provider.of<ThemeService>(context, listen: false);
     _themePreset = _themeService.preset;
-    _quota = UsageLimitService.userStatus?.quota ?? widget.initialQuota;
+    // = UsageLimitService.userStatus?.quota ?? widget.initialQuota;
     _loadPreferences();
     if (kDebugMode) {
       _loadDebugAccessToken();
     }
-    _usageStatusListener = _handleUsageStatusUpdate;
-    UsageLimitService.userStatusNotifier.addListener(_usageStatusListener);
   }
 
   @override
   void dispose() {
-    UsageLimitService.userStatusNotifier.removeListener(_usageStatusListener);
     super.dispose();
-  }
-
-  void _handleUsageStatusUpdate() {
-    final usage = UsageLimitService.userStatus;
-    if (!mounted || usage == null) return;
-    if (usage.quota != _quota) {
-      setState(() {
-        _quota = usage.quota;
-      });
-    }
   }
 
   Future<void> _loadPreferences() async {
@@ -312,10 +297,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (!mounted) return;
     final loc = AppLocalizations.of(context)!;
     try {
-      final adUnitId = TeslaAuthService.shared.getRewardedAdUnitId(
-        preferTestIfMissing: true,
-      );
-      if (adUnitId.isEmpty) {
+      final rewardCreditsPerAd = TeslaAuthService.shared.rewardCreditsPerAd;
+      final adsId = TeslaAuthService.shared.adsId;
+
+      if (adsId == null || rewardCreditsPerAd == null) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(loc.rewardAdLoadFailed)));
@@ -324,7 +309,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       bool rewardedGiven = false;
       await RewardedAd.load(
-        adUnitId: adUnitId,
+        adUnitId: adsId,
         request: const AdRequest(),
         rewardedAdLoadCallback: RewardedAdLoadCallback(
           onAdLoaded: (ad) {
@@ -343,32 +328,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
             );
             ad.show(
               onUserEarnedReward: (ad, reward) async {
+                if (!mounted) return;
                 if (rewardedGiven) return;
                 rewardedGiven = true;
-                final userId = await TeslaAuthService.shared.getEmail();
-                final token = await TeslaAuthService.shared.getAccessToken();
-                if (userId == null || token == null) {
-                  if (!mounted) return;
+
+                try {
+                  final usage = await UsageLimitService.shared.addCredits(
+                    rewardCreditsPerAd,
+                  );
+
+                  setState(() {
+                    _quota = usage.quota;
+                    _hasChanges = true;
+                  });
+
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(loc.errorWithMessage('Not signed in')),
+                      content: Text(loc.rewardEarned(rewardCreditsPerAd)),
                     ),
-                  );
-                  return;
-                }
-                try {
-                  final rewardCredits = TeslaAuthService.shared
-                      .getRewardCreditsPerAd();
-
-                  await _usageLimitService.addCredits(
-                    userId: userId,
-                    accessToken: token,
-                    credits: rewardCredits,
-                  );
-                  if (!mounted) return;
-
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(loc.rewardEarned(rewardCredits))),
                   );
                 } catch (_) {
                   if (!mounted) return;
@@ -544,9 +521,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         final isCredit =
                             _subscriptionService.purchaseMode ==
                             PurchaseMode.creditPack;
-                        // Server `/api/quota/add` already returns the total credits,
-                        // so use `_quota` directly without client-side math.
-                        final currentCredits = _quota;
                         if (!isCredit) {
                           final texts = _purchaseCardTexts(loc);
                           return ListTile(
@@ -585,7 +559,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   Text(
                                     AppLocalizations.of(
                                       context,
-                                    )!.creditsOwnedLabel(currentCredits),
+                                    )!.creditsOwnedLabel(_quota),
                                     style: Theme.of(
                                       context,
                                     ).textTheme.bodySmall,

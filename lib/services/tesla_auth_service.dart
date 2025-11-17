@@ -45,12 +45,9 @@ class TeslaAuthService {
   String? _clientSecret;
   Map<String, CreditPackMeta> creditPackProductIdToCredits = const {};
 
-  // Ad / purchase settings should be shared across all instances.
-  static String? _adRewardedKeyIOS;
-  static String? _adRewardedKeyAndroid;
-  static Map<String, String> _adRefIOS = const {};
-  static Map<String, String> _adRefAndroid = const {};
-  static Map<String, int> _adRewards = const {};
+  late String? adsType;
+  late String? adsId;
+  late int? rewardCreditsPerAd;
 
   PurchaseMode? currentPurchaseMode;
 
@@ -204,78 +201,31 @@ class TeslaAuthService {
         creditPackProductIdToCredits = map;
       }
 
-      // Ad config (rewarded)
-      final iosAd = data['ios_ad'];
-      final androidAd = data['android_ad'];
-      final ref = data['ref'];
-      final adRewards = data['adRewards'];
-      if (iosAd is String) _adRewardedKeyIOS = iosAd;
-      if (androidAd is String) _adRewardedKeyAndroid = androidAd;
-      if (ref is Map<String, dynamic>) {
-        final ios = ref['ios'];
-        final android = ref['android'];
-        if (ios is Map<String, dynamic>) {
-          _adRefIOS = ios.map((k, v) => MapEntry(k, (v ?? '').toString()));
+      adsType = () {
+        if (io.Platform.isIOS) {
+          return data['ios_ad'] as String;
+        } else if (io.Platform.isAndroid) {
+          return data['android_ad'] as String;
         }
-        if (android is Map<String, dynamic>) {
-          _adRefAndroid = android.map(
-            (k, v) => MapEntry(k, (v ?? '').toString()),
-          );
+        return '';
+      }();
+
+      adsId = () {
+        if (io.Platform.isIOS) {
+          return data['ref']['ios'][adsType] as String;
+        } else if (io.Platform.isAndroid) {
+          return data['ref']['android'][adsType] as String;
         }
-      }
-      if (adRewards is Map<String, dynamic>) {
-        _adRewards = adRewards.map(
-          (k, v) => MapEntry(k, (v as num?)?.toInt() ?? 0),
-        );
-      }
+        return '';
+      }();
+
+      rewardCreditsPerAd = () {
+        return data['adRewards'][adsType] as int;
+      }();
     } catch (_) {
       return false;
     }
     return true;
-  }
-
-  String getRewardedAdUnitId({bool preferTestIfMissing = true}) {
-    final isIOS = io.Platform.isIOS;
-    final ref = isIOS ? _adRefIOS : _adRefAndroid;
-
-    // In debug builds (e.g. simulator), prefer the official AdMob test unit.
-    if (kDebugMode) {
-      final testId = ref['rewarded_test'];
-      if (testId != null && testId.isNotEmpty) {
-        return testId;
-      }
-    }
-
-    final key =
-        (isIOS ? _adRewardedKeyIOS : _adRewardedKeyAndroid) ?? 'rewarded_ad';
-    final id = ref[key];
-    if (id != null && id.isNotEmpty) return id;
-
-    if (preferTestIfMissing) {
-      final fallbackTest = ref['rewarded_test'];
-      if (fallbackTest != null && fallbackTest.isNotEmpty) {
-        return fallbackTest;
-      }
-    }
-    return '';
-  }
-
-  /// Returns how many credits should be awarded for the current rewarded ad key.
-  /// Falls back to 0 if no configuration is available.
-  int getRewardCreditsPerAd() {
-    final isIOS = io.Platform.isIOS;
-    final key =
-        (isIOS ? _adRewardedKeyIOS : _adRewardedKeyAndroid) ?? 'rewarded_ad';
-    final configured = _adRewards[key];
-    if (configured != null && configured > 0) {
-      return configured;
-    }
-    // If there is a specific reward configured for the test key, use that.
-    final testConfigured = _adRewards['rewarded_test'];
-    if (testConfigured != null && testConfigured > 0) {
-      return testConfigured;
-    }
-    return 0;
   }
 
   Future<TeslaNavigationMode> getNavigationModePreference() async {

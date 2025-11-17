@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:in_app_purchase_android/in_app_purchase_android.dart';
 import '../models/credit_pack_meta.dart';
-import 'tesla_auth_service.dart';
 import 'usage_limit_service.dart';
 
 import '../models/purchase_mode.dart';
@@ -422,26 +421,21 @@ class SubscriptionService extends ChangeNotifier {
       return false;
     }
 
-    final userId = await TeslaAuthService.shared.getEmail();
-    final token = await TeslaAuthService.shared.getAccessToken();
     final meta = creditPacks[purchase.productID];
 
-    if (userId == null || token == null || meta == null) {
-      debugPrint('[Subscription] Skipped top-up (missing user/token)');
-      _lastError = 'Not signed in';
+    if (meta == null) {
+      debugPrint(
+        '[Subscription] Skipped top-up (missing credit pack metadata)',
+      );
+      _lastError = 'Missing credit pack metadata';
       _purchaseState = SubscriptionPurchaseState.error;
       notifyListeners();
       return false;
     }
 
     try {
-      final usage = await UsageLimitService().addCredits(
-        userId: userId,
-        accessToken: token,
-        credits: meta.credits,
-      );
+      final usage = await UsageLimitService.shared.addCredits(meta.credits);
 
-      // UsageLimitService.userStatus is automatically updated by addCredits
       debugPrint(
         '[Subscription] Top-up success: +${meta.credits} → quota=${usage.quota}',
       );
