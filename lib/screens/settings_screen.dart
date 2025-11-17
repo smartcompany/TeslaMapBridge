@@ -30,6 +30,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final UsageLimitService _usageLimitService = UsageLimitService();
   late final SubscriptionService _subscriptionService;
+  late final VoidCallback _usageStatusListener;
   late final ThemeService _themeService;
   NavigationApp _selectedApp = NavigationApp.tmap;
   TeslaNavigationMode _navigationMode = TeslaNavigationMode.destination;
@@ -41,8 +42,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String? _debugAccessToken;
   late ThemePreset _themePreset;
   late int _quota;
-  int _lastRewardCredits = 0;
-  bool _showRewardAnim = false;
 
   @override
   void initState() {
@@ -53,10 +52,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
     _themeService = Provider.of<ThemeService>(context, listen: false);
     _themePreset = _themeService.preset;
-    _quota = widget.initialQuota;
+    _quota = UsageLimitService.userStatus?.quota ?? widget.initialQuota;
     _loadPreferences();
     if (kDebugMode) {
       _loadDebugAccessToken();
+    }
+    _usageStatusListener = _handleUsageStatusUpdate;
+    UsageLimitService.userStatusNotifier.addListener(_usageStatusListener);
+  }
+
+  @override
+  void dispose() {
+    UsageLimitService.userStatusNotifier.removeListener(_usageStatusListener);
+    super.dispose();
+  }
+
+  void _handleUsageStatusUpdate() {
+    final usage = UsageLimitService.userStatus;
+    if (!mounted || usage == null) return;
+    if (usage.quota != _quota) {
+      setState(() {
+        _quota = usage.quota;
+      });
     }
   }
 
@@ -343,23 +360,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   final rewardCredits = TeslaAuthService.shared
                       .getRewardCreditsPerAd();
 
-                  final usage = await _usageLimitService.addCredits(
+                  await _usageLimitService.addCredits(
                     userId: userId,
                     accessToken: token,
                     credits: rewardCredits,
                   );
                   if (!mounted) return;
-                  setState(() {
-                    _quota = usage.quota;
-                    _lastRewardCredits = rewardCredits;
-                    _showRewardAnim = true;
-                  });
-                  Future.delayed(const Duration(milliseconds: 900), () {
-                    if (!mounted) return;
-                    setState(() {
-                      _showRewardAnim = false;
-                    });
-                  });
+
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text(loc.rewardEarned(rewardCredits))),
                   );

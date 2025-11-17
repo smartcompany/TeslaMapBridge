@@ -27,10 +27,19 @@ class ConsumptionResult {
 class UsageLimitService {
   UsageLimitService({http.Client? client}) : _client = client ?? http.Client();
 
+  static UsageStatus? userStatus;
+  static final ValueNotifier<UsageStatus?> userStatusNotifier =
+      ValueNotifier<UsageStatus?>(null);
+
   final _quotaUri = Uri.parse(
     '${TeslaAuthService.shared.apiBaseHost}/api/quota',
   );
   final http.Client _client;
+
+  static void _setUserStatus(UsageStatus status) {
+    userStatus = status;
+    userStatusNotifier.value = status;
+  }
 
   UsageStatus _parseStatus(Map<String, dynamic> body) {
     final userId = body['userId'] as String;
@@ -69,7 +78,9 @@ class UsageLimitService {
       }
 
       final body = jsonDecode(response.body) as Map<String, dynamic>;
-      return _parseStatus(body);
+      final status = _parseStatus(body);
+      _setUserStatus(status);
+      return status;
     } catch (error) {
       if (error is UsageLimitException) rethrow;
       debugPrint('[UsageLimit] Error fetching quota: $error');
@@ -110,6 +121,7 @@ class UsageLimitService {
 
       final body = jsonDecode(response.body) as Map<String, dynamic>;
       final status = _parseStatus(body);
+      _setUserStatus(status);
       return ConsumptionResult(success: true, status: status);
     } on UsageLimitException catch (error) {
       debugPrint('[UsageLimit] consume failed: $error');
@@ -151,7 +163,9 @@ class UsageLimitService {
       );
     }
     final body = jsonDecode(res.body) as Map<String, dynamic>;
-    return _parseStatus(body);
+    final status = _parseStatus(body);
+    _setUserStatus(status);
+    return status;
   }
 }
 

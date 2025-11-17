@@ -43,6 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _selectedVehicleId;
   List<Destination> _recentDestinations = [];
   final UsageLimitService _usageLimitService = UsageLimitService();
+  late final VoidCallback _usageStatusListener;
   String? _userId;
   bool _isQuotaLoaded = false;
   bool _locationPermissionGranted = false;
@@ -87,6 +88,9 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _quota = UsageLimitService.userStatus?.quota ?? _quota;
+    _usageStatusListener = _handleUsageStatusUpdate;
+    UsageLimitService.userStatusNotifier.addListener(_usageStatusListener);
     _focusListener = () => setState(() {});
     _searchFocusNode.addListener(_focusListener);
     _placesController.addListener(() {
@@ -101,6 +105,26 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadSelectedVehicleId();
     _initLocationServices();
     _initializeUsageTracking();
+  }
+
+  @override
+  void dispose() {
+    UsageLimitService.userStatusNotifier.removeListener(_usageStatusListener);
+    _searchFocusNode.removeListener(_focusListener);
+    _placesController.dispose();
+    _searchFocusNode.dispose();
+    _mapController?.dispose();
+    super.dispose();
+  }
+
+  void _handleUsageStatusUpdate() {
+    final status = UsageLimitService.userStatus;
+    if (!mounted || status == null) return;
+    if (status.quota != _quota) {
+      setState(() {
+        _quota = status.quota;
+      });
+    }
   }
 
   Future<void> _loadDefaultNavigationApp() async {
@@ -246,12 +270,10 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     try {
-      final status = await _usageLimitService.fetchStatus(
+      await _usageLimitService.fetchStatus(
         userId: userId,
         accessToken: accessToken,
       );
-
-      _quota = status.quota;
 
       if (!mounted) return;
       setState(() {
@@ -299,13 +321,13 @@ class _HomeScreenState extends State<HomeScreen> {
         return false;
       }
 
+      final updatedQuota = result.status.quota;
       if (mounted) {
         setState(() {
           _isQuotaLoaded = true;
-          _quota = result.status.quota;
         });
 
-        if (_quota <= 0) {
+        if (updatedQuota <= 0) {
           await _showSubscriptionDialog();
           return false;
         }
@@ -359,7 +381,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       builder: (sheetContext) =>
           subscriptionService.purchaseMode == PurchaseMode.creditPack
-          ? const CreditPurchaseSheet(quota: 0)
+          ? CreditPurchaseSheet(quota: _quota)
           : SubscriptionSheet(quota: _quota),
     );
     subscriptionService.resetTransientState();
@@ -508,15 +530,6 @@ class _HomeScreenState extends State<HomeScreen> {
   // Google Places API key
   static const String _googlePlacesApiKey =
       'AIzaSyBb1IGpqLzKwdtAfyzsqP7YZpn0nQI9iQo';
-
-  @override
-  void dispose() {
-    _searchFocusNode.removeListener(_focusListener);
-    _placesController.dispose();
-    _searchFocusNode.dispose();
-    _mapController?.dispose();
-    super.dispose();
-  }
 
   Future<void> _onPlaceSelected(Prediction prediction) async {
     if (prediction.placeId == null) return;

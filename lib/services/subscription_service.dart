@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
@@ -36,7 +35,6 @@ class SubscriptionService extends ChangeNotifier {
   bool _isLoading = false;
   bool _restoreInProgress = false;
   List<ProductDetails> _products = const [];
-  PurchaseDetails? _lastPurchase;
   SubscriptionPurchaseState _purchaseState = SubscriptionPurchaseState.idle;
   String? _lastError;
 
@@ -443,11 +441,20 @@ class SubscriptionService extends ChangeNotifier {
         credits: meta.credits,
       );
 
+      // UsageLimitService.userStatus is automatically updated by addCredits
+      debugPrint(
+        '[Subscription] Top-up success: +${meta.credits} → quota=${usage.quota}',
+      );
+
       await _iap.completePurchase(purchase);
       notifyListeners();
 
       return true;
     } catch (e) {
+      debugPrint('[Subscription] Top-up error: $e');
+      _lastError = 'Top-up failed: $e';
+      _purchaseState = SubscriptionPurchaseState.error;
+      notifyListeners();
       return false;
     }
   }
