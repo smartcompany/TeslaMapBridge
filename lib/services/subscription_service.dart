@@ -36,6 +36,7 @@ class SubscriptionService extends ChangeNotifier {
   List<ProductDetails> _products = const [];
   SubscriptionPurchaseState _purchaseState = SubscriptionPurchaseState.idle;
   String? _lastError;
+  String? _processingProductId;
 
   bool get isAvailable => _isAvailable;
   bool get isSubscribed => () {
@@ -52,6 +53,7 @@ class SubscriptionService extends ChangeNotifier {
   List<ProductDetails> get products => _products;
   SubscriptionPurchaseState get purchaseState => _purchaseState;
   String? get lastError => _lastError;
+  String? get processingProductId => _processingProductId;
   PurchaseMode? _purchaseMode;
   PurchaseMode? get purchaseMode => _purchaseMode;
   bool get purchasingAvailable => _purchaseMode != null;
@@ -311,6 +313,7 @@ class SubscriptionService extends ChangeNotifier {
     // This prevents new purchases from being treated as restored
     await Future.delayed(const Duration(milliseconds: 500));
 
+    _processingProductId = productId;
     _purchaseState = SubscriptionPurchaseState.purchasing;
     _lastError = null;
     notifyListeners();
@@ -351,6 +354,7 @@ class SubscriptionService extends ChangeNotifier {
       debugPrint('[Subscription] Stack trace: $stackTrace');
       _lastError = 'Purchase failed: $e';
       _purchaseState = SubscriptionPurchaseState.error;
+      _processingProductId = null;
       notifyListeners();
       rethrow;
     }
@@ -390,17 +394,29 @@ class SubscriptionService extends ChangeNotifier {
         case PurchaseStatus.purchased:
           _purchaseState = SubscriptionPurchaseState.purchased;
           _lastError = null;
+          if (_processingProductId == purchase.productID) {
+            _processingProductId = null;
+          }
           break;
         case PurchaseStatus.restored:
           _purchaseState = SubscriptionPurchaseState.restored;
           _lastError = null;
+          if (_processingProductId == purchase.productID) {
+            _processingProductId = null;
+          }
           break;
         case PurchaseStatus.error:
           _lastError = purchase.error?.message ?? 'Purchase failed';
           _purchaseState = SubscriptionPurchaseState.error;
+          if (_processingProductId == purchase.productID) {
+            _processingProductId = null;
+          }
           break;
         case PurchaseStatus.canceled:
           _purchaseState = SubscriptionPurchaseState.idle;
+          if (_processingProductId == purchase.productID) {
+            _processingProductId = null;
+          }
           break;
       }
 
@@ -441,6 +457,9 @@ class SubscriptionService extends ChangeNotifier {
       );
 
       await _iap.completePurchase(purchase);
+      if (_processingProductId == purchase.productID) {
+        _processingProductId = null;
+      }
       notifyListeners();
 
       return true;
@@ -448,6 +467,9 @@ class SubscriptionService extends ChangeNotifier {
       debugPrint('[Subscription] Top-up error: $e');
       _lastError = 'Top-up failed: $e';
       _purchaseState = SubscriptionPurchaseState.error;
+      if (_processingProductId == purchase.productID) {
+        _processingProductId = null;
+      }
       notifyListeners();
       return false;
     }
@@ -505,6 +527,11 @@ class SubscriptionService extends ChangeNotifier {
 
     if (_restoreInProgress) {
       _restoreInProgress = false;
+      didChange = true;
+    }
+
+    if (_processingProductId != null) {
+      _processingProductId = null;
       didChange = true;
     }
 

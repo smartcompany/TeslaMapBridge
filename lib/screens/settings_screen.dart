@@ -48,6 +48,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context,
       listen: false,
     );
+    _subscriptionService.addListener(_handleSubscriptionStateChange);
     _themeService = Provider.of<ThemeService>(context, listen: false);
     _themePreset = _themeService.preset;
     // = UsageLimitService.userStatus?.quota ?? widget.initialQuota;
@@ -59,7 +60,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   void dispose() {
+    _subscriptionService.removeListener(_handleSubscriptionStateChange);
     super.dispose();
+  }
+
+  void _handleSubscriptionStateChange() {
+    if (_hasChanges) return;
+    final state = _subscriptionService.purchaseState;
+    if (state == SubscriptionPurchaseState.purchased ||
+        state == SubscriptionPurchaseState.purchasing ||
+        state == SubscriptionPurchaseState.restored) {
+      if (!mounted) return;
+      setState(() {
+        _hasChanges = true;
+      });
+    }
   }
 
   Future<void> _loadPreferences() async {

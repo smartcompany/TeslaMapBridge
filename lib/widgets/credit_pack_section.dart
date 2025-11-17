@@ -8,10 +8,12 @@ class CreditPackSection extends StatelessWidget {
     super.key,
     required this.service,
     required this.isProcessing,
+    this.processingProductId,
   });
 
   final SubscriptionService service;
   final bool isProcessing;
+  final String? processingProductId;
 
   @override
   Widget build(BuildContext context) {
@@ -121,6 +123,9 @@ class CreditPackSection extends StatelessWidget {
             );
           }
 
+          final isCurrentProcessing =
+              isProcessing && processingProductId == productId;
+
           return Card(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -167,13 +172,38 @@ class CreditPackSection extends StatelessWidget {
                           : () async {
                               await service.buyCredits(productId);
                             },
-                      child: Text(
-                        priceText,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        ),
-                      ),
+                      child: isCurrentProcessing
+                          ? Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor:
+                                        const AlwaysStoppedAnimation<Color>(
+                                          Colors.white,
+                                        ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  priceText,
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Text(
+                              priceText,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
                   ),
                 ],

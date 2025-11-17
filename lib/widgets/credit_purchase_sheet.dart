@@ -19,6 +19,7 @@ class CreditPurchaseSheet extends StatefulWidget {
 class _CreditPurchaseSheetState extends State<CreditPurchaseSheet> {
   SubscriptionService? _subscriptionService;
   SubscriptionPurchaseState? _lastPurchaseState;
+  String? _lastProcessingProductId;
   late int? _currentQuota;
 
   @override
@@ -51,12 +52,14 @@ class _CreditPurchaseSheetState extends State<CreditPurchaseSheet> {
 
     final latestQuota = UsageLimitService.shared.userStatus?.quota;
     final purchaseState = service.purchaseState;
+    final processingId = service.processingProductId;
 
     final shouldUpdateQuota =
         latestQuota != null && latestQuota != _currentQuota;
     final shouldUpdateState = purchaseState != _lastPurchaseState;
+    final shouldUpdateProcessing = processingId != _lastProcessingProductId;
 
-    if (!shouldUpdateQuota && !shouldUpdateState) {
+    if (!shouldUpdateQuota && !shouldUpdateState && !shouldUpdateProcessing) {
       return;
     }
 
@@ -65,6 +68,7 @@ class _CreditPurchaseSheetState extends State<CreditPurchaseSheet> {
         _currentQuota = latestQuota;
       }
       _lastPurchaseState = purchaseState;
+      _lastProcessingProductId = processingId;
     });
   }
 
@@ -79,7 +83,7 @@ class _CreditPurchaseSheetState extends State<CreditPurchaseSheet> {
 
     final purchaseState = _lastPurchaseState ?? service.purchaseState;
     final isProcessing =
-        purchaseState == SubscriptionPurchaseState.purchasing ||
+        service.processingProductId != null ||
         purchaseState == SubscriptionPurchaseState.loading;
 
     return SafeArea(
@@ -108,7 +112,11 @@ class _CreditPurchaseSheetState extends State<CreditPurchaseSheet> {
               ],
             ),
             const SizedBox(height: 16),
-            CreditPackSection(service: service, isProcessing: isProcessing),
+            CreditPackSection(
+              service: service,
+              isProcessing: isProcessing,
+              processingProductId: service.processingProductId,
+            ),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
