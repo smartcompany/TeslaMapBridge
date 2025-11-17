@@ -283,7 +283,8 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<bool> _checkAndConsumeNavigationQuota() async {
+  /// Check if user has quota (without consuming)
+  Future<bool> _checkNavigationQuota() async {
     final subscriptionService = context.read<SubscriptionService>();
     if (subscriptionService.isSubscribed) {
       return true;
@@ -293,9 +294,24 @@ class _HomeScreenState extends State<HomeScreen> {
       await _loadUsageData();
     }
 
+    if (_quota <= 0) {
+      await _showSubscriptionDialog();
+      return false;
+    }
+
+    return true;
+  }
+
+  /// Consume navigation quota (called after successful Tesla API call)
+  Future<void> _consumeNavigationQuota() async {
+    final subscriptionService = context.read<SubscriptionService>();
+    if (subscriptionService.isSubscribed) {
+      return;
+    }
+
     final accessToken = await TeslaAuthService.shared.getAccessToken();
     if (accessToken == null || accessToken.isEmpty) {
-      return false;
+      return;
     }
 
     try {
@@ -309,14 +325,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _isQuotaLoaded = true;
           _quota = userStatusResult.status.quota;
         });
-
-        if (userStatusResult.status.quota <= 0) {
-          await _showSubscriptionDialog();
-          return false;
-        }
       }
-
-      return true;
     } on UsageLimitException catch (error) {
       debugPrint('[Usage] consume failed: $error');
       if (mounted) {
@@ -324,7 +333,6 @@ class _HomeScreenState extends State<HomeScreen> {
           context,
         ).showSnackBar(SnackBar(content: Text(error.message)));
       }
-      return false;
     }
   }
 
@@ -462,7 +470,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return code.isNotEmpty ? code : 'en';
   }
 
-  Future<void> _sendDestinationToTesla(Destination destination) async {
+  Future<bool> _sendDestinationToTesla(Destination destination) async {
     if (_selectedVehicleId == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -472,7 +480,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         );
       }
-      return;
+      return false;
     }
 
     setState(() {
@@ -486,6 +494,7 @@ class _HomeScreenState extends State<HomeScreen> {
       destination.longitude,
       destination.name,
       mode: _navigationMode,
+      destinationAddress: destination.address,
     );
 
     if (mounted) {
@@ -508,6 +517,8 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       );
     }
+
+    return success;
   }
 
   // Google Places API key
@@ -766,13 +777,19 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    final canNavigate = await _checkAndConsumeNavigationQuota();
+    // Check quota before sending (but don't consume yet)
+    final canNavigate = await _checkNavigationQuota();
     if (!canNavigate) {
       return;
     }
 
     final destination = _selectedDestination!;
-    await _sendDestinationToTesla(destination);
+    final teslaSuccess = await _sendDestinationToTesla(destination);
+
+    // Only consume quota if Tesla API call was successful
+    if (teslaSuccess) {
+      await _consumeNavigationQuota();
+    }
 
     setState(() {
       _isLoading = true;

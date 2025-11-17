@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/credit_pack_meta.dart';
 import 'package:flutter/foundation.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../models/purchase_mode.dart';
 
@@ -667,16 +668,26 @@ class TeslaAuthService {
     String vehicleId,
     String destinationName,
     double latitude,
-    double longitude,
-  ) async {
+    double longitude, {
+    String? destinationAddress,
+  }) async {
     final navigationUri = await _buildFleetUri(
       '/api/1/vehicles/$vehicleId/command/navigation_request',
     );
 
     final localeTag = ui.PlatformDispatcher.instance.locale.toLanguageTag();
-    final textValue = destinationName.trim().isEmpty
-        ? '$latitude,$longitude'
-        : destinationName;
+
+    // Prefer address over name for navigation accuracy
+    // If address is available, use it; otherwise use name; fallback to coordinates
+    final textValue = () {
+      if (destinationAddress != null && destinationAddress.trim().isNotEmpty) {
+        return destinationAddress.trim();
+      }
+      if (destinationName.trim().isNotEmpty) {
+        return destinationName.trim();
+      }
+      return '$latitude,$longitude';
+    }();
 
     final response = await http.post(
       navigationUri,
@@ -703,6 +714,70 @@ class TeslaAuthService {
         '[TeslaNav] navigation_request failed '
         'status=${response.statusCode} body=${response.body}',
       );
+
+      // Log to Firebase Crashlytics as non-fatal error
+      try {
+        // Set custom keys for this error
+        await FirebaseCrashlytics.instance.setCustomKey(
+          'navigation_request_status',
+          response.statusCode,
+        );
+        await FirebaseCrashlytics.instance.setCustomKey(
+          'navigation_request_destination_address',
+          destinationAddress ?? 'N/A',
+        );
+        await FirebaseCrashlytics.instance.setCustomKey(
+          'navigation_request_destination_name',
+          destinationName,
+        );
+        await FirebaseCrashlytics.instance.setCustomKey(
+          'navigation_request_latitude',
+          latitude,
+        );
+        await FirebaseCrashlytics.instance.setCustomKey(
+          'navigation_request_longitude',
+          longitude,
+        );
+        await FirebaseCrashlytics.instance.setCustomKey(
+          'navigation_request_text_value',
+          textValue,
+        );
+        await FirebaseCrashlytics.instance.setCustomKey(
+          'navigation_request_locale_tag',
+          localeTag,
+        );
+        await FirebaseCrashlytics.instance.setCustomKey(
+          'navigation_request_vehicle_id',
+          vehicleId,
+        );
+        await FirebaseCrashlytics.instance.setCustomKey(
+          'navigation_request_response_body',
+          response.body,
+        );
+
+        // Record as non-fatal error so it appears immediately in Firebase Console
+        await FirebaseCrashlytics.instance.recordError(
+          Exception(
+            'Tesla navigation_request failed: status=${response.statusCode}',
+          ),
+          StackTrace.current,
+          reason: 'Navigation request failed',
+          information: [
+            'Destination Address: ${destinationAddress ?? "N/A"}',
+            'Destination Name: $destinationName',
+            'Latitude: $latitude',
+            'Longitude: $longitude',
+            'Text Value: $textValue',
+            'Locale Tag: $localeTag',
+            'Vehicle ID: $vehicleId',
+            'Response Body: ${response.body}',
+          ],
+          fatal: false, // Non-fatal error
+        );
+      } catch (e) {
+        print('[TeslaNav] Failed to log to Firebase: $e');
+      }
+
       return false;
     }
 
@@ -783,6 +858,7 @@ class TeslaAuthService {
     double longitude,
     String destinationName, {
     TeslaNavigationMode mode = TeslaNavigationMode.destination,
+    String? destinationAddress,
   }) async {
     try {
       if (!await isLoggedIn()) {
@@ -798,7 +874,8 @@ class TeslaAuthService {
 
       print(
         '[TeslaSend] Sending to vehicle=$vehicleId '
-        'lat=$latitude lon=$longitude name=$destinationName',
+        'lat=$latitude lon=$longitude name=$destinationName '
+        'address=${destinationAddress ?? "N/A"}',
       );
 
       if (mode == TeslaNavigationMode.gps) {
@@ -815,6 +892,7 @@ class TeslaAuthService {
         destinationName,
         latitude,
         longitude,
+        destinationAddress: destinationAddress,
       );
     } catch (e) {
       print('[TeslaSend] Send destination error: $e');
