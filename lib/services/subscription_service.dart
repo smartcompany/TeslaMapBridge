@@ -349,6 +349,18 @@ class SubscriptionService extends ChangeNotifier {
         autoConsume: true,
       );
       debugPrint('[Subscription] buyConsumable completed $result');
+
+      // 사용자가 결제 UI를 닫아 구매를 진행하지 않은 경우,
+      // 추가 업데이트 콜백이 오지 않으므로 여기서 상태를 초기화한다.
+      final bool noFollowUpPurchaseEvent =
+          _purchaseState == SubscriptionPurchaseState.purchasing &&
+          _processingProductId == productId;
+
+      if (noFollowUpPurchaseEvent) {
+        _processingProductId = null;
+        _purchaseState = SubscriptionPurchaseState.idle;
+        notifyListeners();
+      }
     } catch (e, stackTrace) {
       debugPrint('[Subscription] buyConsumable error: $e');
       debugPrint('[Subscription] Stack trace: $stackTrace');
@@ -501,11 +513,17 @@ class SubscriptionService extends ChangeNotifier {
         case PurchaseStatus.error:
           _lastError = purchase.error?.message ?? 'Purchase failed';
           _purchaseState = SubscriptionPurchaseState.error;
+          if (_processingProductId == purchase.productID) {
+            _processingProductId = null;
+          }
           notifyListeners();
           break;
 
         case PurchaseStatus.canceled:
           _purchaseState = SubscriptionPurchaseState.idle;
+          if (_processingProductId == purchase.productID) {
+            _processingProductId = null;
+          }
           notifyListeners();
           break;
       }
