@@ -444,9 +444,13 @@ class SubscriptionService extends ChangeNotifier {
   Future<bool> _topUpAndCompletePurchase({
     required PurchaseDetails purchase,
   }) async {
-    if (purchase.status != PurchaseStatus.pending &&
-        purchase.status != PurchaseStatus.restored) {
-      return false;
+    switch (purchase.status) {
+      case PurchaseStatus.restored: // ios case
+      case PurchaseStatus.purchased: // android case
+        debugPrint('[Subscription] purchase.status: ${purchase.status}');
+        break;
+      default:
+        return false;
     }
 
     final meta = creditPacks[purchase.productID];
