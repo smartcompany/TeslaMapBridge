@@ -322,12 +322,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return;
       }
 
+      // Show loading spinner
+      setState(() {
+        _isLoading = true;
+      });
+
       bool rewardedGiven = false;
       await RewardedAd.load(
         adUnitId: adsId,
         request: const AdRequest(),
         rewardedAdLoadCallback: RewardedAdLoadCallback(
           onAdLoaded: (ad) {
+            setState(() {
+              _isLoading = false;
+            });
+
             ad.fullScreenContentCallback = FullScreenContentCallback(
               onAdFailedToShowFullScreenContent: (ad, error) {
                 ad.dispose();
@@ -372,6 +381,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             );
           },
           onAdFailedToLoad: (error) {
+            setState(() {
+              _isLoading = false;
+            });
+
             if (!mounted) return;
             ScaffoldMessenger.of(
               context,

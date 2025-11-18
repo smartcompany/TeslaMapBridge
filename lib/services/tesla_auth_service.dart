@@ -196,7 +196,9 @@ class TeslaAuthService {
           final id = item['productId'] as String?;
           final credits = (item['credits'] as num?)?.toInt();
           if (id != null && id.isNotEmpty && credits != null && credits > 0) {
-            map[id] = CreditPackMeta(credits: credits);
+            // On Android, convert productId to lowercase for Google Play Console compatibility
+            final normalizedId = io.Platform.isAndroid ? id.toLowerCase() : id;
+            map[normalizedId] = CreditPackMeta(credits: credits);
           }
         }
         creditPackProductIdToCredits = map;
