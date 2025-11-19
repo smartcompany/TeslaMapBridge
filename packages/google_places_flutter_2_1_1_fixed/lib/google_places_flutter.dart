@@ -96,6 +96,14 @@ class _GooglePlaceAutoCompleteTextFieldState
 
   @override
   Widget build(BuildContext context) {
+    final bool showCrossButton =
+        widget.isCrossBtnShown && isCrossBtn && _showCrossIconWidget();
+    final InputDecoration effectiveDecoration = widget.inputDecoration.copyWith(
+      suffixIcon: showCrossButton
+          ? IconButton(onPressed: clearData, icon: const Icon(Icons.close))
+          : null,
+    );
+
     return CompositedTransformTarget(
       link: _layerLink,
       child: Container(
@@ -108,42 +116,28 @@ class _GooglePlaceAutoCompleteTextFieldState
                 shape: BoxShape.rectangle,
                 border: Border.all(color: Colors.grey, width: 0.6),
                 borderRadius: BorderRadius.all(Radius.circular(10))),
-        child: Row(
-          mainAxisSize: MainAxisSize.max,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: TextFormField(
-                decoration: widget.inputDecoration,
-                style: widget.textStyle,
-                controller: widget.textEditingController,
-                focusNode: widget.focusNode ?? FocusNode(),
-                keyboardType:
-                    widget.keyboardType ?? TextInputType.streetAddress,
-                textInputAction: widget.textInputAction ?? TextInputAction.done,
-                onFieldSubmitted: (value) {
-                  if (widget.formSubmitCallback != null) {
-                    widget.formSubmitCallback!();
-                  }
-                },
-                validator: (inputString) {
-                  return widget.validator?.call(inputString, context);
-                },
-                onChanged: (string) {
-                  subject.add(string);
-                  if (widget.isCrossBtnShown) {
-                    isCrossBtn = string.isNotEmpty ? true : false;
-                    setState(() {});
-                  }
-                },
-              ),
-            ),
-            (!widget.isCrossBtnShown)
-                ? SizedBox()
-                : isCrossBtn && _showCrossIconWidget()
-                    ? IconButton(onPressed: clearData, icon: Icon(Icons.close))
-                    : SizedBox()
-          ],
+        child: TextFormField(
+          decoration: effectiveDecoration,
+          style: widget.textStyle,
+          controller: widget.textEditingController,
+          focusNode: widget.focusNode ?? FocusNode(),
+          keyboardType: widget.keyboardType ?? TextInputType.streetAddress,
+          textInputAction: widget.textInputAction ?? TextInputAction.done,
+          onFieldSubmitted: (value) {
+            if (widget.formSubmitCallback != null) {
+              widget.formSubmitCallback!();
+            }
+          },
+          validator: (inputString) {
+            return widget.validator?.call(inputString, context);
+          },
+          onChanged: (string) {
+            subject.add(string);
+            if (widget.isCrossBtnShown) {
+              isCrossBtn = string.isNotEmpty ? true : false;
+              setState(() {});
+            }
+          },
         ),
       ),
     );

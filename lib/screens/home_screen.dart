@@ -911,7 +911,7 @@ class _HomeScreenState extends State<HomeScreen> {
       debounceTime: 400,
       countries: const ['kr', 'us', 'jp', 'cn'],
       isLatLngRequired: true,
-      isCrossBtnShown: false,
+      isCrossBtnShown: true,
       getPlaceDetailWithLatLng: (prediction) {
         _onPlaceSelected(prediction);
       },
