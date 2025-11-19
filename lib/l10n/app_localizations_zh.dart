@@ -18,7 +18,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get defaultNavigationApp => '默认导航应用';
 
   @override
-  String get teslaNavigationModeTitle => '特斯拉导航方式';
+  String get teslaNavigationModeTitle => '导航方式';
 
   @override
   String get teslaNavigationModeDestination => '发送目的地信息';
@@ -53,7 +53,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get recentSearches => '最近行驶地点';
 
   @override
-  String get teslaVehicleSelection => '选择特斯拉车辆';
+  String get teslaVehicleSelection => '选择车辆';
 
   @override
   String get noVehiclesMessage => '未找到车辆或加载失败。\n请在 Tesla 应用中确认后刷新。';
@@ -99,7 +99,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get unknownPlace => '未知地点';
 
   @override
-  String get loginTitle => '特斯拉登录';
+  String get loginTitle => '车辆账户登录';
 
   @override
   String get initializing => '初始化中...';

@@ -706,6 +706,22 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _onMapTapped(LatLng latLng) async {
+    // 자동완성 리스트나 최근 주행한 장소 리스트가 보이는 경우 체크
+    // (포커스 해제 전에 체크해야 함)
+    final hasSearchFocus = _searchFocusNode.hasFocus;
+    final hasRecentDestinations = _recentDestinations.isNotEmpty;
+    
+    // 검색창 포커스 해제 (리스트 숨김)
+    _searchFocusNode.unfocus();
+    FocusManager.instance.primaryFocus?.unfocus();
+
+    // 자동완성 리스트나 최근 주행한 장소 리스트가 보이는 경우
+    // 위치 정보를 설정하지 않고 리스트만 숨김
+    if (hasSearchFocus || hasRecentDestinations) {
+      return;
+    }
+
+    // 자동완성 리스트나 최근 주행한 장소 리스트가 없으면 기존대로 위치 정보 설정
     setState(() {
       _isLoading = true;
     });

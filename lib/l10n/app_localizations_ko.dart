@@ -18,7 +18,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get defaultNavigationApp => '기본 네비게이션 앱';
 
   @override
-  String get teslaNavigationModeTitle => '테슬라 내비게이션 방식';
+  String get teslaNavigationModeTitle => '내비게이션 방식';
 
   @override
   String get teslaNavigationModeDestination => '목적지 정보 전송';
@@ -53,7 +53,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get recentSearches => '최근 주행한 장소';
 
   @override
-  String get teslaVehicleSelection => '테슬라 차량 선택';
+  String get teslaVehicleSelection => '차량 선택';
 
   @override
   String get noVehiclesMessage =>
@@ -100,7 +100,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get unknownPlace => '알 수 없는 장소';
 
   @override
-  String get loginTitle => '테슬라 로그인';
+  String get loginTitle => '차량 계정 로그인';
 
   @override
   String get initializing => '초기화 중...';

@@ -18,7 +18,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get defaultNavigationApp => 'Default navigation app';
 
   @override
-  String get teslaNavigationModeTitle => 'Tesla navigation preference';
+  String get teslaNavigationModeTitle => 'Navigation mode';
 
   @override
   String get teslaNavigationModeDestination => 'Use destination details';
@@ -53,7 +53,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get recentSearches => 'Recent drives';
 
   @override
-  String get teslaVehicleSelection => 'Select Tesla vehicle';
+  String get teslaVehicleSelection => 'Select vehicle';
 
   @override
   String get noVehiclesMessage =>
@@ -101,7 +101,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get unknownPlace => 'Unknown place';
 
   @override
-  String get loginTitle => 'Tesla Login';
+  String get loginTitle => 'Vehicle Account Login';
 
   @override
   String get initializing => 'Initializing...';

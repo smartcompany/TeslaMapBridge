@@ -123,7 +123,7 @@ abstract class AppLocalizations {
   /// No description provided for @teslaNavigationModeTitle.
   ///
   /// In en, this message translates to:
-  /// **'Tesla navigation preference'**
+  /// **'Navigation mode'**
   String get teslaNavigationModeTitle;
 
   /// No description provided for @teslaNavigationModeDestination.
@@ -189,7 +189,7 @@ abstract class AppLocalizations {
   /// No description provided for @teslaVehicleSelection.
   ///
   /// In en, this message translates to:
-  /// **'Select Tesla vehicle'**
+  /// **'Select vehicle'**
   String get teslaVehicleSelection;
 
   /// No description provided for @noVehiclesMessage.
@@ -273,7 +273,7 @@ abstract class AppLocalizations {
   /// No description provided for @loginTitle.
   ///
   /// In en, this message translates to:
-  /// **'Tesla Login'**
+  /// **'Vehicle Account Login'**
   String get loginTitle;
 
   /// No description provided for @initializing.

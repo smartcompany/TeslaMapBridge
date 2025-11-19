@@ -18,7 +18,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get defaultNavigationApp => 'デフォルトのナビアプリ';
 
   @override
-  String get teslaNavigationModeTitle => 'テスラナビゲーション方式';
+  String get teslaNavigationModeTitle => 'ナビゲーション方式';
 
   @override
   String get teslaNavigationModeDestination => '目的地情報を送信';
@@ -53,7 +53,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get recentSearches => '最近のドライブ地点';
 
   @override
-  String get teslaVehicleSelection => 'テスラ車を選択';
+  String get teslaVehicleSelection => '車両を選択';
 
   @override
   String get noVehiclesMessage =>
@@ -100,7 +100,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get unknownPlace => '不明な場所';
 
   @override
-  String get loginTitle => 'テスラログイン';
+  String get loginTitle => '車両アカウントログイン';
 
   @override
   String get initializing => '初期化中...';
