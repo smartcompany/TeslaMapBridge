@@ -150,6 +150,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get removeFavoriteTooltip => '从收藏中移除';
 
   @override
+  String get favoriteNameDialogTitle => '添加收藏';
+
+  @override
+  String get favoriteNameDialogHint => '输入名称（例如：家）';
+
+  @override
+  String get favoriteNameDialogCancel => '取消';
+
+  @override
+  String get favoriteNameDialogSave => '保存';
+
+  @override
   String get navAppWaze => 'Waze';
 
   @override

@@ -366,6 +366,30 @@ abstract class AppLocalizations {
   /// **'Remove from favorites'**
   String get removeFavoriteTooltip;
 
+  /// No description provided for @favoriteNameDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add favorite'**
+  String get favoriteNameDialogTitle;
+
+  /// No description provided for @favoriteNameDialogHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a name (e.g. Home)'**
+  String get favoriteNameDialogHint;
+
+  /// No description provided for @favoriteNameDialogCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get favoriteNameDialogCancel;
+
+  /// No description provided for @favoriteNameDialogSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get favoriteNameDialogSave;
+
   /// No description provided for @navAppWaze.
   ///
   /// In en, this message translates to:

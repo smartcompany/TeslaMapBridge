@@ -151,6 +151,18 @@ class AppLocalizationsKo extends AppLocalizations {
   String get removeFavoriteTooltip => '즐겨찾기에서 제거';
 
   @override
+  String get favoriteNameDialogTitle => '즐겨찾기 추가';
+
+  @override
+  String get favoriteNameDialogHint => '이름을 입력하세요 (예: 집)';
+
+  @override
+  String get favoriteNameDialogCancel => '취소';
+
+  @override
+  String get favoriteNameDialogSave => '저장';
+
+  @override
   String get navAppWaze => 'Waze';
 
   @override

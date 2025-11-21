@@ -152,6 +152,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get removeFavoriteTooltip => 'Remove from favorites';
 
   @override
+  String get favoriteNameDialogTitle => 'Add favorite';
+
+  @override
+  String get favoriteNameDialogHint => 'Enter a name (e.g. Home)';
+
+  @override
+  String get favoriteNameDialogCancel => 'Cancel';
+
+  @override
+  String get favoriteNameDialogSave => 'Save';
+
+  @override
   String get navAppWaze => 'Waze';
 
   @override

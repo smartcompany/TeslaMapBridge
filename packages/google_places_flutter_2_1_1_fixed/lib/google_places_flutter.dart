@@ -26,7 +26,6 @@ class GooglePlaceAutoCompleteTextField extends StatefulWidget {
   Widget? seperatedBuilder;
   void clearData;
   BoxDecoration? boxDecoration;
-  bool isCrossBtnShown;
   bool showError;
   double? containerHorizontalPadding;
   double? containerVerticalPadding;
@@ -57,7 +56,6 @@ class GooglePlaceAutoCompleteTextField extends StatefulWidget {
       this.getPlaceDetailWithLatLng,
       this.itemBuilder,
       this.boxDecoration,
-      this.isCrossBtnShown = true,
       this.seperatedBuilder,
       this.showError = true,
       this.containerHorizontalPadding,
@@ -96,14 +94,6 @@ class _GooglePlaceAutoCompleteTextFieldState
 
   @override
   Widget build(BuildContext context) {
-    final bool showCrossButton =
-        widget.isCrossBtnShown && isCrossBtn && _showCrossIconWidget();
-    final InputDecoration effectiveDecoration = widget.inputDecoration.copyWith(
-      suffixIcon: showCrossButton
-          ? IconButton(onPressed: clearData, icon: const Icon(Icons.close))
-          : null,
-    );
-
     return CompositedTransformTarget(
       link: _layerLink,
       child: Container(
@@ -117,7 +107,7 @@ class _GooglePlaceAutoCompleteTextFieldState
                 border: Border.all(color: Colors.grey, width: 0.6),
                 borderRadius: BorderRadius.all(Radius.circular(10))),
         child: TextFormField(
-          decoration: effectiveDecoration,
+          decoration: widget.inputDecoration,
           style: widget.textStyle,
           controller: widget.textEditingController,
           focusNode: widget.focusNode ?? FocusNode(),
@@ -133,10 +123,6 @@ class _GooglePlaceAutoCompleteTextFieldState
           },
           onChanged: (string) {
             subject.add(string);
-            if (widget.isCrossBtnShown) {
-              isCrossBtn = string.isNotEmpty ? true : false;
-              setState(() {});
-            }
           },
         ),
       ),

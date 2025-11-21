@@ -151,6 +151,18 @@ class AppLocalizationsJa extends AppLocalizations {
   String get removeFavoriteTooltip => 'お気に入りから削除';
 
   @override
+  String get favoriteNameDialogTitle => 'お気に入りを追加';
+
+  @override
+  String get favoriteNameDialogHint => '名前を入力してください (例: 自宅)';
+
+  @override
+  String get favoriteNameDialogCancel => 'キャンセル';
+
+  @override
+  String get favoriteNameDialogSave => '保存';
+
+  @override
   String get navAppWaze => 'Waze';
 
   @override

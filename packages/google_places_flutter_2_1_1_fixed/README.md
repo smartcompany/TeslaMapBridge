@@ -45,8 +45,6 @@ dependencies:
         }
         // if you want to add seperator between list items
         seperatedBuilder: Divider(),
-        // want to show close icon 
-        isCrossBtnShown: true,
         // optional container padding
          containerHorizontalPadding: 10,
          // place type

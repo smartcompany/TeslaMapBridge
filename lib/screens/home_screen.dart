@@ -31,6 +31,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   static const String _recentDestinationsKey = 'recent_destinations';
   static const String _favoriteDestinationsKey = 'favorite_destinations';
+  static const String _favoriteDestinationLabelsKey =
+      'favorite_destination_labels';
 
   final _navigationService = NavigationService();
   final _placesController = TextEditingController();
@@ -49,15 +51,14 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Destination> _recentDestinations = [];
   List<Destination> _favoriteDestinations = [];
   Set<String> _favoriteDestinationKeys = {};
+  Map<String, String> _favoriteNameToAddress = {};
   String? _userId;
   bool _isQuotaLoaded = false;
   bool _locationPermissionGranted = false;
   int _quota = 0;
 
   bool get _shouldShowRecentSuggestions =>
-      _recentDestinations.isNotEmpty &&
-      _searchFocusNode.hasFocus &&
-      _placesController.text.isEmpty;
+      _searchFocusNode.hasFocus && _placesController.text.isEmpty;
   NavigationApp get _defaultNavigationApp =>
       NavigationService.defaultNavigationAppForLocale(
         WidgetsBinding.instance.platformDispatcher.locale,
@@ -213,6 +214,23 @@ class _HomeScreenState extends State<HomeScreen> {
     final favorites = stored
         .map((item) => Destination.fromMap(jsonDecode(item)))
         .toList();
+    final labelsRaw = prefs.getString(_favoriteDestinationLabelsKey);
+    final labelMap = <String, String>{};
+    if (labelsRaw != null && labelsRaw.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(labelsRaw);
+        if (decoded is Map<String, dynamic>) {
+          for (final entry in decoded.entries) {
+            final value = entry.value;
+            if (value is String) {
+              labelMap[entry.key] = value;
+            }
+          }
+        }
+      } catch (error) {
+        debugPrint('[Favorites] Failed to decode labels: $error');
+      }
+    }
     if (!mounted) return;
     setState(() {
       _favoriteDestinations = favorites;
@@ -220,6 +238,7 @@ class _HomeScreenState extends State<HomeScreen> {
           .map(_destinationKey)
           .whereType<String>()
           .toSet();
+      _favoriteNameToAddress = labelMap;
     });
   }
 
@@ -227,28 +246,46 @@ class _HomeScreenState extends State<HomeScreen> {
     final key = _destinationKey(destination);
     if (key == null) return;
 
-    final prefs = await SharedPreferences.getInstance();
-
-    setState(() {
-      final existingIndex = _favoriteDestinations.indexWhere(
-        (item) => _destinationKey(item) == key,
-      );
-      if (existingIndex >= 0) {
+    final existingIndex = _favoriteDestinations.indexWhere(
+      (item) => _destinationKey(item) == key,
+    );
+    if (existingIndex >= 0) {
+      setState(() {
         _favoriteDestinations.removeAt(existingIndex);
         _favoriteDestinationKeys.remove(key);
-      } else {
-        // Avoid duplicates by removing first
-        _favoriteDestinations.removeWhere(
-          (item) => _destinationKey(item) == key,
+        _favoriteNameToAddress.removeWhere(
+          (label, address) => address == destination.address,
         );
-        _favoriteDestinations.add(destination);
-        _favoriteDestinationKeys.add(key);
-      }
+      });
+      await _persistFavoriteData();
+      return;
+    }
+
+    final favoriteName = await _promptFavoriteName(destination);
+    if (favoriteName == null || favoriteName.trim().isEmpty) {
+      return;
+    }
+    final trimmedName = favoriteName.trim();
+
+    setState(() {
+      _favoriteDestinations.removeWhere((item) => _destinationKey(item) == key);
+      _favoriteDestinations.add(destination);
+      _favoriteDestinationKeys.add(key);
+      _favoriteNameToAddress[trimmedName] = destination.address;
     });
 
+    await _persistFavoriteData();
+  }
+
+  Future<void> _persistFavoriteData() async {
+    final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(
       _favoriteDestinationsKey,
       _favoriteDestinations.map((d) => jsonEncode(d.toMap())).toList(),
+    );
+    await prefs.setString(
+      _favoriteDestinationLabelsKey,
+      jsonEncode(_favoriteNameToAddress),
     );
   }
 
@@ -263,6 +300,44 @@ class _HomeScreenState extends State<HomeScreen> {
       return 'place:${destination.placeId}';
     }
     return 'coord:${destination.latitude}_${destination.longitude}';
+  }
+
+  Future<String?> _promptFavoriteName(Destination destination) async {
+    final loc = AppLocalizations.of(context)!;
+    final controller = TextEditingController(text: destination.name);
+    return showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final trimmed = controller.text.trim();
+            return AlertDialog(
+              title: Text(loc.favoriteNameDialogTitle),
+              content: TextField(
+                controller: controller,
+                autofocus: true,
+                decoration: InputDecoration(
+                  hintText: loc.favoriteNameDialogHint,
+                ),
+                onChanged: (_) => setModalState(() {}),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: Text(loc.favoriteNameDialogCancel),
+                ),
+                FilledButton(
+                  onPressed: trimmed.isEmpty
+                      ? null
+                      : () => Navigator.of(dialogContext).pop(trimmed),
+                  child: Text(loc.favoriteNameDialogSave),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   Future<void> _loadSelectedVehicleId() async {
@@ -981,7 +1056,6 @@ class _HomeScreenState extends State<HomeScreen> {
       debounceTime: 400,
       countries: const ['kr', 'us', 'jp', 'cn'],
       isLatLngRequired: true,
-      isCrossBtnShown: false,
       getPlaceDetailWithLatLng: (prediction) {
         _onPlaceSelected(prediction);
       },
