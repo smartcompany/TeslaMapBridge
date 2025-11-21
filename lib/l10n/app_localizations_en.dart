@@ -140,7 +140,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navAppAtlan => 'Atlan';
 
   @override
+  String get navAppAppleMaps => 'Apple Maps';
+
+  @override
   String get navAppGoogleMaps => 'Google Maps';
+
+  @override
+  String get addFavoriteTooltip => 'Add to favorites';
+
+  @override
+  String get removeFavoriteTooltip => 'Remove from favorites';
 
   @override
   String get navAppWaze => 'Waze';

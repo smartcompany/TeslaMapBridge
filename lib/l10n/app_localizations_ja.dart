@@ -139,7 +139,16 @@ class AppLocalizationsJa extends AppLocalizations {
   String get navAppAtlan => 'アトラン';
 
   @override
+  String get navAppAppleMaps => 'Apple マップ';
+
+  @override
   String get navAppGoogleMaps => 'Google マップ';
+
+  @override
+  String get addFavoriteTooltip => 'お気に入りに追加';
+
+  @override
+  String get removeFavoriteTooltip => 'お気に入りから削除';
 
   @override
   String get navAppWaze => 'Waze';

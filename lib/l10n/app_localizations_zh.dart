@@ -138,7 +138,16 @@ class AppLocalizationsZh extends AppLocalizations {
   String get navAppAtlan => 'Atlan';
 
   @override
+  String get navAppAppleMaps => 'Apple 地图';
+
+  @override
   String get navAppGoogleMaps => 'Google 地图';
+
+  @override
+  String get addFavoriteTooltip => '加入收藏';
+
+  @override
+  String get removeFavoriteTooltip => '从收藏中移除';
 
   @override
   String get navAppWaze => 'Waze';

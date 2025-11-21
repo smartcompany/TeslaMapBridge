@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -30,7 +32,22 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   late final SubscriptionService _subscriptionService;
   late final ThemeService _themeService;
-  NavigationApp _selectedApp = NavigationApp.tmap;
+  NavigationApp _selectedApp = NavigationService.defaultNavigationAppForLocale(
+    WidgetsBinding.instance.platformDispatcher.locale,
+    isIOS: Platform.isIOS,
+  );
+  NavigationApp get _defaultNavigationApp =>
+      NavigationService.defaultNavigationAppForLocale(
+        WidgetsBinding.instance.platformDispatcher.locale,
+        isIOS: Platform.isIOS,
+      );
+
+  List<NavigationApp> get _availableNavigationApps => Platform.isIOS
+      ? NavigationApp.values
+      : NavigationApp.values
+            .where((app) => app != NavigationApp.appleMaps)
+            .toList();
+
   TeslaNavigationMode _navigationMode = TeslaNavigationMode.destination;
   bool _isLoading = true;
   bool _hasChanges = false;
@@ -111,7 +128,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (stored != null) {
         final match = NavigationApp.values.firstWhere(
           (app) => app.name == stored,
-          orElse: () => NavigationApp.tmap,
+          orElse: () => _defaultNavigationApp,
         );
         _selectedApp = match;
       }
@@ -639,7 +656,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  ...NavigationApp.values.map(
+                  ..._availableNavigationApps.map(
                     (app) => RadioListTile<NavigationApp>(
                       title: Text(NavigationService().getAppName(context, app)),
                       value: app,

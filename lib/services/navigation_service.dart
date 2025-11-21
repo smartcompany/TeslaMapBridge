@@ -12,6 +12,7 @@ enum NavigationApp {
   naver,
   kakao,
   atlan,
+  appleMaps,
   googleMaps,
   waze,
   baiduMaps,
@@ -105,6 +106,19 @@ class NavigationService {
           'https://map.atlan.co.kr/mobile/route?lat=$lat&lon=$lng&name=$encodedName',
         );
         return urls;
+      case NavigationApp.appleMaps:
+        final bufferParams = StringBuffer('daddr=$lat,$lng');
+        if (hasStart) {
+          bufferParams.write('&saddr=$startLat,$startLng');
+        }
+        if (encodedName.isNotEmpty) {
+          bufferParams.write('&q=$encodedName');
+        }
+        final paramsWithMode = '${bufferParams.toString()}&dirflg=d';
+        return [
+          'maps://?$paramsWithMode',
+          'http://maps.apple.com/?$paramsWithMode',
+        ];
       case NavigationApp.googleMaps:
         return [
           if (Platform.isAndroid) 'google.navigation:q=$lat,$lng&mode=d',
@@ -189,6 +203,8 @@ class NavigationService {
         return loc.navAppKakao;
       case NavigationApp.atlan:
         return loc.navAppAtlan;
+      case NavigationApp.appleMaps:
+        return loc.navAppAppleMaps;
       case NavigationApp.googleMaps:
         return loc.navAppGoogleMaps;
       case NavigationApp.waze:
@@ -205,6 +221,25 @@ class NavigationService {
         return loc.navAppNavitime;
     }
   }
+
+  static NavigationApp defaultNavigationAppForLocale(
+    Locale locale, {
+    required bool isIOS,
+  }) {
+    final languageCode = locale.languageCode.toLowerCase();
+    switch (languageCode) {
+      case 'ko':
+        return NavigationApp.tmap;
+      case 'ja':
+        return NavigationApp.navitime;
+      case 'zh':
+        return NavigationApp.gaodeMaps;
+      case 'en':
+        return NavigationApp.googleMaps;
+      default:
+        return isIOS ? NavigationApp.appleMaps : NavigationApp.googleMaps;
+    }
+  }
 }
 
 const Map<NavigationApp, List<String>> _preferredSchemes = {
@@ -212,6 +247,7 @@ const Map<NavigationApp, List<String>> _preferredSchemes = {
   NavigationApp.naver: ['nmap://'],
   NavigationApp.kakao: ['kakaomap://', 'kakaonavi://'],
   NavigationApp.atlan: ['atlan://', 'atlanapp://'],
+  NavigationApp.appleMaps: ['maps://'],
   NavigationApp.googleMaps: ['google.navigation:', 'comgooglemaps://', 'geo:'],
   NavigationApp.waze: ['waze://'],
   NavigationApp.baiduMaps: ['baidumap://'],

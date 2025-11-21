@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -29,20 +30,25 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   static const String _recentDestinationsKey = 'recent_destinations';
+  static const String _favoriteDestinationsKey = 'favorite_destinations';
 
   final _navigationService = NavigationService();
   final _placesController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   late final VoidCallback _focusListener;
   Destination? _selectedDestination;
-  NavigationApp _selectedApp = NavigationApp.tmap;
+  NavigationApp _selectedApp = NavigationService.defaultNavigationAppForLocale(
+    WidgetsBinding.instance.platformDispatcher.locale,
+    isIOS: Platform.isIOS,
+  );
   TeslaNavigationMode _navigationMode = TeslaNavigationMode.destination;
   bool _isLoading = false;
   bool _isSendingToTesla = false;
   GoogleMapController? _mapController;
   String? _selectedVehicleId;
   List<Destination> _recentDestinations = [];
-  final UsageLimitService _usageLimitService = UsageLimitService.shared;
+  List<Destination> _favoriteDestinations = [];
+  Set<String> _favoriteDestinationKeys = {};
   String? _userId;
   bool _isQuotaLoaded = false;
   bool _locationPermissionGranted = false;
@@ -52,6 +58,11 @@ class _HomeScreenState extends State<HomeScreen> {
       _recentDestinations.isNotEmpty &&
       _searchFocusNode.hasFocus &&
       _placesController.text.isEmpty;
+  NavigationApp get _defaultNavigationApp =>
+      NavigationService.defaultNavigationAppForLocale(
+        WidgetsBinding.instance.platformDispatcher.locale,
+        isIOS: Platform.isIOS,
+      );
 
   List<Destination> get _recentDestinationsForDisplay {
     if (_recentDestinations.isEmpty) return const <Destination>[];
@@ -99,6 +110,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadDefaultNavigationApp();
     _loadNavigationMode();
     _loadRecentDestinations();
+    _loadFavoriteDestinations();
     _loadSelectedVehicleId();
     _initLocationServices();
     _initializeUsageTracking();
@@ -119,7 +131,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (stored != null) {
       final app = NavigationApp.values.firstWhere(
         (item) => item.name == stored,
-        orElse: () => NavigationApp.tmap,
+        orElse: () => _defaultNavigationApp,
       );
       if (mounted) {
         setState(() {
@@ -193,6 +205,64 @@ class _HomeScreenState extends State<HomeScreen> {
       _recentDestinationsKey,
       _recentDestinations.map((d) => jsonEncode(d.toMap())).toList(),
     );
+  }
+
+  Future<void> _loadFavoriteDestinations() async {
+    final prefs = await SharedPreferences.getInstance();
+    final stored = prefs.getStringList(_favoriteDestinationsKey) ?? [];
+    final favorites = stored
+        .map((item) => Destination.fromMap(jsonDecode(item)))
+        .toList();
+    if (!mounted) return;
+    setState(() {
+      _favoriteDestinations = favorites;
+      _favoriteDestinationKeys = favorites
+          .map(_destinationKey)
+          .whereType<String>()
+          .toSet();
+    });
+  }
+
+  Future<void> _toggleFavorite(Destination destination) async {
+    final key = _destinationKey(destination);
+    if (key == null) return;
+
+    final prefs = await SharedPreferences.getInstance();
+
+    setState(() {
+      final existingIndex = _favoriteDestinations.indexWhere(
+        (item) => _destinationKey(item) == key,
+      );
+      if (existingIndex >= 0) {
+        _favoriteDestinations.removeAt(existingIndex);
+        _favoriteDestinationKeys.remove(key);
+      } else {
+        // Avoid duplicates by removing first
+        _favoriteDestinations.removeWhere(
+          (item) => _destinationKey(item) == key,
+        );
+        _favoriteDestinations.add(destination);
+        _favoriteDestinationKeys.add(key);
+      }
+    });
+
+    await prefs.setStringList(
+      _favoriteDestinationsKey,
+      _favoriteDestinations.map((d) => jsonEncode(d.toMap())).toList(),
+    );
+  }
+
+  bool _isFavoriteDestination(Destination destination) {
+    final key = _destinationKey(destination);
+    if (key == null) return false;
+    return _favoriteDestinationKeys.contains(key);
+  }
+
+  String? _destinationKey(Destination destination) {
+    if (destination.placeId != null && destination.placeId!.isNotEmpty) {
+      return 'place:${destination.placeId}';
+    }
+    return 'coord:${destination.latitude}_${destination.longitude}';
   }
 
   Future<void> _loadSelectedVehicleId() async {
@@ -911,7 +981,7 @@ class _HomeScreenState extends State<HomeScreen> {
       debounceTime: 400,
       countries: const ['kr', 'us', 'jp', 'cn'],
       isLatLngRequired: true,
-      isCrossBtnShown: true,
+      isCrossBtnShown: false,
       getPlaceDetailWithLatLng: (prediction) {
         _onPlaceSelected(prediction);
       },
@@ -1033,6 +1103,20 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 subtitle: Text(_selectedDestination!.address),
+                trailing: IconButton(
+                  icon: Icon(
+                    _isFavoriteDestination(_selectedDestination!)
+                        ? Icons.favorite
+                        : Icons.favorite_border,
+                    color: _isFavoriteDestination(_selectedDestination!)
+                        ? Theme.of(context).colorScheme.error
+                        : Theme.of(context).iconTheme.color,
+                  ),
+                  tooltip: _isFavoriteDestination(_selectedDestination!)
+                      ? loc.removeFavoriteTooltip
+                      : loc.addFavoriteTooltip,
+                  onPressed: () => _toggleFavorite(_selectedDestination!),
+                ),
               ),
             ),
             const SizedBox(height: 16),

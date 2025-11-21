@@ -342,11 +342,29 @@ abstract class AppLocalizations {
   /// **'Atlan'**
   String get navAppAtlan;
 
+  /// No description provided for @navAppAppleMaps.
+  ///
+  /// In en, this message translates to:
+  /// **'Apple Maps'**
+  String get navAppAppleMaps;
+
   /// No description provided for @navAppGoogleMaps.
   ///
   /// In en, this message translates to:
   /// **'Google Maps'**
   String get navAppGoogleMaps;
+
+  /// No description provided for @addFavoriteTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to favorites'**
+  String get addFavoriteTooltip;
+
+  /// No description provided for @removeFavoriteTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from favorites'**
+  String get removeFavoriteTooltip;
 
   /// No description provided for @navAppWaze.
   ///

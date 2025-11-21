@@ -139,7 +139,16 @@ class AppLocalizationsKo extends AppLocalizations {
   String get navAppAtlan => '아틀란';
 
   @override
+  String get navAppAppleMaps => 'Apple 지도';
+
+  @override
   String get navAppGoogleMaps => '구글 지도';
+
+  @override
+  String get addFavoriteTooltip => '즐겨찾기에 추가';
+
+  @override
+  String get removeFavoriteTooltip => '즐겨찾기에서 제거';
 
   @override
   String get navAppWaze => 'Waze';
