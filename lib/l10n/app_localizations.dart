@@ -336,12 +336,6 @@ abstract class AppLocalizations {
   /// **'Kakao Navi'**
   String get navAppKakao;
 
-  /// No description provided for @navAppAtlan.
-  ///
-  /// In en, this message translates to:
-  /// **'Atlan'**
-  String get navAppAtlan;
-
   /// No description provided for @navAppAppleMaps.
   ///
   /// In en, this message translates to:

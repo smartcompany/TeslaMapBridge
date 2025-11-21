@@ -656,17 +656,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  ..._availableNavigationApps.map(
-                    (app) => RadioListTile<NavigationApp>(
-                      title: Text(NavigationService().getAppName(context, app)),
-                      value: app,
-                      groupValue: _selectedApp,
-                      onChanged: (value) {
-                        if (value != null) {
-                          _setDefaultNavigationApp(value);
-                        }
-                      },
+                  DropdownButtonFormField<NavigationApp>(
+                    value: _selectedApp,
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
+                    items: _availableNavigationApps.map((app) {
+                      return DropdownMenuItem<NavigationApp>(
+                        value: app,
+                        child: Text(
+                          NavigationService().getAppName(context, app),
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        _setDefaultNavigationApp(value);
+                      }
+                    },
                   ),
                   const SizedBox(height: 32),
                   Text(

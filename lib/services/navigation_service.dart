@@ -11,7 +11,6 @@ enum NavigationApp {
   tmap,
   naver,
   kakao,
-  atlan,
   appleMaps,
   googleMaps,
   waze,
@@ -86,26 +85,6 @@ class NavigationService {
           'kakaomap://route?${kakaoRouteParams.toString()}',
           'https://map.kakao.com/link/to/$encodedName,$lat,$lng',
         ];
-      case NavigationApp.atlan:
-        final urls = <String>[];
-        if (Platform.isAndroid) {
-          urls.add(
-            'intent://route?dlat=$lat&dlng=$lng&dname=$encodedName#Intent;scheme=atlan;package=com.thinkwaresolution.atlan3d;end',
-          );
-          urls.add('market://details?id=com.thinkwaresolution.atlan3d');
-          urls.add(
-            'https://play.google.com/store/apps/details?id=com.thinkwaresolution.atlan3d',
-          );
-        } else {
-          urls.add('atlanapp://navigate?lat=$lat&lon=$lng&name=$encodedName');
-          urls.add(
-            'https://apps.apple.com/kr/app/3d%EC%A7%80%EB%8F%84-%EC%95%84%ED%8B%80%EB%9E%80/id542287735',
-          );
-        }
-        urls.add(
-          'https://map.atlan.co.kr/mobile/route?lat=$lat&lon=$lng&name=$encodedName',
-        );
-        return urls;
       case NavigationApp.appleMaps:
         final bufferParams = StringBuffer('daddr=$lat,$lng');
         if (hasStart) {
@@ -201,8 +180,6 @@ class NavigationService {
         return loc.navAppNaver;
       case NavigationApp.kakao:
         return loc.navAppKakao;
-      case NavigationApp.atlan:
-        return loc.navAppAtlan;
       case NavigationApp.appleMaps:
         return loc.navAppAppleMaps;
       case NavigationApp.googleMaps:
@@ -246,7 +223,6 @@ const Map<NavigationApp, List<String>> _preferredSchemes = {
   NavigationApp.tmap: ['tmap://'],
   NavigationApp.naver: ['nmap://'],
   NavigationApp.kakao: ['kakaomap://', 'kakaonavi://'],
-  NavigationApp.atlan: ['atlan://', 'atlanapp://'],
   NavigationApp.appleMaps: ['maps://'],
   NavigationApp.googleMaps: ['google.navigation:', 'comgooglemaps://', 'geo:'],
   NavigationApp.waze: ['waze://'],

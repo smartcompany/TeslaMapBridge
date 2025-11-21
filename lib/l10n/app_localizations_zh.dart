@@ -135,9 +135,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get navAppKakao => 'Kakao 导航';
 
   @override
-  String get navAppAtlan => 'Atlan';
-
-  @override
   String get navAppAppleMaps => 'Apple 地图';
 
   @override

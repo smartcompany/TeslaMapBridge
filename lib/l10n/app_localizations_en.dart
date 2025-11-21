@@ -137,9 +137,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navAppKakao => 'Kakao Navi';
 
   @override
-  String get navAppAtlan => 'Atlan';
-
-  @override
   String get navAppAppleMaps => 'Apple Maps';
 
   @override
