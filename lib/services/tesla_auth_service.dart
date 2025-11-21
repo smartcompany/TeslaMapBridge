@@ -7,7 +7,6 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/credit_pack_meta.dart';
-import 'package:flutter/foundation.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../models/purchase_mode.dart';
@@ -679,16 +678,24 @@ class TeslaAuthService {
 
     final localeTag = ui.PlatformDispatcher.instance.locale.toLanguageTag();
 
-    // Prefer address over name for navigation accuracy
-    // If address is available, use it; otherwise use name; fallback to coordinates
+    // Combine address and name for better navigation accuracy
+    // Format: "address, name" if both available, otherwise use available one
     final textValue = () {
-      if (destinationAddress != null && destinationAddress.trim().isNotEmpty) {
-        return destinationAddress.trim();
+      final address = destinationAddress?.trim();
+      final name = destinationName.trim();
+      final hasAddress = address != null && address.isNotEmpty;
+      final hasName = name.isNotEmpty;
+
+      if (hasAddress && hasName) {
+        // Send both address and name together
+        return '$address, $name';
+      } else if (hasAddress) {
+        return address!;
+      } else if (hasName) {
+        return name;
+      } else {
+        return '$latitude,$longitude';
       }
-      if (destinationName.trim().isNotEmpty) {
-        return destinationName.trim();
-      }
-      return '$latitude,$longitude';
     }();
 
     final response = await http.post(
