@@ -172,6 +172,14 @@
       "name": {}
     }
   },
-  "delete": "삭제"
+  "delete": "삭제",
+  "deleteRecentDestination": "주행 이력 삭제",
+  "confirmDeleteRecentDestination": "주행 이력 삭제",
+  "confirmDeleteRecentDestinationMessage": "{name} 주행 이력을 삭제하시겠습니까?",
+  "@confirmDeleteRecentDestinationMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  }
 }
 

@@ -755,6 +755,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete'**
   String get delete;
+
+  /// No description provided for @deleteRecentDestination.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete recent destination'**
+  String get deleteRecentDestination;
+
+  /// No description provided for @confirmDeleteRecentDestination.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Recent Destination'**
+  String get confirmDeleteRecentDestination;
+
+  /// No description provided for @confirmDeleteRecentDestinationMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {name} from recent destinations?'**
+  String confirmDeleteRecentDestinationMessage(Object name);
 }
 
 class _AppLocalizationsDelegate

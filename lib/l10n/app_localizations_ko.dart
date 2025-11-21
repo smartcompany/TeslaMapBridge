@@ -362,4 +362,15 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get delete => '삭제';
+
+  @override
+  String get deleteRecentDestination => '주행 이력 삭제';
+
+  @override
+  String get confirmDeleteRecentDestination => '주행 이력 삭제';
+
+  @override
+  String confirmDeleteRecentDestinationMessage(Object name) {
+    return '$name 주행 이력을 삭제하시겠습니까?';
+  }
 }

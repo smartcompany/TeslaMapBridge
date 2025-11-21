@@ -172,6 +172,14 @@
       "name": {}
     }
   },
-  "delete": "Delete"
+  "delete": "Delete",
+  "deleteRecentDestination": "Delete recent destination",
+  "confirmDeleteRecentDestination": "Delete Recent Destination",
+  "confirmDeleteRecentDestinationMessage": "Delete {name} from recent destinations?",
+  "@confirmDeleteRecentDestinationMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  }
 }
 

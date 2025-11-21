@@ -207,9 +207,23 @@ class _HomeScreenState extends State<HomeScreen>
             item.longitude == timestamped.longitude;
       });
       _recentDestinations.insert(0, timestamped);
-      if (_recentDestinations.length > 5) {
-        _recentDestinations = _recentDestinations.sublist(0, 5);
-      }
+    });
+    await prefs.setStringList(
+      _recentDestinationsKey,
+      _recentDestinations.map((d) => jsonEncode(d.toMap())).toList(),
+    );
+  }
+
+  Future<void> _removeRecentDestination(Destination destination) async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _recentDestinations.removeWhere((item) {
+        if (item.placeId != null && destination.placeId != null) {
+          return item.placeId == destination.placeId;
+        }
+        return item.latitude == destination.latitude &&
+            item.longitude == destination.longitude;
+      });
     });
     await prefs.setStringList(
       _recentDestinationsKey,
@@ -958,6 +972,7 @@ class _HomeScreenState extends State<HomeScreen>
     // Only consume quota if Tesla API call was successful
     if (teslaSuccess) {
       await _consumeNavigationQuota();
+      await _recordDrivenDestination(destination);
     }
 
     setState(() {
@@ -1019,8 +1034,6 @@ class _HomeScreenState extends State<HomeScreen>
         _isLoading = false;
       });
     }
-
-    await _recordDrivenDestination(destination);
   }
 
   Widget _buildSearchField(AppLocalizations loc) {
@@ -1191,7 +1204,47 @@ class _HomeScreenState extends State<HomeScreen>
           subtitle: destination.address.isNotEmpty
               ? Text(destination.address)
               : null,
-          trailing: const Icon(Icons.north_east),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.delete_outline),
+                tooltip: loc.deleteRecentDestination,
+                onPressed: () async {
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: Text(loc.confirmDeleteRecentDestination),
+                      content: Text(
+                        loc.confirmDeleteRecentDestinationMessage(
+                          destination.name,
+                        ),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(false),
+                          child: Text(loc.cancel),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(true),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Theme.of(
+                              context,
+                            ).colorScheme.error,
+                          ),
+                          child: Text(loc.delete),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirmed == true && mounted) {
+                    await _removeRecentDestination(destination);
+                  }
+                },
+              ),
+              const Icon(Icons.north_east),
+            ],
+          ),
           onTap: () {
             print('[Recent] tapped ${destination.name}');
             _searchFocusNode.unfocus();

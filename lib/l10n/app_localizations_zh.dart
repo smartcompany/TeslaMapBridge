@@ -359,4 +359,15 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get delete => '删除';
+
+  @override
+  String get deleteRecentDestination => '删除最近目的地';
+
+  @override
+  String get confirmDeleteRecentDestination => '删除最近目的地';
+
+  @override
+  String confirmDeleteRecentDestinationMessage(Object name) {
+    return '确定要从最近目的地中删除 $name 吗？';
+  }
 }

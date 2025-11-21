@@ -362,4 +362,15 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get delete => '削除';
+
+  @override
+  String get deleteRecentDestination => '最近の目的地を削除';
+
+  @override
+  String get confirmDeleteRecentDestination => '最近の目的地の削除';
+
+  @override
+  String confirmDeleteRecentDestinationMessage(Object name) {
+    return '$name を最近の目的地から削除しますか？';
+  }
 }

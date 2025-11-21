@@ -368,4 +368,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get delete => 'Delete';
+
+  @override
+  String get deleteRecentDestination => 'Delete recent destination';
+
+  @override
+  String get confirmDeleteRecentDestination => 'Delete Recent Destination';
+
+  @override
+  String confirmDeleteRecentDestinationMessage(Object name) {
+    return 'Delete $name from recent destinations?';
+  }
 }

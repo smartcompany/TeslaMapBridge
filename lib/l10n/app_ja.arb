@@ -172,6 +172,14 @@
       "name": {}
     }
   },
-  "delete": "削除"
+  "delete": "削除",
+  "deleteRecentDestination": "最近の目的地を削除",
+  "confirmDeleteRecentDestination": "最近の目的地の削除",
+  "confirmDeleteRecentDestinationMessage": "{name} を最近の目的地から削除しますか？",
+  "@confirmDeleteRecentDestinationMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  }
 }
 
