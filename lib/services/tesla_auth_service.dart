@@ -681,22 +681,12 @@ class TeslaAuthService {
     // Combine address and name for better navigation accuracy
     // Format: "address, name" if both available, otherwise use available one
     final textValue = () {
-      final address = destinationAddress?.trim();
+      final address = destinationAddress?.trim() ?? '';
       final name = destinationName.trim();
-      final hasAddress = address != null && address.isNotEmpty;
-      final hasName = name.isNotEmpty;
-
-      if (hasAddress && hasName) {
-        // Send both address and name together
-        return '$address, $name';
-      } else if (hasAddress) {
-        return address!;
-      } else if (hasName) {
-        return name;
-      } else {
-        return '$latitude,$longitude';
-      }
+      return '$name, $address, ($latitude,$longitude)';
     }();
+
+    print('textValue = $textValue');
 
     final response = await http.post(
       navigationUri,
