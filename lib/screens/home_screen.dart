@@ -1026,17 +1026,6 @@ class _HomeScreenState extends State<HomeScreen> {
       inputDecoration: InputDecoration(
         hintText: loc.searchHint,
         prefixIcon: const Icon(Icons.search),
-        suffixIcon: _placesController.text.isEmpty
-            ? null
-            : IconButton(
-                icon: const Icon(Icons.clear),
-                onPressed: () {
-                  setState(() {
-                    _placesController.clear();
-                  });
-                  _searchFocusNode.requestFocus();
-                },
-              ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: borderColor),

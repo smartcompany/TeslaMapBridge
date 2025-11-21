@@ -94,6 +94,8 @@ class _GooglePlaceAutoCompleteTextFieldState
 
   @override
   Widget build(BuildContext context) {
+    final textFormField = _buildTextField(context);
+
     return CompositedTransformTarget(
       link: _layerLink,
       child: Container(
@@ -106,25 +108,7 @@ class _GooglePlaceAutoCompleteTextFieldState
                 shape: BoxShape.rectangle,
                 border: Border.all(color: Colors.grey, width: 0.6),
                 borderRadius: BorderRadius.all(Radius.circular(10))),
-        child: TextFormField(
-          decoration: widget.inputDecoration,
-          style: widget.textStyle,
-          controller: widget.textEditingController,
-          focusNode: widget.focusNode ?? FocusNode(),
-          keyboardType: widget.keyboardType ?? TextInputType.streetAddress,
-          textInputAction: widget.textInputAction ?? TextInputAction.done,
-          onFieldSubmitted: (value) {
-            if (widget.formSubmitCallback != null) {
-              widget.formSubmitCallback!();
-            }
-          },
-          validator: (inputString) {
-            return widget.validator?.call(inputString, context);
-          },
-          onChanged: (string) {
-            subject.add(string);
-          },
-        ),
+        child: textFormField,
       ),
     );
   }
@@ -214,6 +198,43 @@ class _GooglePlaceAutoCompleteTextFieldState
         .distinct()
         .debounceTime(Duration(milliseconds: widget.debounceTime))
         .listen(textChanged);
+  }
+
+  Widget _buildTextField(BuildContext context) {
+    final hasText = widget.textEditingController.text.isNotEmpty;
+    final clearButton = hasText
+        ? IconButton(
+            icon: const Icon(Icons.clear),
+            onPressed: () {
+              subject.add('');
+              setState(() {
+                widget.textEditingController.clear();
+                widget.focusNode?.requestFocus();
+              });
+            },
+          )
+        : null;
+
+    return TextFormField(
+      decoration: widget.inputDecoration.copyWith(suffixIcon: clearButton),
+      style: widget.textStyle,
+      controller: widget.textEditingController,
+      focusNode: widget.focusNode ?? FocusNode(),
+      keyboardType: widget.keyboardType ?? TextInputType.streetAddress,
+      textInputAction: widget.textInputAction ?? TextInputAction.done,
+      onFieldSubmitted: (value) {
+        if (widget.formSubmitCallback != null) {
+          widget.formSubmitCallback!();
+        }
+      },
+      validator: (inputString) {
+        return widget.validator?.call(inputString, context);
+      },
+      onChanged: (string) {
+        subject.add(string);
+        setState(() {});
+      },
+    );
   }
 
   textChanged(String text) async {
