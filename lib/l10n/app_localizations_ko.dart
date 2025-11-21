@@ -348,4 +348,18 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get noFavorites => '저장된 즐겨찾기가 없습니다.';
+
+  @override
+  String get deleteFavorite => '즐겨찾기 삭제';
+
+  @override
+  String get confirmDeleteFavorite => '즐겨찾기 삭제';
+
+  @override
+  String confirmDeleteFavoriteMessage(Object name) {
+    return '$name 즐겨찾기를 삭제하시겠습니까?';
+  }
+
+  @override
+  String get delete => '삭제';
 }

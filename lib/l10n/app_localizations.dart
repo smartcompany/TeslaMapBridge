@@ -731,6 +731,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No saved favorites.'**
   String get noFavorites;
+
+  /// No description provided for @deleteFavorite.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete favorite'**
+  String get deleteFavorite;
+
+  /// No description provided for @confirmDeleteFavorite.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Favorite'**
+  String get confirmDeleteFavorite;
+
+  /// No description provided for @confirmDeleteFavoriteMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {name} from favorites?'**
+  String confirmDeleteFavoriteMessage(Object name);
+
+  /// No description provided for @delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get delete;
 }
 
 class _AppLocalizationsDelegate

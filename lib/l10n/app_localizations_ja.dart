@@ -348,4 +348,18 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get noFavorites => '保存されたお気に入りがありません。';
+
+  @override
+  String get deleteFavorite => 'お気に入りを削除';
+
+  @override
+  String get confirmDeleteFavorite => 'お気に入りの削除';
+
+  @override
+  String confirmDeleteFavoriteMessage(Object name) {
+    return '$name をお気に入りから削除しますか？';
+  }
+
+  @override
+  String get delete => '削除';
 }

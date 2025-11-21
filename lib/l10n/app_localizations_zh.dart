@@ -345,4 +345,18 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get noFavorites => '没有保存的收藏。';
+
+  @override
+  String get deleteFavorite => '删除收藏';
+
+  @override
+  String get confirmDeleteFavorite => '删除收藏';
+
+  @override
+  String confirmDeleteFavoriteMessage(Object name) {
+    return '确定要从收藏中删除 $name 吗？';
+  }
+
+  @override
+  String get delete => '删除';
 }

@@ -163,6 +163,15 @@
   "rewardAdMustFinish": "要获得积分，必须将广告观看至结束。",
   "favorites": "收藏夹",
   "noRecentDestinations": "没有最近的目的地。",
-  "noFavorites": "没有保存的收藏。"
+  "noFavorites": "没有保存的收藏。",
+  "deleteFavorite": "删除收藏",
+  "confirmDeleteFavorite": "删除收藏",
+  "confirmDeleteFavoriteMessage": "确定要从收藏中删除 {name} 吗？",
+  "@confirmDeleteFavoriteMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "delete": "删除"
 }
 

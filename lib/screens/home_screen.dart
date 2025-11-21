@@ -298,6 +298,21 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
+  Future<void> _removeFavorite(Destination destination) async {
+    final key = _destinationKey(destination);
+    if (key == null) return;
+
+    setState(() {
+      _favoriteDestinations.removeWhere((item) => _destinationKey(item) == key);
+      _favoriteDestinationKeys.remove(key);
+      _favoriteNameToAddress.removeWhere(
+        (label, address) => address == destination.address,
+      );
+    });
+
+    await _persistFavoriteData();
+  }
+
   bool _isFavoriteDestination(Destination destination) {
     final key = _destinationKey(destination);
     if (key == null) return false;
@@ -1220,7 +1235,49 @@ class _HomeScreenState extends State<HomeScreen>
             favoriteName.isNotEmpty ? favoriteName : destination.name,
           ),
           subtitle: Text(destination.address),
-          trailing: const Icon(Icons.north_east),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.delete_outline),
+                tooltip: loc.deleteFavorite,
+                onPressed: () async {
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: Text(loc.confirmDeleteFavorite),
+                      content: Text(
+                        loc.confirmDeleteFavoriteMessage(
+                          favoriteName.isNotEmpty
+                              ? favoriteName
+                              : destination.name,
+                        ),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(false),
+                          child: Text(loc.cancel),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(true),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Theme.of(
+                              context,
+                            ).colorScheme.error,
+                          ),
+                          child: Text(loc.delete),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirmed == true && mounted) {
+                    await _removeFavorite(destination);
+                  }
+                },
+              ),
+              const Icon(Icons.north_east),
+            ],
+          ),
           onTap: () {
             print('[Favorite] tapped ${destination.name}');
             _searchFocusNode.unfocus();
@@ -1332,25 +1389,42 @@ class _HomeScreenState extends State<HomeScreen>
         ],
       ),
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: Stack(
           children: [
-            Expanded(
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Positioned.fill(child: _buildMap()),
-                  if (_shouldShowRecentSuggestions)
-                    Positioned(
-                      left: 16,
-                      right: 16,
-                      top: 0,
-                      child: _buildRecentDestinationsOverlay(loc),
-                    ),
-                ],
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [Positioned.fill(child: _buildMap())],
+                  ),
+                ),
+                _buildBottomSection(loc),
+              ],
             ),
-            _buildBottomSection(loc),
+            if (_shouldShowRecentSuggestions) ...[
+              // 투명한 전체 화면 배경 - 외부 클릭 감지용
+              Positioned.fill(
+                child: GestureDetector(
+                  onTap: () {
+                    _searchFocusNode.unfocus();
+                    FocusManager.instance.primaryFocus?.unfocus();
+                  },
+                  child: Container(color: Colors.transparent),
+                ),
+              ),
+              // 오버레이 카드
+              Positioned(
+                left: 16,
+                right: 16,
+                top: 0,
+                child: GestureDetector(
+                  onTap: () {}, // 카드 내부 클릭은 이벤트 소비
+                  child: _buildRecentDestinationsOverlay(loc),
+                ),
+              ),
+            ],
           ],
         ),
       ),

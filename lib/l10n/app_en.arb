@@ -163,6 +163,15 @@
   "rewardAdMustFinish": "You must watch the ad to the end to receive credits.",
   "favorites": "Favorites",
   "noRecentDestinations": "No recent destinations.",
-  "noFavorites": "No saved favorites."
+  "noFavorites": "No saved favorites.",
+  "deleteFavorite": "Delete favorite",
+  "confirmDeleteFavorite": "Delete Favorite",
+  "confirmDeleteFavoriteMessage": "Delete {name} from favorites?",
+  "@confirmDeleteFavoriteMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "delete": "Delete"
 }
 

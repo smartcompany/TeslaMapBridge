@@ -163,6 +163,15 @@
   "rewardAdMustFinish": "クレジットを受け取るには広告を最後まで視聴する必要があります。",
   "favorites": "お気に入り",
   "noRecentDestinations": "最近の目的地がありません。",
-  "noFavorites": "保存されたお気に入りがありません。"
+  "noFavorites": "保存されたお気に入りがありません。",
+  "deleteFavorite": "お気に入りを削除",
+  "confirmDeleteFavorite": "お気に入りの削除",
+  "confirmDeleteFavoriteMessage": "{name} をお気に入りから削除しますか？",
+  "@confirmDeleteFavoriteMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "delete": "削除"
 }
 

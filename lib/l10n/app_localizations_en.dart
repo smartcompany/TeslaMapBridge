@@ -354,4 +354,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noFavorites => 'No saved favorites.';
+
+  @override
+  String get deleteFavorite => 'Delete favorite';
+
+  @override
+  String get confirmDeleteFavorite => 'Delete Favorite';
+
+  @override
+  String confirmDeleteFavoriteMessage(Object name) {
+    return 'Delete $name from favorites?';
+  }
+
+  @override
+  String get delete => 'Delete';
 }
