@@ -160,6 +160,9 @@
   "creditsUpdated": "クレジットが更新されました。",
   "rewardNotCompleted": "最後まで視聴しないとクレジットを受け取れません。",
   "rewardAdLoadFailed": "現在広告を読み込めません。しばらくしてからもう一度お試しください。",
-  "rewardAdMustFinish": "クレジットを受け取るには広告を最後まで視聴する必要があります。"
+  "rewardAdMustFinish": "クレジットを受け取るには広告を最後まで視聴する必要があります。",
+  "favorites": "お気に入り",
+  "noRecentDestinations": "最近の目的地がありません。",
+  "noFavorites": "保存されたお気に入りがありません。"
 }
 

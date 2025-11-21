@@ -345,4 +345,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get rewardAdMustFinish =>
       'You must watch the ad to the end to receive credits.';
+
+  @override
+  String get favorites => 'Favorites';
+
+  @override
+  String get noRecentDestinations => 'No recent destinations.';
+
+  @override
+  String get noFavorites => 'No saved favorites.';
 }

@@ -160,6 +160,9 @@
   "privacyPolicy": "Privacy Policy",
   "termsAndPrivacy": "Terms / Privacy",
   "legalSectionTitle": "Legal",
-  "rewardAdMustFinish": "You must watch the ad to the end to receive credits."
+  "rewardAdMustFinish": "You must watch the ad to the end to receive credits.",
+  "favorites": "Favorites",
+  "noRecentDestinations": "No recent destinations.",
+  "noFavorites": "No saved favorites."
 }
 

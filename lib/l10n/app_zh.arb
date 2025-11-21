@@ -160,6 +160,9 @@
   "creditsUpdated": "积分已更新。",
   "rewardNotCompleted": "需要完整观看广告才能获得积分。",
   "rewardAdLoadFailed": "当前无法加载广告，请稍后重试。",
-  "rewardAdMustFinish": "要获得积分，必须将广告观看至结束。"
+  "rewardAdMustFinish": "要获得积分，必须将广告观看至结束。",
+  "favorites": "收藏夹",
+  "noRecentDestinations": "没有最近的目的地。",
+  "noFavorites": "没有保存的收藏。"
 }
 

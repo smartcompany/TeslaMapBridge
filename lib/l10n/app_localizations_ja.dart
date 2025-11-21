@@ -339,4 +339,13 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get rewardAdMustFinish => 'クレジットを受け取るには広告を最後まで視聴する必要があります。';
+
+  @override
+  String get favorites => 'お気に入り';
+
+  @override
+  String get noRecentDestinations => '最近の目的地がありません。';
+
+  @override
+  String get noFavorites => '保存されたお気に入りがありません。';
 }

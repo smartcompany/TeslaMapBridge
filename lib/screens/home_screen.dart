@@ -28,7 +28,8 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
   static const String _recentDestinationsKey = 'recent_destinations';
   static const String _favoriteDestinationsKey = 'favorite_destinations';
   static const String _favoriteDestinationLabelsKey =
@@ -56,6 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isQuotaLoaded = false;
   bool _locationPermissionGranted = false;
   int _quota = 0;
+  late TabController _overlayTabController;
 
   bool get _shouldShowRecentSuggestions =>
       _searchFocusNode.hasFocus && _placesController.text.isEmpty;
@@ -99,6 +101,12 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _overlayTabController = TabController(length: 2, vsync: this);
+    _overlayTabController.addListener(() {
+      if (mounted) {
+        setState(() {});
+      }
+    });
     _quota = UsageLimitService.shared.userStatus?.quota ?? _quota;
     _focusListener = () => setState(() {});
     _searchFocusNode.addListener(_focusListener);
@@ -119,6 +127,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    _overlayTabController.dispose();
     _searchFocusNode.removeListener(_focusListener);
     _placesController.dispose();
     _searchFocusNode.dispose();
@@ -1110,43 +1119,116 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildRecentDestinationsOverlay(AppLocalizations loc) {
     return ConstrainedBox(
-      constraints: const BoxConstraints(maxHeight: 320),
+      constraints: const BoxConstraints(maxHeight: 400),
       child: Card(
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Text(
-                  loc.recentSearches,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TabBar(
+              controller: _overlayTabController,
+              tabs: [
+                Tab(text: loc.recentSearches),
+                Tab(text: loc.favorites),
+              ],
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: TabBarView(
+                controller: _overlayTabController,
+                children: [
+                  _buildRecentDestinationsList(loc),
+                  _buildFavoritesList(loc),
+                ],
               ),
-              const Divider(height: 1),
-              ..._recentDestinationsForDisplay.map(
-                (destination) => ListTile(
-                  leading: const Icon(Icons.history),
-                  title: Text(destination.name),
-                  subtitle: destination.address.isNotEmpty
-                      ? Text(destination.address)
-                      : null,
-                  trailing: const Icon(Icons.north_east),
-                  onTap: () {
-                    print('[Recent] tapped ${destination.name}');
-                    _searchFocusNode.unfocus();
-                    FocusManager.instance.primaryFocus?.unfocus();
-                    _applySelectedDestination(destination);
-                  },
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
+    );
+  }
+
+  Widget _buildRecentDestinationsList(AppLocalizations loc) {
+    if (_recentDestinationsForDisplay.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Text(
+            loc.noRecentDestinations,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).hintColor,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      shrinkWrap: true,
+      itemCount: _recentDestinationsForDisplay.length,
+      itemBuilder: (context, index) {
+        final destination = _recentDestinationsForDisplay[index];
+        return ListTile(
+          leading: const Icon(Icons.history),
+          title: Text(destination.name),
+          subtitle: destination.address.isNotEmpty
+              ? Text(destination.address)
+              : null,
+          trailing: const Icon(Icons.north_east),
+          onTap: () {
+            print('[Recent] tapped ${destination.name}');
+            _searchFocusNode.unfocus();
+            FocusManager.instance.primaryFocus?.unfocus();
+            _applySelectedDestination(destination);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildFavoritesList(AppLocalizations loc) {
+    if (_favoriteDestinations.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Text(
+            loc.noFavorites,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).hintColor,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      shrinkWrap: true,
+      itemCount: _favoriteDestinations.length,
+      itemBuilder: (context, index) {
+        final destination = _favoriteDestinations[index];
+        final favoriteName = _favoriteNameToAddress.entries
+            .firstWhere(
+              (entry) => entry.value == destination.address,
+              orElse: () => MapEntry('', ''),
+            )
+            .key;
+        return ListTile(
+          leading: const Icon(Icons.favorite, color: Colors.red),
+          title: Text(
+            favoriteName.isNotEmpty ? favoriteName : destination.name,
+          ),
+          subtitle: Text(destination.address),
+          trailing: const Icon(Icons.north_east),
+          onTap: () {
+            print('[Favorite] tapped ${destination.name}');
+            _searchFocusNode.unfocus();
+            FocusManager.instance.primaryFocus?.unfocus();
+            _applySelectedDestination(destination);
+          },
+        );
+      },
     );
   }
 

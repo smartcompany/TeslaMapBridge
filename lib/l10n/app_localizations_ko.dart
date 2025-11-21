@@ -339,4 +339,13 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get rewardAdMustFinish => '광고를 끝까지 시청해야 크레딧을 받을 수 있습니다.';
+
+  @override
+  String get favorites => '즐겨찾기';
+
+  @override
+  String get noRecentDestinations => '최근 주행한 장소가 없습니다.';
+
+  @override
+  String get noFavorites => '저장된 즐겨찾기가 없습니다.';
 }

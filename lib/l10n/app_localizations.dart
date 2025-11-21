@@ -713,6 +713,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You must watch the ad to the end to receive credits.'**
   String get rewardAdMustFinish;
+
+  /// No description provided for @favorites.
+  ///
+  /// In en, this message translates to:
+  /// **'Favorites'**
+  String get favorites;
+
+  /// No description provided for @noRecentDestinations.
+  ///
+  /// In en, this message translates to:
+  /// **'No recent destinations.'**
+  String get noRecentDestinations;
+
+  /// No description provided for @noFavorites.
+  ///
+  /// In en, this message translates to:
+  /// **'No saved favorites.'**
+  String get noFavorites;
 }
 
 class _AppLocalizationsDelegate

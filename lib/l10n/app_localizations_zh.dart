@@ -336,4 +336,13 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get rewardAdMustFinish => '要获得积分，必须将广告观看至结束。';
+
+  @override
+  String get favorites => '收藏夹';
+
+  @override
+  String get noRecentDestinations => '没有最近的目的地。';
+
+  @override
+  String get noFavorites => '没有保存的收藏。';
 }
