@@ -42,6 +42,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         isIOS: Platform.isIOS,
       );
 
+  List<NavigationApp> _installedNavigationApps = [];
   List<NavigationApp> get _availableNavigationApps => Platform.isIOS
       ? NavigationApp.values
       : NavigationApp.values
@@ -124,26 +125,83 @@ class _SettingsScreenState extends State<SettingsScreen> {
       resolvedVehicleId = availableIds.first;
     }
 
-    setState(() {
-      if (stored != null) {
-        final match = NavigationApp.values.firstWhere(
-          (app) => app.name == stored,
-          orElse: () => _defaultNavigationApp,
-        );
-        _selectedApp = match;
+    // Check which navigation apps are installed
+    final navigationService = NavigationService();
+    final allApps = Platform.isIOS
+        ? NavigationApp.values
+        : NavigationApp.values
+              .where((app) => app != NavigationApp.appleMaps)
+              .toList();
+
+    final installedApps = <NavigationApp>[];
+    for (final app in allApps) {
+      // Apple Maps (iOS) and Google Maps (Android) are always available
+      final isAlwaysAvailable =
+          (Platform.isIOS && app == NavigationApp.appleMaps) ||
+          (Platform.isAndroid && app == NavigationApp.googleMaps);
+
+      if (isAlwaysAvailable) {
+        installedApps.add(app);
+      } else {
+        final isInstalled = await navigationService.isAppInstalled(app);
+        if (isInstalled) {
+          installedApps.add(app);
+        }
       }
-      _navigationMode = modeMatch;
-      _vehicles = vehicles;
-      _selectedVehicleId = resolvedVehicleId;
-      _themePreset = _themeService.preset;
-      if (resolvedVehicleId != storedVehicleId) {
-        _hasChanges = true;
+    }
+
+    // Determine default app based on locale
+    final defaultApp = _defaultNavigationApp;
+
+    // If default app is not installed, use platform default
+    NavigationApp resolvedApp;
+    if (installedApps.contains(defaultApp)) {
+      resolvedApp = defaultApp;
+    } else {
+      // iOS: Apple Maps, Android: Google Maps
+      resolvedApp = Platform.isIOS
+          ? NavigationApp.appleMaps
+          : NavigationApp.googleMaps;
+      // Ensure platform default is in installed apps (it should always be available)
+      if (!installedApps.contains(resolvedApp)) {
+        installedApps.add(resolvedApp);
       }
-      _isLoading = false;
-    });
+    }
+
+    // If stored app exists and is installed, use it
+    if (stored != null) {
+      final match = NavigationApp.values.firstWhere(
+        (app) => app.name == stored,
+        orElse: () => resolvedApp,
+      );
+      if (installedApps.contains(match)) {
+        resolvedApp = match;
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _installedNavigationApps = installedApps;
+        _selectedApp = resolvedApp;
+        _navigationMode = modeMatch;
+        _vehicles = vehicles;
+        _selectedVehicleId = resolvedVehicleId;
+        _themePreset = _themeService.preset;
+        if (resolvedVehicleId != storedVehicleId) {
+          _hasChanges = true;
+        }
+        if (resolvedApp != stored) {
+          _hasChanges = true;
+        }
+        _isLoading = false;
+      });
+    }
 
     if (resolvedVehicleId != storedVehicleId) {
       await TeslaAuthService.shared.setSelectedVehicleId(resolvedVehicleId);
+    }
+    if (resolvedApp != stored) {
+      await prefs.setString(kDefaultNavigationAppKey, resolvedApp.name);
     }
     if (kDebugMode) {
       _loadDebugAccessToken();
@@ -664,15 +722,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ),
                     items: _availableNavigationApps.map((app) {
+                      final isInstalled = _installedNavigationApps.contains(
+                        app,
+                      );
                       return DropdownMenuItem<NavigationApp>(
                         value: app,
+                        enabled: isInstalled,
                         child: Text(
                           NavigationService().getAppName(context, app),
+                          style: TextStyle(
+                            color: isInstalled
+                                ? null
+                                : Theme.of(context).disabledColor,
+                          ),
                         ),
                       );
                     }).toList(),
                     onChanged: (value) {
-                      if (value != null) {
+                      if (value != null &&
+                          _installedNavigationApps.contains(value)) {
                         _setDefaultNavigationApp(value);
                       }
                     },
@@ -799,6 +867,59 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       },
                     ),
                   ),
+                  if (kDebugMode) ...[
+                    const SizedBox(height: 32),
+                    Card(
+                      child: ListTile(
+                        leading: const Icon(Icons.delete_outline),
+                        title: const Text('Delete Navigation App Preference'),
+                        subtitle: Text(
+                          'Current: ${NavigationService().getAppName(context, _selectedApp)}',
+                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () async {
+                          final confirmed = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Delete Navigation Preference'),
+                              content: const Text(
+                                'Are you sure you want to delete the saved navigation app preference?',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.of(context).pop(false),
+                                  child: Text(loc.cancel),
+                                ),
+                                FilledButton(
+                                  onPressed: () =>
+                                      Navigator.of(context).pop(true),
+                                  child: const Text('Delete'),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (confirmed == true) {
+                            final prefs = await SharedPreferences.getInstance();
+                            await prefs.remove(kDefaultNavigationAppKey);
+                            if (mounted) {
+                              setState(() {
+                                _selectedApp = _defaultNavigationApp;
+                                _hasChanges = true;
+                              });
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Navigation preference deleted',
+                                  ),
+                                ),
+                              );
+                            }
+                          }
+                        },
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 32),
                   if (kDebugMode)
                     Card(
