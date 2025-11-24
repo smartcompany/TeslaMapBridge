@@ -20,6 +20,7 @@ import '../services/tesla_auth_service.dart';
 import '../services/usage_limit_service.dart';
 import '../widgets/subscription_sheet.dart';
 import '../widgets/credit_purchase_sheet.dart';
+import 'dart:ui' as ui;
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -640,17 +641,23 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
-  String _currentLanguageParam() {
-    if (!mounted) {
-      return 'en';
+  Locale getLocaleByRegion() {
+    final region = ui.PlatformDispatcher.instance.locale.countryCode;
+    switch (region) {
+      case 'KR':
+        return const Locale('ko', 'KR');
+      case 'JP':
+        return const Locale('ja', 'JP');
+      case 'CN':
+        return const Locale('zh', 'CN');
+      default:
+        return const Locale('en', 'US');
     }
-    final locale = Localizations.localeOf(context);
-    final tag = locale.toLanguageTag();
-    if (tag.isNotEmpty) {
-      return tag;
-    }
-    final code = locale.languageCode;
-    return code.isNotEmpty ? code : 'en';
+  }
+
+  String _currentLocaleLanguageCode() {
+    final locale = getLocaleByRegion();
+    return locale.languageCode;
   }
 
   Future<bool> _sendDestinationToTesla(Destination destination) async {
@@ -738,7 +745,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   Future<Destination?> _getDestinationFromLatLng(LatLng latLng) async {
     try {
-      final languageParam = _currentLanguageParam();
+      final languageParam = _currentLocaleLanguageCode();
       final response = await http.get(
         Uri.parse(
           'https://maps.googleapis.com/maps/api/geocode/json'
@@ -831,7 +838,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   Future<Destination?> _getNearbyPlace(LatLng latLng) async {
     try {
-      final languageParam = _currentLanguageParam();
+      final languageParam = _currentLocaleLanguageCode();
       final response = await http.get(
         Uri.parse(
           'https://maps.googleapis.com/maps/api/place/nearbysearch/json'
@@ -914,7 +921,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   Future<Destination?> _getPlaceDetails(String placeId) async {
     try {
-      final languageParam = _currentLanguageParam();
+      final languageParam = _currentLocaleLanguageCode();
       final response = await http.get(
         Uri.parse(
           'https://maps.googleapis.com/maps/api/place/details/json'
@@ -1045,7 +1052,7 @@ class _HomeScreenState extends State<HomeScreen>
         (theme.brightness == Brightness.dark
             ? const Color(0xFF1F252C)
             : Colors.white);
-    final language = _currentLanguageParam();
+    final language = _currentLocaleLanguageCode();
 
     return GooglePlaceAutoCompleteTextField(
       textEditingController: _placesController,

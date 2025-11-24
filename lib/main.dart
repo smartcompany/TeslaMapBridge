@@ -105,10 +105,10 @@ class MyApp extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: const [
-        Locale('en'),
-        Locale('ko'),
-        Locale('zh'),
-        Locale('ja'),
+        Locale('en', 'US'),
+        Locale('ko', 'KR'),
+        Locale('zh', 'CN'),
+        Locale('ja', 'JP'),
       ],
       builder: (context, child) {
         final mediaQuery = MediaQuery.of(context);
