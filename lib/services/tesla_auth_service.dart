@@ -683,7 +683,7 @@ class TeslaAuthService {
     final textValue = () {
       final address = destinationAddress?.trim() ?? '';
       final name = destinationName.trim();
-      return '$name, $address, ($latitude,$longitude)';
+      return '$name, $address';
     }();
 
     print('textValue = $textValue');
