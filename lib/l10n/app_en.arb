@@ -29,6 +29,15 @@
   "sendToTeslaFailure": "Failed to send destination to Tesla vehicle.",
   "navigationStarted": "Navigation started.",
   "navigationFailed": "Failed to start navigation.",
+  "creditsAddedTitle": "Credits added",
+  "creditsAddedMessage": "{added} credits added. Total balance: {total} credits.",
+  "@creditsAddedMessage": {
+    "placeholders": {
+      "added": {},
+      "total": {}
+    }
+  },
+  "creditsAddedDismiss": "OK",
   "selectDestinationPrompt": "Please select a destination.",
   "failedToFetchPlaceDetails": "Failed to fetch place details: {error}",
   "@failedToFetchPlaceDetails": {

@@ -170,7 +170,7 @@ class CreditPackSection extends StatelessWidget {
                       onPressed: isProcessing || !hasProduct
                           ? null
                           : () async {
-                              await service.buyCredits(productId);
+                              await service.buyCredits(context, productId);
                             },
                       child: isCurrentProcessing
                           ? Row(

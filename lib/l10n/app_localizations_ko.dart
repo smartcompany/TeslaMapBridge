@@ -84,6 +84,17 @@ class AppLocalizationsKo extends AppLocalizations {
   String get navigationFailed => '길 안내를 시작하지 못했습니다.';
 
   @override
+  String get creditsAddedTitle => '크레딧이 추가되었습니다';
+
+  @override
+  String creditsAddedMessage(Object added, Object total) {
+    return '$added 크레딧이 추가되었습니다. 현재 잔액은 $total 크레딧입니다.';
+  }
+
+  @override
+  String get creditsAddedDismiss => '확인';
+
+  @override
   String get selectDestinationPrompt => '목적지를 선택해주세요.';
 
   @override

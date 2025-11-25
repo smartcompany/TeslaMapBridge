@@ -246,6 +246,24 @@ abstract class AppLocalizations {
   /// **'Failed to start navigation.'**
   String get navigationFailed;
 
+  /// No description provided for @creditsAddedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Credits added'**
+  String get creditsAddedTitle;
+
+  /// No description provided for @creditsAddedMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{added} credits added. Total balance: {total} credits.'**
+  String creditsAddedMessage(Object added, Object total);
+
+  /// No description provided for @creditsAddedDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get creditsAddedDismiss;
+
   /// No description provided for @selectDestinationPrompt.
   ///
   /// In en, this message translates to:

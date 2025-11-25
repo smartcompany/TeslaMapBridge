@@ -85,6 +85,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navigationFailed => 'Failed to start navigation.';
 
   @override
+  String get creditsAddedTitle => 'Credits added';
+
+  @override
+  String creditsAddedMessage(Object added, Object total) {
+    return '$added credits added. Total balance: $total credits.';
+  }
+
+  @override
+  String get creditsAddedDismiss => 'OK';
+
+  @override
   String get selectDestinationPrompt => 'Please select a destination.';
 
   @override

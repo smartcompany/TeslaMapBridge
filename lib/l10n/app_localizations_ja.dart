@@ -84,6 +84,17 @@ class AppLocalizationsJa extends AppLocalizations {
   String get navigationFailed => 'ナビを開始できませんでした。';
 
   @override
+  String get creditsAddedTitle => 'クレジットを追加しました';
+
+  @override
+  String creditsAddedMessage(Object added, Object total) {
+    return '$added クレジットを追加しました。現在の残高は $total クレジットです。';
+  }
+
+  @override
+  String get creditsAddedDismiss => '確認';
+
+  @override
   String get selectDestinationPrompt => '目的地を選択してください。';
 
   @override

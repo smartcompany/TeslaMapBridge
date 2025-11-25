@@ -29,6 +29,15 @@
   "sendToTeslaFailure": "发送目的地到特斯拉车辆失败。",
   "navigationStarted": "导航已启动。",
   "navigationFailed": "无法启动导航。",
+  "creditsAddedTitle": "积分已添加",
+  "creditsAddedMessage": "已增加 {added} 点积分，当前余额 {total} 点。",
+  "@creditsAddedMessage": {
+    "placeholders": {
+      "added": {},
+      "total": {}
+    }
+  },
+  "creditsAddedDismiss": "确定",
   "selectDestinationPrompt": "请选择目的地。",
   "failedToFetchPlaceDetails": "获取地点信息失败：{error}",
   "@failedToFetchPlaceDetails": {

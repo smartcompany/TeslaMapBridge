@@ -29,6 +29,15 @@
   "sendToTeslaFailure": "テスラ車への送信に失敗しました。",
   "navigationStarted": "ナビを開始しました。",
   "navigationFailed": "ナビを開始できませんでした。",
+  "creditsAddedTitle": "クレジットを追加しました",
+  "creditsAddedMessage": "{added} クレジットを追加しました。現在の残高は {total} クレジットです。",
+  "@creditsAddedMessage": {
+    "placeholders": {
+      "added": {},
+      "total": {}
+    }
+  },
+  "creditsAddedDismiss": "確認",
   "selectDestinationPrompt": "目的地を選択してください。",
   "failedToFetchPlaceDetails": "場所情報の取得に失敗しました: {error}",
   "@failedToFetchPlaceDetails": {

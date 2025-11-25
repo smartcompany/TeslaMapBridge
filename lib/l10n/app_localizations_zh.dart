@@ -83,6 +83,17 @@ class AppLocalizationsZh extends AppLocalizations {
   String get navigationFailed => '无法启动导航。';
 
   @override
+  String get creditsAddedTitle => '积分已添加';
+
+  @override
+  String creditsAddedMessage(Object added, Object total) {
+    return '已增加 $added 点积分，当前余额 $total 点。';
+  }
+
+  @override
+  String get creditsAddedDismiss => '确定';
+
+  @override
   String get selectDestinationPrompt => '请选择目的地。';
 
   @override

@@ -2,12 +2,14 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:in_app_purchase_android/in_app_purchase_android.dart';
 import '../models/credit_pack_meta.dart';
 import 'usage_limit_service.dart';
 
 import '../models/purchase_mode.dart';
+import '../l10n/app_localizations.dart';
 
 enum SubscriptionPurchaseState {
   idle,
@@ -37,6 +39,9 @@ class SubscriptionService extends ChangeNotifier {
   SubscriptionPurchaseState _purchaseState = SubscriptionPurchaseState.idle;
   String? _lastError;
   String? _processingProductId;
+  BuildContext? _lastPurchaseContext;
+  BuildContext? _processingDialogContext;
+  bool _processingDialogVisible = false;
 
   bool get isAvailable => _isAvailable;
   bool get isSubscribed => () {
@@ -281,8 +286,9 @@ class SubscriptionService extends ChangeNotifier {
   }
 
   /// Purchase a specific credit pack by productId
-  Future<void> buyCredits(String productId) async {
+  Future<void> buyCredits(BuildContext context, String productId) async {
     debugPrint('[Subscription] buyCredits called for: $productId');
+    _lastPurchaseContext = context;
     if (!_isAvailable) {
       debugPrint('[Subscription] App Store unavailable');
       _lastError = 'App Store unavailable';
@@ -466,10 +472,17 @@ class SubscriptionService extends ChangeNotifier {
     }
 
     try {
+      _presentProcessingDialog();
       final usage = await UsageLimitService.shared.addCredits(meta.credits);
 
       debugPrint(
         '[Subscription] Top-up success: +${meta.credits} → quota=${usage.quota}',
+      );
+
+      _dismissProcessingDialog();
+      await _showCreditsAddedDialog(
+        addedCredits: meta.credits,
+        totalCredits: usage.quota,
       );
 
       await _iap.completePurchase(purchase);
@@ -480,6 +493,7 @@ class SubscriptionService extends ChangeNotifier {
 
       return true;
     } catch (e) {
+      _dismissProcessingDialog();
       debugPrint('[Subscription] Top-up error: $e');
       _lastError = 'Top-up failed: $e';
       _purchaseState = SubscriptionPurchaseState.error;
@@ -560,5 +574,76 @@ class SubscriptionService extends ChangeNotifier {
     if (didChange) {
       notifyListeners();
     }
+  }
+
+  Future<void> _showCreditsAddedDialog({
+    required int addedCredits,
+    required int totalCredits,
+  }) async {
+    final context = _lastPurchaseContext;
+    if (context == null || !_isContextMounted(context)) {
+      return;
+    }
+    final loc = AppLocalizations.of(context);
+    if (loc == null) return;
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(loc.creditsAddedTitle),
+        content: Text(loc.creditsAddedMessage(addedCredits, totalCredits)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(loc.creditsAddedDismiss),
+          ),
+        ],
+      ),
+    );
+
+    _lastPurchaseContext = null;
+  }
+
+  void _presentProcessingDialog() {
+    final context = _lastPurchaseContext;
+    if (context == null ||
+        !_isContextMounted(context) ||
+        _processingDialogVisible) {
+      return;
+    }
+    _processingDialogVisible = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_processingDialogVisible || !_isContextMounted(context)) {
+        return;
+      }
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        barrierColor: Colors.black54,
+        builder: (dialogContext) {
+          _processingDialogContext = dialogContext;
+          return const Center(child: CircularProgressIndicator());
+        },
+      ).then((_) {
+        _processingDialogContext = null;
+        _processingDialogVisible = false;
+      });
+    });
+  }
+
+  void _dismissProcessingDialog() {
+    if (!_processingDialogVisible) {
+      return;
+    }
+    final dialogContext = _processingDialogContext;
+    if (dialogContext != null && _isContextMounted(dialogContext)) {
+      Navigator.of(dialogContext, rootNavigator: true).pop();
+    }
+    _processingDialogContext = null;
+    _processingDialogVisible = false;
+  }
+
+  bool _isContextMounted(BuildContext context) {
+    return context is Element && context.mounted;
   }
 }
