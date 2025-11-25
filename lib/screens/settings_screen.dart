@@ -378,6 +378,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ? CreditPurchaseSheet(quota: _quota)
             : SubscriptionSheet(quota: _quota),
       );
+      if (mounted) {
+        final latestQuota = UsageLimitService.shared.userStatus?.quota;
+        if (latestQuota != null && latestQuota != _quota) {
+          setState(() {
+            _quota = latestQuota;
+          });
+        }
+      }
     } finally {
       _subscriptionService.resetTransientState();
     }
