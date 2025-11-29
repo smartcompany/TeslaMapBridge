@@ -208,6 +208,11 @@ class _HomeScreenState extends State<HomeScreen>
             item.longitude == timestamped.longitude;
       });
       _recentDestinations.insert(0, timestamped);
+
+      // 최대 50개로 제한
+      if (_recentDestinations.length > 50) {
+        _recentDestinations = _recentDestinations.sublist(0, 50);
+      }
     });
     await prefs.setStringList(
       _recentDestinationsKey,
