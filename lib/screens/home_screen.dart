@@ -1153,8 +1153,13 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildRecentDestinationsOverlay(AppLocalizations loc) {
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final availableHeight = screenHeight - keyboardHeight - 200;
+    final maxHeight = availableHeight.clamp(200.0, 400.0);
+
     return ConstrainedBox(
-      constraints: const BoxConstraints(maxHeight: 400),
+      constraints: BoxConstraints(maxHeight: maxHeight),
       child: Card(
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -1170,14 +1175,11 @@ class _HomeScreenState extends State<HomeScreen>
               ],
             ),
             const Divider(height: 1),
-            Expanded(
-              child: TabBarView(
-                controller: _overlayTabController,
-                children: [
-                  _buildRecentDestinationsList(loc),
-                  _buildFavoritesList(loc),
-                ],
-              ),
+            Flexible(
+              fit: FlexFit.loose,
+              child: _overlayTabController.index == 0
+                  ? _buildRecentDestinationsList(loc)
+                  : _buildFavoritesList(loc),
             ),
           ],
         ),
@@ -1187,21 +1189,21 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _buildRecentDestinationsList(AppLocalizations loc) {
     if (_recentDestinationsForDisplay.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Text(
-            loc.noRecentDestinations,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).hintColor,
-            ),
-          ),
+      return Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Text(
+          loc.noRecentDestinations,
+          textAlign: TextAlign.center,
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).hintColor),
         ),
       );
     }
 
     return ListView.builder(
       shrinkWrap: true,
+      padding: const EdgeInsets.only(bottom: 16),
       itemCount: _recentDestinationsForDisplay.length,
       itemBuilder: (context, index) {
         final destination = _recentDestinationsForDisplay[index];
@@ -1265,21 +1267,21 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _buildFavoritesList(AppLocalizations loc) {
     if (_favoriteDestinations.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Text(
-            loc.noFavorites,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).hintColor,
-            ),
-          ),
+      return Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Text(
+          loc.noFavorites,
+          textAlign: TextAlign.center,
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: Theme.of(context).hintColor),
         ),
       );
     }
 
     return ListView.builder(
       shrinkWrap: true,
+      padding: const EdgeInsets.only(bottom: 16),
       itemCount: _favoriteDestinations.length,
       itemBuilder: (context, index) {
         final destination = _favoriteDestinations[index];
