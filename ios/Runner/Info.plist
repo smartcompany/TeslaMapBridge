@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>CarMap Link</string>
+	<string>Navi to Tesla</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -21,7 +21,7 @@
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>26</string>
+	<string>27</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
@@ -68,9 +68,9 @@
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>CarMap Link uses your location to plan routes from your current position.</string>
+	<string>Navi to Tesla uses your location to plan routes from your current position.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>CarMap Link needs access to your location even in the background to keep navigation accurate.</string>
+	<string>Navi to Tesla needs access to your location even in the background to keep navigation accurate.</string>
 	<!-- Google Mobile Ads (AdMob) iOS App ID -->
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-3940256099942544~1458002511</string>

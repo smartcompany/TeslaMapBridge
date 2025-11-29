@@ -9,7 +9,7 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
-  String get appTitle => 'CarMap Link';
+  String get appTitle => 'Navi to Tesla';
 
   @override
   String get settingsTitle => '设置';

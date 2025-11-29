@@ -9,7 +9,7 @@ class AppLocalizationsKo extends AppLocalizations {
   AppLocalizationsKo([String locale = 'ko']) : super(locale);
 
   @override
-  String get appTitle => 'CarMap Link';
+  String get appTitle => 'Navi to Tesla';
 
   @override
   String get settingsTitle => '설정';
