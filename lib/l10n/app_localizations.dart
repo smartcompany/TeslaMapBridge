@@ -105,7 +105,7 @@ abstract class AppLocalizations {
   /// No description provided for @appTitle.
   ///
   /// In en, this message translates to:
-  /// **'Navi to Tesla'**
+  /// **'CarMap Link'**
   String get appTitle;
 
   /// No description provided for @settingsTitle.

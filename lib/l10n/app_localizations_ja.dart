@@ -9,7 +9,7 @@ class AppLocalizationsJa extends AppLocalizations {
   AppLocalizationsJa([String locale = 'ja']) : super(locale);
 
   @override
-  String get appTitle => 'Navi to Tesla';
+  String get appTitle => 'CarMap Link';
 
   @override
   String get settingsTitle => '設定';

@@ -1,4 +1,4 @@
-"CFBundleDisplayName" = "Navi to Tesla";
-"NSLocationWhenInUseUsageDescription" = "現在地からルート案内を行うために Navi to Tesla が位置情報を利用します。";
-"NSLocationAlwaysAndWhenInUseUsageDescription" = "バックグラウンド実行中も正確なナビゲーションを維持するために Navi to Tesla が位置情報へアクセスする必要があります。";
+"CFBundleDisplayName" = "CarMap Link";
+"NSLocationWhenInUseUsageDescription" = "現在地からルート案内を行うために CarMap Link が位置情報を利用します。";
+"NSLocationAlwaysAndWhenInUseUsageDescription" = "バックグラウンド実行中も正確なナビゲーションを維持するために CarMap Link が位置情報へアクセスする必要があります。";
 "ITSAppUsesNonExemptEncryption" = "false";
