@@ -63,10 +63,20 @@ class NavigationService {
     final hasStart = startLat != null && startLng != null;
     switch (app) {
       case NavigationApp.tmap:
-        return [
-          'tmap://route?goalx=$lng&goaly=$lat&goalname=$encodedName',
-          'tmap://search?name=$encodedName&lon=$lng&lat=$lat',
-        ];
+        final tmapUrls = <String>[];
+        // 앱 스킴
+        if (encodedName.isNotEmpty) {
+          tmapUrls.add('tmap://route?goalx=$lng&goaly=$lat&goalname=$encodedName');
+        } else {
+          tmapUrls.add('tmap://route?goalx=$lng&goaly=$lat');
+        }
+        // 웹 fallback (T맵 웹 지도)
+        if (encodedName.isNotEmpty) {
+          tmapUrls.add('https://tmapapi.sktelecom.com/main/scheme?goalx=$lng&goaly=$lat&goalname=$encodedName');
+        } else {
+          tmapUrls.add('https://tmapapi.sktelecom.com/main/scheme?goalx=$lng&goaly=$lat');
+        }
+        return tmapUrls;
       case NavigationApp.naver:
         return [
           'nmap://route?dlat=$lat&dlng=$lng&dname=$encodedName',
