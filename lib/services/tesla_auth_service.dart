@@ -109,22 +109,38 @@ class TeslaAuthService {
     return await _storage.read(key: _apiBaseUrlKey);
   }
 
-  String? resolve(dynamic candidate) {
-    if (candidate is String && _isFleetUrl(candidate)) {
-      return candidate;
-    }
-    if (candidate is List) {
-      for (final value in candidate.whereType<String>()) {
-        if (_isFleetUrl(value)) {
-          return value;
-        }
-      }
-    }
+  /// 리전 우선순위: NA > APAC > CN > EU (EU는 412 나는 경우 많음)
+  static const List<String> _fleetRegionOrder = ['na', 'apac', 'cn', 'eu'];
+
+  String? _fleetUrlRegion(String? url) {
+    if (url == null) return null;
+    final host = Uri.tryParse(url)?.host ?? '';
+    if (host.contains('prd.na.')) return 'na';
+    if (host.contains('prd.apac.')) return 'apac';
+    if (host.contains('prd.cn.')) return 'cn';
+    if (host.contains('prd.eu.')) return 'eu';
     return null;
   }
 
+  /// aud 값(List 또는 String)에서 Fleet URL 하나를 골라 반환. 여러 개면 위 우선순위 적용.
+  String? _pickFleetUrlFromAud(dynamic aud) {
+    if (aud == null) return null;
+    if (aud is String && _isFleetUrl(aud)) return aud;
+    if (aud is! List) return null;
+    final fleetUrls =
+        aud.whereType<String>().where(_isFleetUrl).toList();
+    if (fleetUrls.isEmpty) return null;
+    if (fleetUrls.length == 1) return fleetUrls.single;
+    for (final region in _fleetRegionOrder) {
+      for (final u in fleetUrls) {
+        if (_fleetUrlRegion(u) == region) return u;
+      }
+    }
+    return fleetUrls.first;
+  }
+
   String? _extractFleetAudience(Map<String, dynamic> responseData) {
-    final directAudience = resolve(responseData['aud']);
+    final directAudience = _pickFleetUrlFromAud(responseData['aud']);
     if (directAudience != null) {
       return directAudience;
     }
@@ -144,7 +160,21 @@ class TeslaAuthService {
       final payloadSegment = normalize(parts[1]);
       final payloadJson = utf8.decode(base64Url.decode(payloadSegment));
       final payloadMap = jsonDecode(payloadJson) as Map<String, dynamic>;
-      return resolve(payloadMap['aud']);
+      // aud 는 JWT payload 에서 List 로 옴 (예: [userinfo, eu, na])
+      final aud = payloadMap['aud'];
+      final fleetUrl = _pickFleetUrlFromAud(aud);
+      if (fleetUrl != null) return fleetUrl;
+      // ou_code(계정 리전) 있으면 그 리전 Fleet URL 사용
+      final ouCode = payloadMap['ou_code'] as String?;
+      if (ouCode != null && ouCode.isNotEmpty && aud is List) {
+        final want = ouCode.toLowerCase();
+        for (final value in aud.whereType<String>()) {
+          if (_isFleetUrl(value) && _fleetUrlRegion(value) == want) {
+            return value;
+          }
+        }
+      }
+      return null;
     } catch (e) {
       print('Failed to decode access token audience: $e');
       return null;
