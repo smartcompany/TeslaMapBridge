@@ -105,8 +105,49 @@ class TeslaAuthService {
     }
   }
 
+  /// 현재 access token JWT payload 에서 우선순위대로 고른 Fleet URL (재로그인 없이 업데이트 후 바로 반영용).
+  String? _preferredFleetUrlFromToken(String accessToken) {
+    try {
+      final parts = accessToken.split('.');
+      if (parts.length < 2) return null;
+      String normalize(String input) {
+        final padding = (4 - input.length % 4) % 4;
+        return input.padRight(input.length + padding, '=');
+      }
+      final payloadSegment = normalize(parts[1]);
+      final payloadJson = utf8.decode(base64Url.decode(payloadSegment));
+      final payloadMap = jsonDecode(payloadJson) as Map<String, dynamic>;
+      final aud = payloadMap['aud'];
+      final fleetUrl = _pickFleetUrlFromAud(aud);
+      if (fleetUrl != null) return fleetUrl;
+      final ouCode = payloadMap['ou_code'] as String?;
+      if (ouCode != null && ouCode.isNotEmpty && aud is List) {
+        final want = ouCode.toLowerCase();
+        for (final value in aud.whereType<String>()) {
+          if (_isFleetUrl(value) && _fleetUrlRegion(value) == want) {
+            return value;
+          }
+        }
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<String?> getFleetAuthUrl() async {
-    return await _storage.read(key: _apiBaseUrlKey);
+    final stored = await _storage.read(key: _apiBaseUrlKey);
+    final accessToken = await _storage.read(key: _accessTokenKey);
+    if (accessToken == null || accessToken.isEmpty) return stored;
+    final preferred = _preferredFleetUrlFromToken(accessToken);
+    if (preferred != null && preferred != stored) {
+      await _storage.write(key: _apiBaseUrlKey, value: preferred);
+      print(
+        '[TeslaAuth] Updated stored Fleet URL to preferred from token: $preferred (was $stored)',
+      );
+      return preferred;
+    }
+    return stored;
   }
 
   /// 리전 우선순위: NA > APAC > CN > EU (EU는 412 나는 경우 많음)
