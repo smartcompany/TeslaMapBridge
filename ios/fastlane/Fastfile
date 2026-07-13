@@ -35,6 +35,14 @@ platform :ios do
     
     # Clean build folder before building
     clean_build_artifacts
+
+    # App Store export needs an App Store provisioning profile on disk.
+    # Archive can succeed with Automatic signing, but export fails without this.
+    get_provisioning_profile(
+      app_identifier: "com.smartcompany.teslaMapBridge",
+      filename: "AppStore_com.smartcompany.teslaMapBridge.mobileprovision"
+    )
+    profile_name = lane_context[SharedValues::SIGH_NAME]
     
     # Build app with dSYM generation
     # Note: iOS uses "app-store" for export_method, but export_options.method can be "app-store-connect"
@@ -48,8 +56,11 @@ platform :ios do
         uploadBitcode: false,
         uploadSymbols: true,
         compileBitcode: false,
-        signingStyle: "automatic",
-        teamID: "NTCK5U8AWD"
+        signingStyle: "manual",
+        teamID: "NTCK5U8AWD",
+        provisioningProfiles: {
+          "com.smartcompany.teslaMapBridge" => profile_name
+        }
       }
     )
     

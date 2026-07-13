@@ -45,4 +45,5 @@ app.*.map.json
 /android/app/release
 ios/Runner.app.dSYM.zip
 ios/Runner.ipa
+ios/*.mobileprovision
 packages/google_places_flutter_2_1_1_fixed/example/build
