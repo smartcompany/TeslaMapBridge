@@ -180,6 +180,18 @@ abstract class AppLocalizations {
   /// **'Search for a destination'**
   String get searchHint;
 
+  /// No description provided for @searchNoResults.
+  ///
+  /// In en, this message translates to:
+  /// **'No search results.'**
+  String get searchNoResults;
+
+  /// No description provided for @searchResultsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Search results'**
+  String get searchResultsTitle;
+
   /// No description provided for @recentSearches.
   ///
   /// In en, this message translates to:
@@ -731,6 +743,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Favorites'**
   String get favorites;
+
+  /// No description provided for @superchargerTab.
+  ///
+  /// In en, this message translates to:
+  /// **'Supercharger'**
+  String get superchargerTab;
+
+  /// No description provided for @superchargerSearchingHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Looking for Superchargers'**
+  String get superchargerSearchingHint;
 
   /// No description provided for @noRecentDestinations.
   ///

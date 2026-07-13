@@ -33,6 +33,8 @@ class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
   static const String _recentDestinationsKey = 'recent_destinations';
   static const String _favoriteDestinationsKey = 'favorite_destinations';
+  static const String _superchargerCacheKey = 'supercharger_poi_cache';
+  static const int _superchargerCacheMax = 500;
   static const String _favoriteDestinationLabelsKey =
       'favorite_destination_labels';
 
@@ -59,9 +61,26 @@ class _HomeScreenState extends State<HomeScreen>
   bool _locationPermissionGranted = false;
   int _quota = 0;
   late TabController _overlayTabController;
+  List<Destination> _textSearchResults = [];
+  bool _showTextSearchResults = false;
+  bool _isTextSearching = false;
+  List<Destination> _superchargerResults = [];
+  List<Destination> _superchargerCache = [];
+  bool _isLoadingSuperchargers = false;
+  bool _showSuperchargerPois = false;
+  BitmapDescriptor? _superchargerMarkerIcon;
+  BitmapDescriptor? _superchargerSelectedMarkerIcon;
+  String? _selectedSuperchargerKey;
+  final GlobalKey _searchFieldKey = GlobalKey();
+  /// 검색창 포커스/텍스트 변화 시 AppBar 전체 setState 대신 오버레이만 갱신
+  final ValueNotifier<int> _searchUiTick = ValueNotifier<int>(0);
 
   bool get _shouldShowRecentSuggestions =>
-      _searchFocusNode.hasFocus && _placesController.text.isEmpty;
+      !_showTextSearchResults &&
+      _searchFocusNode.hasFocus &&
+      _placesController.text.isEmpty;
+
+  bool get _shouldShowTextSearchResults => _showTextSearchResults;
   NavigationApp get _defaultNavigationApp =>
       NavigationService.defaultNavigationAppForLocale(
         WidgetsBinding.instance.platformDispatcher.locale,
@@ -104,32 +123,49 @@ class _HomeScreenState extends State<HomeScreen>
     super.initState();
     _overlayTabController = TabController(length: 2, vsync: this);
     _overlayTabController.addListener(() {
-      if (mounted) {
-        setState(() {});
-      }
+      if (!mounted) return;
+      setState(() {});
+      _searchUiTick.value++;
     });
     _quota = UsageLimitService.shared.userStatus?.quota ?? _quota;
-    _focusListener = () => setState(() {});
+    _focusListener = () {
+      if (mounted) {
+        _searchUiTick.value++;
+      }
+    };
     _searchFocusNode.addListener(_focusListener);
     _placesController.addListener(() {
       print('onChanged: ${_placesController.text}');
-      if (mounted) {
-        setState(() {});
+      if (!mounted) return;
+      // 입력 중이면 엔터 검색 결과 오버레이는 닫고 자동완성으로 전환
+      if (_showTextSearchResults) {
+        setState(() {
+          _showTextSearchResults = false;
+          _textSearchResults = [];
+        });
+      } else {
+        _searchUiTick.value++;
       }
     });
     _loadDefaultNavigationApp();
     _loadNavigationMode();
     _loadRecentDestinations();
     _loadFavoriteDestinations();
+    _loadSuperchargerCache();
     _loadSelectedVehicleId();
     _initLocationServices();
     _initializeUsageTracking();
+    // marker icon needs context for pixel ratio — load after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadSuperchargerMarkerIcon();
+    });
   }
 
   @override
   void dispose() {
     _overlayTabController.dispose();
     _searchFocusNode.removeListener(_focusListener);
+    _searchUiTick.dispose();
     _placesController.dispose();
     _searchFocusNode.dispose();
     _mapController?.dispose();
@@ -392,11 +428,42 @@ class _HomeScreenState extends State<HomeScreen>
     });
   }
 
-  Future<void> _applySelectedDestination(Destination destination) async {
+  Future<void> _applySelectedDestination(
+    Destination destination, {
+    bool fillSearchField = true,
+  }) async {
     setState(() {
       _isLoading = false;
       _selectedDestination = destination;
-      _placesController.text = destination.name;
+      if (fillSearchField) {
+        _placesController.text = destination.name;
+      } else {
+        _placesController.clear();
+      }
+      // 일반 목적지 선택 시 슈퍼차저 POI 전부 숨김
+      _showSuperchargerPois = false;
+      _superchargerResults = [];
+      _selectedSuperchargerKey = null;
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _moveCameraToSelectedDestination();
+    });
+  }
+
+  String _poiKey(Destination destination) {
+    if (destination.placeId != null && destination.placeId!.isNotEmpty) {
+      return 'place:${destination.placeId}';
+    }
+    return 'coord:${destination.latitude}_${destination.longitude}';
+  }
+
+  Future<void> _selectSuperchargerPoi(Destination destination) async {
+    setState(() {
+      _isLoading = false;
+      _selectedDestination = destination;
+      _placesController.clear();
+      _selectedSuperchargerKey = _poiKey(destination);
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -665,6 +732,27 @@ class _HomeScreenState extends State<HomeScreen>
     return locale.languageCode;
   }
 
+  /// Places 검색 국가 제한: 폰 지역 설정(countryCode) 기준.
+  List<String> _countriesForPlacesSearch() {
+    final locale = Localizations.localeOf(context);
+    final countryCode =
+        locale.countryCode ?? ui.PlatformDispatcher.instance.locale.countryCode;
+    if (countryCode != null && countryCode.isNotEmpty) {
+      return [countryCode.toLowerCase()];
+    }
+    // countryCode 없으면 언어 코드로 추정
+    switch (locale.languageCode.toLowerCase()) {
+      case 'ko':
+        return const ['kr'];
+      case 'ja':
+        return const ['jp'];
+      case 'zh':
+        return const ['cn'];
+      default:
+        return const [];
+    }
+  }
+
   Future<bool> _sendDestinationToTesla(Destination destination) async {
     if (_selectedVehicleId == null) {
       if (mounted) {
@@ -901,6 +989,21 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Future<void> _onMapTapped(LatLng latLng) async {
+    // 검색/자동완성 중 지도 탭 → 오버레이만 닫고 목적지는 설정하지 않음
+    final wasSearching =
+        _searchFocusNode.hasFocus || _showTextSearchResults;
+
+    _searchFocusNode.unfocus();
+    FocusManager.instance.primaryFocus?.unfocus();
+    if (_showTextSearchResults) {
+      setState(() {
+        _showTextSearchResults = false;
+        _textSearchResults = [];
+      });
+    }
+
+    if (wasSearching) return;
+
     setState(() {
       _isLoading = true;
     });
@@ -908,7 +1011,10 @@ class _HomeScreenState extends State<HomeScreen>
     try {
       final destination = await _getDestinationFromLatLng(latLng);
       if (destination != null) {
-        await _applySelectedDestination(destination);
+        await _applySelectedDestination(
+          destination,
+          fillSearchField: false,
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -1048,6 +1154,497 @@ class _HomeScreenState extends State<HomeScreen>
     }
   }
 
+  /// Places Text Search API — query 로 장소 목록 조회.
+  Future<List<Destination>> _fetchTextSearchResults(
+    String query, {
+    LatLng? locationBias,
+    int radiusMeters = 50000,
+    bool useLocationBias = true,
+    bool fetchAllPages = false,
+  }) async {
+    final languageParam = _currentLocaleLanguageCode();
+    final countries = _countriesForPlacesSearch();
+    final region = countries.isNotEmpty ? countries.first : languageParam;
+
+    final params = <String, String>{
+      'query': query,
+      'key': _googlePlacesApiKey,
+      'language': languageParam,
+      'region': region,
+    };
+
+    LatLng? bias = locationBias;
+    if (useLocationBias && bias == null && _locationPermissionGranted) {
+      try {
+        final position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.medium,
+        );
+        bias = LatLng(position.latitude, position.longitude);
+      } catch (e) {
+        debugPrint('[TextSearch] location bias skipped: $e');
+      }
+    }
+
+    if (useLocationBias && bias != null) {
+      params['location'] = '${bias.latitude},${bias.longitude}';
+      params['radius'] = '$radiusMeters';
+    }
+
+    final destinations = <Destination>[];
+    final unknown = AppLocalizations.of(context)?.unknownPlace ?? 'Unknown';
+    String? pageToken;
+
+    do {
+      final pageParams = Map<String, String>.from(params);
+      if (pageToken != null && pageToken.isNotEmpty) {
+        // next_page_token 은 발급 직후 바로 쓰면 INVALID_REQUEST 날 수 있음
+        await Future<void>.delayed(const Duration(milliseconds: 2000));
+        pageParams['pagetoken'] = pageToken;
+      }
+
+      final uri = Uri.https(
+        'maps.googleapis.com',
+        '/maps/api/place/textsearch/json',
+        pageParams,
+      );
+      debugPrint('[TextSearch] GET $uri');
+      final response = await http.get(uri);
+
+      if (response.statusCode != 200) {
+        debugPrint(
+          '[TextSearch] HTTP ${response.statusCode}: ${response.body}',
+        );
+        throw Exception('HTTP ${response.statusCode}');
+      }
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final status = data['status'] as String? ?? '';
+      final results = data['results'] as List<dynamic>? ?? [];
+      debugPrint('[TextSearch] status=$status count=${results.length}');
+
+      if (status != 'OK' && status != 'ZERO_RESULTS') {
+        if (destinations.isEmpty) {
+          throw Exception('Places Text Search failed: $status');
+        }
+        break;
+      }
+
+      for (final item in results) {
+        if (item is! Map<String, dynamic>) continue;
+        final geometry = item['geometry'] as Map<String, dynamic>?;
+        final location = geometry?['location'] as Map<String, dynamic>?;
+        if (location == null) continue;
+        final lat = (location['lat'] as num?)?.toDouble();
+        final lng = (location['lng'] as num?)?.toDouble();
+        if (lat == null || lng == null) continue;
+
+        destinations.add(
+          Destination(
+            name: item['name'] as String? ?? unknown,
+            address: item['formatted_address'] as String? ?? '',
+            latitude: lat,
+            longitude: lng,
+            placeId: item['place_id'] as String?,
+          ),
+        );
+      }
+
+      pageToken = fetchAllPages
+          ? data['next_page_token'] as String?
+          : null;
+    } while (pageToken != null && pageToken.isNotEmpty);
+
+    return destinations;
+  }
+
+  Future<void> _loadSuperchargerMarkerIcon() async {
+    if (!mounted) return;
+    try {
+      final icons = await Future.wait([
+        BitmapDescriptor.asset(
+          const ImageConfiguration(size: Size(48, 48)),
+          'assets/images/supercharger_icon.png',
+        ),
+        BitmapDescriptor.asset(
+          const ImageConfiguration(size: Size(64, 64)),
+          'assets/images/supercharger_icon_selected.png',
+        ),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _superchargerMarkerIcon = icons[0];
+        _superchargerSelectedMarkerIcon = icons[1];
+      });
+    } catch (e) {
+      debugPrint('[Supercharger] marker icon load failed: $e');
+    }
+  }
+
+  Future<({LatLng center, int radiusMeters})?> _currentMapViewportSearch() async {
+    final controller = _mapController;
+    if (controller == null) return null;
+    try {
+      final bounds = await controller.getVisibleRegion();
+      final center = LatLng(
+        (bounds.northeast.latitude + bounds.southwest.latitude) / 2,
+        (bounds.northeast.longitude + bounds.southwest.longitude) / 2,
+      );
+      final diagonalMeters = Geolocator.distanceBetween(
+        bounds.northeast.latitude,
+        bounds.northeast.longitude,
+        bounds.southwest.latitude,
+        bounds.southwest.longitude,
+      );
+      final radiusMeters = (diagonalMeters / 2).clamp(3000, 50000).round();
+      return (center: center, radiusMeters: radiusMeters);
+    } catch (e) {
+      debugPrint('[Supercharger] viewport failed: $e');
+      return null;
+    }
+  }
+
+  Future<LatLng?> _currentMapCenter() async {
+    final viewport = await _currentMapViewportSearch();
+    return viewport?.center;
+  }
+
+  Future<void> _loadSuperchargerCache() async {
+    final prefs = await SharedPreferences.getInstance();
+    final stored = prefs.getStringList(_superchargerCacheKey) ?? [];
+    final cached = <Destination>[];
+    for (final item in stored) {
+      try {
+        cached.add(Destination.fromMap(jsonDecode(item) as Map<String, dynamic>));
+      } catch (e) {
+        debugPrint('[Supercharger] cache parse skip: $e');
+      }
+    }
+    if (!mounted) return;
+    setState(() {
+      _superchargerCache = cached;
+    });
+    debugPrint('[Supercharger] cache loaded=${cached.length}');
+  }
+
+  Future<void> _persistSuperchargerCache() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(
+      _superchargerCacheKey,
+      _superchargerCache.map((d) => jsonEncode(d.toMap())).toList(),
+    );
+  }
+
+  /// [incoming] 을 앞에 두고 placeId/좌표 기준 중복 제거 후 캐시 상한 적용.
+  List<Destination> _mergeSuperchargerCache(List<Destination> incoming) {
+    final merged = <Destination>[];
+    final seen = <String>{};
+    for (final item in [...incoming, ..._superchargerCache]) {
+      final key = _poiKey(item);
+      if (!seen.add(key)) continue;
+      merged.add(item);
+      if (merged.length >= _superchargerCacheMax) break;
+    }
+    return merged;
+  }
+
+  /// 검색바 슈퍼차저 버튼: 현재 지도 영역 조회 + 캐시 전체 POI 표시/숨김.
+  Future<void> _toggleSuperchargersOnMap() async {
+    if (_isLoadingSuperchargers) return;
+
+    _searchFocusNode.unfocus();
+    FocusManager.instance.primaryFocus?.unfocus();
+
+    if (_showSuperchargerPois) {
+      setState(() {
+        _showSuperchargerPois = false;
+        _superchargerResults = [];
+        _selectedSuperchargerKey = null;
+      });
+      return;
+    }
+
+    await _loadSuperchargersForViewport();
+  }
+
+  Future<void> _loadSuperchargersForViewport() async {
+    if (_isLoadingSuperchargers) return;
+
+    setState(() {
+      _isLoadingSuperchargers = true;
+      _showSuperchargerPois = true;
+      // 캐시가 있으면 먼저 전부 표시한 뒤 영역 검색으로 보강
+      if (_superchargerCache.isNotEmpty) {
+        _superchargerResults = List<Destination>.from(_superchargerCache);
+      }
+    });
+
+    try {
+      if (_superchargerMarkerIcon == null) {
+        await _loadSuperchargerMarkerIcon();
+      }
+      final viewport = await _currentMapViewportSearch();
+      final destinations = await _fetchTextSearchResults(
+        'Tesla Supercharger',
+        locationBias: viewport?.center,
+        radiusMeters: viewport?.radiusMeters ?? 30000,
+        useLocationBias: true,
+        fetchAllPages: true,
+      );
+      if (!mounted) return;
+      if (!_showSuperchargerPois) return;
+
+      final merged = _mergeSuperchargerCache(destinations);
+      setState(() {
+        _superchargerCache = merged;
+        _superchargerResults = List<Destination>.from(merged);
+      });
+      await _persistSuperchargerCache();
+      debugPrint(
+        '[Supercharger] viewport POIs=${destinations.length} '
+        'cache=${merged.length} '
+        'center=${viewport?.center} radius=${viewport?.radiusMeters}',
+      );
+    } catch (e, st) {
+      debugPrint('[Supercharger] error: $e');
+      debugPrint('$st');
+      if (mounted) {
+        // 캐시로 이미 표시 중이면 유지, 없으면 숨김
+        if (_superchargerResults.isEmpty) {
+          setState(() {
+            _showSuperchargerPois = false;
+          });
+          final loc = AppLocalizations.of(context)!;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(loc.errorWithMessage('$e'))),
+          );
+        }
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingSuperchargers = false;
+        });
+      }
+    }
+  }
+
+  Set<Marker> _buildMapMarkers() {
+    final markers = <Marker>{};
+    final selectedScKey = _selectedSuperchargerKey;
+
+    // 슈퍼차저 POI가 선택된 경우 기본 destination 마커는 그리지 않음
+    final hideDefaultDestination =
+        selectedScKey != null && _showSuperchargerPois;
+
+    if (_selectedDestination != null && !hideDefaultDestination) {
+      final dest = _selectedDestination!;
+      markers.add(
+        Marker(
+          markerId: const MarkerId('destination'),
+          position: LatLng(dest.latitude, dest.longitude),
+          infoWindow: InfoWindow(
+            title: dest.name,
+            snippet: dest.address,
+          ),
+          zIndexInt: 2,
+        ),
+      );
+    }
+
+    if (_showSuperchargerPois) {
+      final normalIcon = _superchargerMarkerIcon;
+      final selectedIcon =
+          _superchargerSelectedMarkerIcon ?? _superchargerMarkerIcon;
+      for (var i = 0; i < _superchargerResults.length; i++) {
+        final sc = _superchargerResults[i];
+        final key = _poiKey(sc);
+        final isSelected = key == selectedScKey;
+        markers.add(
+          Marker(
+            markerId: MarkerId('supercharger_$i'),
+            position: LatLng(sc.latitude, sc.longitude),
+            icon: (isSelected ? selectedIcon : normalIcon) ??
+                BitmapDescriptor.defaultMarkerWithHue(
+                  isSelected
+                      ? BitmapDescriptor.hueYellow
+                      : BitmapDescriptor.hueRed,
+                ),
+            anchor: const Offset(0.5, 1.0),
+            infoWindow: const InfoWindow(),
+            consumeTapEvents: true,
+            onTap: () => _selectSuperchargerPoi(sc),
+            zIndexInt: isSelected ? 3 : 1,
+          ),
+        );
+      }
+    }
+
+    return markers;
+  }
+
+  /// Places Text Search — 엔터(검색) 시 자동완성이 아닌 검색 결과 사용.
+  Future<void> _performTextSearch() async {
+    final query = _placesController.text.trim();
+    if (query.isEmpty) return;
+
+    _searchFocusNode.unfocus();
+    FocusManager.instance.primaryFocus?.unfocus();
+
+    setState(() {
+      _isTextSearching = true;
+      _showTextSearchResults = true;
+      _textSearchResults = [];
+    });
+    _searchUiTick.value++;
+
+    try {
+      final center = await _currentMapCenter();
+      final destinations = await _fetchTextSearchResults(
+        query,
+        locationBias: center,
+      );
+      if (!mounted) return;
+      setState(() {
+        _textSearchResults = destinations;
+        _showTextSearchResults = true;
+      });
+      _searchUiTick.value++;
+    } catch (e, st) {
+      debugPrint('[TextSearch] error: $e');
+      debugPrint('$st');
+      if (mounted) {
+        final loc = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(loc.errorWithMessage('$e'))),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isTextSearching = false;
+        });
+        _searchUiTick.value++;
+      }
+    }
+  }
+
+  Widget _buildTextSearchResultsOverlay(AppLocalizations loc) {
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final availableHeight = screenHeight - keyboardHeight - 200;
+    final maxHeight = availableHeight.clamp(200.0, 400.0);
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: maxHeight),
+      child: Card(
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      loc.searchResultsTitle,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () {
+                      setState(() {
+                        _showTextSearchResults = false;
+                        _textSearchResults = [];
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            if (_isTextSearching)
+              const Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (_textSearchResults.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  loc.searchNoResults,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).hintColor,
+                      ),
+                ),
+              )
+            else
+              Flexible(
+                fit: FlexFit.loose,
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.only(bottom: 8),
+                  itemCount: _textSearchResults.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final destination = _textSearchResults[index];
+                    return ListTile(
+                      leading: const Icon(Icons.place),
+                      title: Text(destination.name),
+                      subtitle: destination.address.isNotEmpty
+                          ? Text(destination.address)
+                          : null,
+                      onTap: () {
+                        setState(() {
+                          _showTextSearchResults = false;
+                          _textSearchResults = [];
+                        });
+                        _applySelectedDestination(destination);
+                      },
+                    );
+                  },
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSuperchargerSearchSuffix(AppLocalizations loc) {
+    return IconButton(
+      tooltip: loc.superchargerTab,
+      onPressed: _isLoadingSuperchargers ? null : _toggleSuperchargersOnMap,
+      icon: _isLoadingSuperchargers
+          ? const SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Color(0xFFE82127),
+              ),
+            )
+          : Container(
+              width: 28,
+              height: 28,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: const Icon(
+                Icons.bolt,
+                size: 20,
+                color: Color(0xFFE82127),
+              ),
+            ),
+    );
+  }
+
   Widget _buildSearchField(AppLocalizations loc) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -1060,20 +1657,24 @@ class _HomeScreenState extends State<HomeScreen>
     final language = _currentLocaleLanguageCode();
 
     return GooglePlaceAutoCompleteTextField(
+      key: _searchFieldKey,
       textEditingController: _placesController,
       googleAPIKey: _googlePlacesApiKey,
       language: language,
       focusNode: _searchFocusNode,
-      textInputAction: TextInputAction.done,
+      textInputAction: TextInputAction.search,
+      keyboardType: TextInputType.text,
       formSubmitCallback: () {
-        _searchFocusNode.unfocus();
-        FocusManager.instance.primaryFocus?.unfocus();
+        _performTextSearch();
       },
       boxDecoration: const BoxDecoration(color: Colors.transparent),
       containerHorizontalPadding: 0,
       containerVerticalPadding: 0,
+      suffixIcon: _buildSuperchargerSearchSuffix(loc),
       inputDecoration: InputDecoration(
-        hintText: loc.searchHint,
+        hintText: _isLoadingSuperchargers
+            ? loc.superchargerSearchingHint
+            : loc.searchHint,
         prefixIcon: const Icon(Icons.search),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -1092,7 +1693,7 @@ class _HomeScreenState extends State<HomeScreen>
         contentPadding: const EdgeInsets.symmetric(vertical: 0),
       ),
       debounceTime: 400,
-      countries: const ['kr', 'us', 'jp', 'cn'],
+      countries: _countriesForPlacesSearch(),
       isLatLngRequired: true,
       getPlaceDetailWithLatLng: (prediction) {
         _onPlaceSelected(prediction);
@@ -1137,21 +1738,7 @@ class _HomeScreenState extends State<HomeScreen>
           onTap: _onMapTapped,
           myLocationEnabled: _locationPermissionGranted,
           myLocationButtonEnabled: _locationPermissionGranted,
-          markers: _selectedDestination != null
-              ? {
-                  Marker(
-                    markerId: const MarkerId('destination'),
-                    position: LatLng(
-                      _selectedDestination!.latitude,
-                      _selectedDestination!.longitude,
-                    ),
-                    infoWindow: InfoWindow(
-                      title: _selectedDestination!.name,
-                      snippet: _selectedDestination!.address,
-                    ),
-                  ),
-                }
-              : {},
+          markers: _buildMapMarkers(),
         ),
       ),
     );
@@ -1470,28 +2057,63 @@ class _HomeScreenState extends State<HomeScreen>
                 _buildBottomSection(loc),
               ],
             ),
-            if (_shouldShowRecentSuggestions) ...[
-              // 투명한 전체 화면 배경 - 외부 클릭 감지용
-              Positioned.fill(
-                child: GestureDetector(
-                  onTap: () {
-                    _searchFocusNode.unfocus();
-                    FocusManager.instance.primaryFocus?.unfocus();
-                  },
-                  child: Container(color: Colors.transparent),
-                ),
-              ),
-              // 오버레이 카드
-              Positioned(
-                left: 16,
-                right: 16,
-                top: 0,
-                child: GestureDetector(
-                  onTap: () {}, // 카드 내부 클릭은 이벤트 소비
-                  child: _buildRecentDestinationsOverlay(loc),
-                ),
-              ),
-            ],
+            ValueListenableBuilder<int>(
+              valueListenable: _searchUiTick,
+              builder: (context, _, __) {
+                if (_shouldShowTextSearchResults) {
+                  return Stack(
+                    children: [
+                      Positioned.fill(
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _showTextSearchResults = false;
+                              _textSearchResults = [];
+                            });
+                          },
+                          child: Container(color: Colors.transparent),
+                        ),
+                      ),
+                      Positioned(
+                        left: 16,
+                        right: 16,
+                        top: 0,
+                        child: GestureDetector(
+                          onTap: () {},
+                          child: _buildTextSearchResultsOverlay(loc),
+                        ),
+                      ),
+                    ],
+                  );
+                }
+                if (_shouldShowRecentSuggestions) {
+                  return Stack(
+                    children: [
+                      Positioned.fill(
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () {
+                            _searchFocusNode.unfocus();
+                            FocusManager.instance.primaryFocus?.unfocus();
+                          },
+                          child: const SizedBox.expand(),
+                        ),
+                      ),
+                      Positioned(
+                        left: 16,
+                        right: 16,
+                        top: 0,
+                        child: GestureDetector(
+                          onTap: () {},
+                          child: _buildRecentDestinationsOverlay(loc),
+                        ),
+                      ),
+                    ],
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
           ],
         ),
       ),

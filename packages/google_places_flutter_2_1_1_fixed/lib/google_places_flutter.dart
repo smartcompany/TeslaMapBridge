@@ -35,6 +35,8 @@ class GooglePlaceAutoCompleteTextField extends StatefulWidget {
   TextInputAction? textInputAction;
   final VoidCallback? formSubmitCallback;
   TextInputType? keyboardType;
+  /// If set, replaces the default clear (X) button in the search field.
+  final Widget? suffixIcon;
 
   final String? Function(String?, BuildContext)? validator;
 
@@ -45,7 +47,8 @@ class GooglePlaceAutoCompleteTextField extends StatefulWidget {
   final int? radius;
 
   GooglePlaceAutoCompleteTextField(
-      {required this.textEditingController,
+      {Key? key,
+      required this.textEditingController,
       required this.googleAPIKey,
       this.debounceTime = 600,
       this.inputDecoration = const InputDecoration(),
@@ -70,7 +73,9 @@ class GooglePlaceAutoCompleteTextField extends StatefulWidget {
       this.formSubmitCallback,
       this.textInputAction,
       this.keyboardType,
-      this.clearData});
+      this.suffixIcon,
+      this.clearData})
+      : super(key: key);
 
   @override
   _GooglePlaceAutoCompleteTextFieldState createState() =>
@@ -91,6 +96,12 @@ class _GooglePlaceAutoCompleteTextFieldState
   late var _dio;
 
   CancelToken? _cancelToken = CancelToken();
+  bool _suppressAutocomplete = false;
+  FocusNode? _internalFocusNode;
+  bool _hadText = false;
+
+  FocusNode get _effectiveFocusNode =>
+      widget.focusNode ?? (_internalFocusNode ??= FocusNode());
 
   @override
   Widget build(BuildContext context) {
@@ -114,6 +125,9 @@ class _GooglePlaceAutoCompleteTextFieldState
   }
 
   getLocation(String text) async {
+    if (_suppressAutocomplete) {
+      return;
+    }
     String apiURL =
         "https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$text&key=${widget.googleAPIKey}&language=${widget.language}";
 
@@ -152,6 +166,9 @@ class _GooglePlaceAutoCompleteTextFieldState
       String url = kIsWeb ? proxyURL + apiURL : apiURL;
 
       Response response = await _dio.get(url);
+      if (_suppressAutocomplete || !mounted) {
+        return;
+      }
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
       Map map = response.data;
@@ -194,35 +211,69 @@ class _GooglePlaceAutoCompleteTextFieldState
   void initState() {
     super.initState();
     _dio = Dio();
+    _hadText = widget.textEditingController.text.isNotEmpty;
+    _effectiveFocusNode.addListener(_handleFocusChange);
     subject.stream
         .distinct()
         .debounceTime(Duration(milliseconds: widget.debounceTime))
         .listen(textChanged);
   }
 
+  void _handleFocusChange() {
+    if (!_effectiveFocusNode.hasFocus) {
+      dismissSuggestions();
+    }
+  }
+
+  /// Hides suggestions and cancels any in-flight autocomplete request.
+  void dismissSuggestions() {
+    _suppressAutocomplete = true;
+    if (_cancelToken?.isCancelled == false) {
+      _cancelToken?.cancel();
+      _cancelToken = CancelToken();
+    }
+    removeOverlay();
+  }
+
+  @override
+  void dispose() {
+    _effectiveFocusNode.removeListener(_handleFocusChange);
+    _internalFocusNode?.dispose();
+    subject.close();
+    super.dispose();
+  }
+
   Widget _buildTextField(BuildContext context) {
     final hasText = widget.textEditingController.text.isNotEmpty;
-    final clearButton = hasText
+    // 텍스트가 있으면 X(clear), 없으면 커스텀 suffix(슈퍼차저 버튼 등)
+    final Widget? suffix = hasText
         ? IconButton(
             icon: const Icon(Icons.clear),
             onPressed: () {
               subject.add('');
-              setState(() {
-                widget.textEditingController.clear();
-                widget.focusNode?.requestFocus();
-              });
+              widget.textEditingController.clear();
+              _hadText = false;
+              setState(() {});
+              _effectiveFocusNode.requestFocus();
             },
           )
-        : null;
+        : widget.suffixIcon;
 
     return TextFormField(
-      decoration: widget.inputDecoration.copyWith(suffixIcon: clearButton),
+      decoration: widget.inputDecoration.copyWith(suffixIcon: suffix),
       style: widget.textStyle,
       controller: widget.textEditingController,
-      focusNode: widget.focusNode ?? FocusNode(),
-      keyboardType: widget.keyboardType ?? TextInputType.streetAddress,
+      focusNode: _effectiveFocusNode,
+      keyboardType: widget.keyboardType ?? TextInputType.text,
       textInputAction: widget.textInputAction ?? TextInputAction.done,
       onFieldSubmitted: (value) {
+        // Cancel pending autocomplete and hide suggestions before search
+        _suppressAutocomplete = true;
+        if (_cancelToken?.isCancelled == false) {
+          _cancelToken?.cancel();
+          _cancelToken = CancelToken();
+        }
+        removeOverlay();
         if (widget.formSubmitCallback != null) {
           widget.formSubmitCallback!();
         }
@@ -231,13 +282,22 @@ class _GooglePlaceAutoCompleteTextFieldState
         return widget.validator?.call(inputString, context);
       },
       onChanged: (string) {
+        _suppressAutocomplete = false;
         subject.add(string);
-        setState(() {});
+        final nowHasText = string.isNotEmpty;
+        // Avoid rebuilding TextField on every keystroke (can dismiss soft keyboard)
+        if (nowHasText != _hadText) {
+          _hadText = nowHasText;
+          setState(() {});
+        }
       },
     );
   }
 
   textChanged(String text) async {
+    if (_suppressAutocomplete) {
+      return;
+    }
     if (text.isNotEmpty) {
       getLocation(text);
     } else {

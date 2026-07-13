@@ -50,6 +50,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get searchHint => '目的地を検索';
 
   @override
+  String get searchNoResults => '検索結果がありません。';
+
+  @override
+  String get searchResultsTitle => '検索結果';
+
+  @override
   String get recentSearches => '最近のドライブ地点';
 
   @override
@@ -350,6 +356,12 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get favorites => 'お気に入り';
+
+  @override
+  String get superchargerTab => 'スーパーチャージャー';
+
+  @override
+  String get superchargerSearchingHint => 'スーパーチャージャーを検索しています';
 
   @override
   String get noRecentDestinations => '最近の目的地がありません。';

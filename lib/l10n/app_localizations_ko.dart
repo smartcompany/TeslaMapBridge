@@ -50,6 +50,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get searchHint => '목적지를 검색하세요';
 
   @override
+  String get searchNoResults => '검색 결과가 없습니다.';
+
+  @override
+  String get searchResultsTitle => '검색 결과';
+
+  @override
   String get recentSearches => '최근 주행한 장소';
 
   @override
@@ -350,6 +356,12 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get favorites => '즐겨찾기';
+
+  @override
+  String get superchargerTab => '슈퍼차저';
+
+  @override
+  String get superchargerSearchingHint => '슈퍼차저를 찾고 있습니다';
 
   @override
   String get noRecentDestinations => '최근 주행한 장소가 없습니다.';

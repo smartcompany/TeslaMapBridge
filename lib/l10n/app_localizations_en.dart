@@ -50,6 +50,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchHint => 'Search for a destination';
 
   @override
+  String get searchNoResults => 'No search results.';
+
+  @override
+  String get searchResultsTitle => 'Search results';
+
+  @override
   String get recentSearches => 'Recent drives';
 
   @override
@@ -356,6 +362,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get favorites => 'Favorites';
+
+  @override
+  String get superchargerTab => 'Supercharger';
+
+  @override
+  String get superchargerSearchingHint => 'Looking for Superchargers';
 
   @override
   String get noRecentDestinations => 'No recent destinations.';

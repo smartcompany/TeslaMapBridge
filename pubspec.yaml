@@ -94,6 +94,9 @@ flutter:
   # the material Icons class.
   uses-material-design: true
   generate: true
+  assets:
+    - assets/images/supercharger_icon.png
+    - assets/images/supercharger_icon_selected.png
 
 flutter_launcher_icons:
   android: true

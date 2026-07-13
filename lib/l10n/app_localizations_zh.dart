@@ -50,6 +50,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get searchHint => '搜索目的地';
 
   @override
+  String get searchNoResults => '没有搜索结果。';
+
+  @override
+  String get searchResultsTitle => '搜索结果';
+
+  @override
   String get recentSearches => '最近行驶地点';
 
   @override
@@ -347,6 +353,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get favorites => '收藏夹';
+
+  @override
+  String get superchargerTab => '超充站';
+
+  @override
+  String get superchargerSearchingHint => '正在查找超充站';
 
   @override
   String get noRecentDestinations => '没有最近的目的地。';
