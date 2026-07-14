@@ -97,16 +97,20 @@ class UsageLimitService {
     }
 
     try {
+      final normalizedUserId = userId.trim().toLowerCase();
       final response = await _client.post(
         Uri.parse('${_quotaUri.toString()}/use'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $accessToken',
         },
-        body: jsonEncode({'userId': userId}),
+        body: jsonEncode({'userId': normalizedUserId}),
       );
 
       if (response.statusCode != 200) {
+        debugPrint(
+          '[UsageLimit] consume failed: ${response.statusCode} ${response.body}',
+        );
         final body = jsonDecode(response.body) as Map<String, dynamic>?;
         final message = body?['error'] as String?;
         throw UsageLimitException(
@@ -121,17 +125,14 @@ class UsageLimitService {
       return ConsumptionResult(success: true, status: status);
     } on UsageLimitException catch (error) {
       debugPrint('[UsageLimit] consume failed: $error');
-      return ConsumptionResult(
-        success: false,
-        status: UsageStatus(userId: userId, quota: 0),
-        errorMessage: error.message,
-      );
+      rethrow;
     }
   }
 
   Future<UsageStatus> addCredits(int credits) async {
-    final userId = await TeslaAuthService.shared.getEmail();
+    final rawEmail = await TeslaAuthService.shared.getEmail();
     final accessToken = await TeslaAuthService.shared.getAccessToken();
+    final userId = rawEmail?.trim().toLowerCase();
 
     if (userId == null || userId.isEmpty) {
       throw UsageLimitException(message: 'Not signed in');
@@ -156,9 +157,13 @@ class UsageLimitService {
     );
 
     if (res.statusCode != 200) {
+      debugPrint(
+        '[UsageLimit] addCredits failed: ${res.statusCode} ${res.body}',
+      );
       final body = jsonDecode(res.body) as Map<String, dynamic>?;
       throw UsageLimitException(
         message: body?['error'] as String? ?? 'Failed to add credits',
+        statusCode: res.statusCode,
       );
     }
     final body = jsonDecode(res.body) as Map<String, dynamic>;

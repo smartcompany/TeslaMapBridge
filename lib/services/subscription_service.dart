@@ -44,15 +44,6 @@ class SubscriptionService extends ChangeNotifier {
   bool _processingDialogVisible = false;
 
   bool get isAvailable => _isAvailable;
-  bool get isSubscribed => () {
-    switch (_purchaseState) {
-      case SubscriptionPurchaseState.purchased:
-      case SubscriptionPurchaseState.restored:
-        return true;
-      default:
-        return false;
-    }
-  }();
   bool get isLoading => _isLoading;
   bool get restoreInProgress => _restoreInProgress;
   List<ProductDetails> get products => _products;
@@ -556,7 +547,10 @@ class SubscriptionService extends ChangeNotifier {
     var didChange = false;
 
     if (_purchaseState == SubscriptionPurchaseState.loading ||
-        _purchaseState == SubscriptionPurchaseState.purchasing) {
+        _purchaseState == SubscriptionPurchaseState.purchasing ||
+        (_purchaseMode == PurchaseMode.creditPack &&
+            (_purchaseState == SubscriptionPurchaseState.purchased ||
+                _purchaseState == SubscriptionPurchaseState.restored))) {
       _purchaseState = SubscriptionPurchaseState.idle;
       didChange = true;
     }

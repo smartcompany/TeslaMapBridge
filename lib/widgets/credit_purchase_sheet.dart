@@ -25,7 +25,7 @@ class _CreditPurchaseSheetState extends State<CreditPurchaseSheet> {
   @override
   void initState() {
     super.initState();
-    _currentQuota = UsageLimitService.shared.userStatus?.quota;
+    _currentQuota = UsageLimitService.shared.userStatus?.quota ?? widget.quota;
   }
 
   @override

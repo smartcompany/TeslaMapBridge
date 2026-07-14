@@ -398,77 +398,96 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final rewardCreditsPerAd = TeslaAuthService.shared.rewardCreditsPerAd;
       final adsId = TeslaAuthService.shared.adsId;
 
-      if (adsId == null || rewardCreditsPerAd == null) {
+      if (adsId == null ||
+          adsId.isEmpty ||
+          rewardCreditsPerAd == null ||
+          rewardCreditsPerAd <= 0) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(loc.rewardAdLoadFailed)));
         return;
       }
 
-      // Show loading spinner
       setState(() {
         _isLoading = true;
       });
 
-      bool rewardedGiven = false;
       await RewardedAd.load(
         adUnitId: adsId,
         request: const AdRequest(),
         rewardedAdLoadCallback: RewardedAdLoadCallback(
           onAdLoaded: (ad) {
+            if (!mounted) {
+              ad.dispose();
+              return;
+            }
             setState(() {
               _isLoading = false;
             });
 
+            var earnedReward = false;
+
             ad.fullScreenContentCallback = FullScreenContentCallback(
               onAdFailedToShowFullScreenContent: (ad, error) {
                 ad.dispose();
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(loc.rewardAdLoadFailed)),
+                );
               },
-              onAdDismissedFullScreenContent: (ad) {
+              onAdDismissedFullScreenContent: (ad) async {
                 ad.dispose();
-                if (!rewardedGiven && mounted) {
+                // iOS 등에서 dismiss 가 reward 콜백보다 먼저 올 수 있어 짧게 대기
+                if (!earnedReward) {
+                  await Future<void>.delayed(
+                    const Duration(milliseconds: 600),
+                  );
+                }
+                if (!mounted) return;
+                if (!earnedReward) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text(loc.rewardAdMustFinish)),
                   );
+                  return;
                 }
-              },
-            );
-            ad.show(
-              onUserEarnedReward: (ad, reward) async {
-                if (!mounted) return;
-                if (rewardedGiven) return;
-                rewardedGiven = true;
 
                 try {
                   final usage = await UsageLimitService.shared.addCredits(
                     rewardCreditsPerAd,
                   );
-
+                  if (!mounted) return;
                   setState(() {
                     _quota = usage.quota;
                     _hasChanges = true;
                   });
-
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(loc.rewardEarned(rewardCreditsPerAd)),
                     ),
                   );
-                } catch (_) {
+                } catch (e) {
+                  debugPrint('[Reward] addCredits failed: $e');
                   if (!mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(loc.rewardAdLoadFailed)),
+                    SnackBar(
+                      content: Text(loc.errorWithMessage('$e')),
+                    ),
                   );
                 }
               },
             );
+            ad.show(
+              onUserEarnedReward: (ad, reward) {
+                earnedReward = true;
+              },
+            );
           },
           onAdFailedToLoad: (error) {
+            debugPrint('[Reward] ad failed to load: $error');
+            if (!mounted) return;
             setState(() {
               _isLoading = false;
             });
-
-            if (!mounted) return;
             ScaffoldMessenger.of(
               context,
             ).showSnackBar(SnackBar(content: Text(loc.rewardAdLoadFailed)));
@@ -476,7 +495,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       );
     } catch (e) {
+      debugPrint('[Reward] flow error: $e');
       if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(loc.rewardAdLoadFailed)));
@@ -489,11 +512,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final titleText = isCredit
         ? loc.creditsSectionTitle
         : loc.subscriptionSectionTitle;
-    final subtitleText = _subscriptionService.isSubscribed
-        ? loc.subscriptionActiveLabel
-        : (isCredit
-              ? loc.oneTimePurchaseButton
-              : loc.subscriptionUpgradeButton);
+    final subtitleText = isCredit
+        ? loc.oneTimePurchaseButton
+        : loc.subscriptionUpgradeButton;
     return (titleText, subtitleText);
   }
 

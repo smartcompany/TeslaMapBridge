@@ -20,10 +20,6 @@ class SubscriptionSheet extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    if (service.isSubscribed) {
-      return const SizedBox.shrink();
-    }
-
     return TextButton(
       style: TextButton.styleFrom(
         foregroundColor: Theme.of(context).colorScheme.secondary,
@@ -61,43 +57,19 @@ class SubscriptionSheet extends StatelessWidget {
             final isProcessing =
                 service.purchaseState == SubscriptionPurchaseState.purchasing ||
                 service.purchaseState == SubscriptionPurchaseState.loading;
-            final canPurchase =
-                !service.isSubscribed && !isProcessing && product != null;
+            final canPurchase = !isProcessing && product != null;
 
-            final usageMessage = () {
-              if (service.isSubscribed) {
-                return service.purchaseMode == PurchaseMode.subscription
-                    ? loc.subscriptionActiveLabel
-                    : loc.oneTimePurchaseActiveLabel;
-              }
+            final usageMessage = quota > 0
+                ? loc.subscriptionUsageStatus(quota)
+                : (service.purchaseMode == PurchaseMode.subscription
+                      ? loc.subscriptionRequiredMessage
+                      : loc.oneTimePurchaseRequiredMessage);
 
-              if (quota > 0) {
-                return loc.subscriptionUsageStatus(quota);
-              }
-
-              return service.purchaseMode == PurchaseMode.subscription
-                  ? loc.subscriptionRequiredMessage
-                  : loc.oneTimePurchaseRequiredMessage;
-            }();
-
-            final productDescription = () {
-              if (service.isSubscribed) {
-                return '${product?.description ?? ''} (${product?.price ?? ''})';
-              }
-
-              if (product != null) {
-                return product.description;
-              }
-
-              return loc.subscriptionLoading;
-            }();
+            final productDescription = product != null
+                ? product.description
+                : loc.subscriptionLoading;
 
             final buttonLabel = () {
-              if (service.isSubscribed) {
-                return service.purchaseMode == PurchaseMode.subscription
-                    ? loc.subscriptionActiveLabel
-                    : loc.oneTimePurchaseActiveLabel;
-              }
               if (isProcessing) {
                 return loc.subscriptionProcessing;
               }

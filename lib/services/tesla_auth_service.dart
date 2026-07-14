@@ -576,7 +576,7 @@ class TeslaAuthService {
         final data = jsonDecode(response.body);
         final email = data['response']?['email'] as String?;
         if (email != null) {
-          await _storage.write(key: _emailKey, value: email);
+          await _storage.write(key: _emailKey, value: email.trim().toLowerCase());
         }
       }
     } catch (e) {

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -446,6 +447,11 @@ class _HomeScreenState extends State<HomeScreen>
       _selectedSuperchargerKey = null;
     });
 
+    // 목적지 UI가 뜬 시점에 남은 횟수가 보이도록 쿼터 재동기화
+    if (!_isQuotaLoaded || _quota <= 0) {
+      unawaited(_loadUsageData());
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _moveCameraToSelectedDestination();
     });
@@ -465,6 +471,10 @@ class _HomeScreenState extends State<HomeScreen>
       _placesController.clear();
       _selectedSuperchargerKey = _poiKey(destination);
     });
+
+    if (!_isQuotaLoaded || _quota <= 0) {
+      unawaited(_loadUsageData());
+    }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _moveCameraToSelectedDestination();
@@ -494,25 +504,28 @@ class _HomeScreenState extends State<HomeScreen>
     return null;
   }
 
+  void _syncQuotaFromShared() {
+    final shared = UsageLimitService.shared.userStatus;
+    if (shared == null || !mounted) return;
+    setState(() {
+      _quota = shared.quota;
+      _isQuotaLoaded = true;
+    });
+  }
+
   Future<void> _loadUsageData() async {
     final userId = await _ensureUserId();
     if (userId == null) {
-      if (mounted) {
-        setState(() {
-          _isQuotaLoaded = true;
-        });
-      }
+      // 로그인 전이면 "로드 완료"로 표시하지 않음 → 이후 재시도
+      _syncQuotaFromShared();
       return;
     }
 
     final accessToken = await TeslaAuthService.shared.getAccessToken();
     if (accessToken == null || accessToken.isEmpty) {
       debugPrint('[Usage] Missing access token when loading quota');
-      if (mounted) {
-        setState(() {
-          _isQuotaLoaded = true;
-        });
-      }
+      // 토큰 없어도 공유 캐시가 있으면 그걸 쓰고, 없으면 미로드 상태 유지
+      _syncQuotaFromShared();
       return;
     }
 
@@ -529,6 +542,7 @@ class _HomeScreenState extends State<HomeScreen>
       });
     } on UsageLimitException catch (error) {
       debugPrint('[Usage] Failed to load quota: $error');
+      _syncQuotaFromShared();
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -536,19 +550,15 @@ class _HomeScreenState extends State<HomeScreen>
       }
     } catch (error) {
       debugPrint('[Usage] Failed to load quota: $error');
+      _syncQuotaFromShared();
     }
   }
 
   /// Check if user has quota (without consuming)
   Future<bool> _checkNavigationQuota() async {
-    final subscriptionService = context.read<SubscriptionService>();
-    if (subscriptionService.isSubscribed) {
-      return true;
-    }
-
-    if (!_isQuotaLoaded) {
-      await _loadUsageData();
-    }
+    // 안내 시작 직마다 최신 쿼터를 다시 불러 오래된 0값으로 구매 시트를 띄우지 않음
+    await _loadUsageData();
+    _syncQuotaFromShared();
 
     if (_quota <= 0) {
       await _showSubscriptionDialog();
@@ -560,21 +570,30 @@ class _HomeScreenState extends State<HomeScreen>
 
   /// Consume navigation quota (called after successful Tesla API call)
   Future<void> _consumeNavigationQuota() async {
-    final subscriptionService = context.read<SubscriptionService>();
-    if (subscriptionService.isSubscribed) {
+    final userId = await _ensureUserId();
+    if (userId == null || userId.isEmpty) {
+      debugPrint('[Usage] consume skipped: missing userId');
       return;
     }
 
     final accessToken = await TeslaAuthService.shared.getAccessToken();
     if (accessToken == null || accessToken.isEmpty) {
+      debugPrint('[Usage] consume skipped: missing access token');
       return;
     }
 
     try {
       final userStatusResult = await UsageLimitService.shared.consume(
-        userId: _userId!,
+        userId: userId,
         accessToken: accessToken,
       );
+
+      if (!userStatusResult.success) {
+        debugPrint(
+          '[Usage] consume unsuccessful: ${userStatusResult.errorMessage}',
+        );
+        return;
+      }
 
       if (mounted) {
         setState(() {
@@ -582,6 +601,7 @@ class _HomeScreenState extends State<HomeScreen>
           _quota = userStatusResult.status.quota;
         });
       }
+      debugPrint('[Usage] consume ok, remaining=$_quota');
     } on UsageLimitException catch (error) {
       debugPrint('[Usage] consume failed: $error');
       if (mounted) {
@@ -1957,8 +1977,14 @@ class _HomeScreenState extends State<HomeScreen>
                 title: Text(
                   _selectedDestination!.name,
                   style: const TextStyle(fontWeight: FontWeight.bold),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                subtitle: Text(_selectedDestination!.address),
+                subtitle: Text(
+                  _selectedDestination!.address,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 trailing: IconButton(
                   icon: Icon(
                     _isFavoriteDestination(_selectedDestination!)
